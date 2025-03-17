@@ -1,0 +1,24 @@
+From 234b65cc30432cc8c35b4d2b65dfa6c6e21cc103 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Mon, 11 Nov 2024 16:09:00 -0500
+Subject: [PATCH] Search X11 on Linux
+
+---
+ src/hdanari/CMakeLists.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/hdanari/CMakeLists.txt b/src/hdanari/CMakeLists.txt
+index bde0360..4853a13 100644
+--- a/src/hdanari/CMakeLists.txt
++++ b/src/hdanari/CMakeLists.txt
+@@ -18,6 +18,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
+     find_package(X11 REQUIRED)
+     find_package(OpenGL REQUIRED)
+ endif()
++find_package(OpenGL REQUIRED)
+ 
+ if(GCC OR CLANG)
+   project_add_compile_options(-Wl,--no-undefined)
+-- 
+2.47.0
+
