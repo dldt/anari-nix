@@ -16,13 +16,13 @@ let
   anari-sdk-src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "ae6bcdc0eb6d369529212075db412999d89fdd6c";
-    hash = "sha256-hRR+6M7p2AtPyI4CHZmLdEL2a9SKU61u2tsVHxagxS8=";
+    rev = "0ddd2eecd591a874e8653af9cb80a1e8ecc7fb7d";
+    hash = "sha256-uxVWxocZ8bWtleZp3QZgzmhUuIKgkMTv6AGSTgzkri8=";
   };
 in
 stdenv.mkDerivation {
   pname = " hdanari";
-  version = "v0.13.1-3-gae6bcdc";
+  version = "v0.13.1-4-g0ddd2ee";
 
   # Main source
   src = anari-sdk-src // {
