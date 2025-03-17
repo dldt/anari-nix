@@ -1,0 +1,17 @@
+diff --git a/src/prod/lib/neuray/test_ineuray.cpp b/src/prod/lib/neuray/test_ineuray.cpp
+index eb5c57e6..062299dc 100644
+--- a/src/prod/lib/neuray/test_ineuray.cpp
++++ b/src/prod/lib/neuray/test_ineuray.cpp
+@@ -42,12 +42,6 @@
+ #include <mi/base/handle.h>
+ #include <mi/base/interface_implement.h>
+ 
+-// X11/Xlib.h defines Status to int
+-// Include it here to test our workarounds in neuray.h and inetworking_configuration.h
+-#ifdef MI_PLATFORM_UNIX
+-#include <X11/Xlib.h>
+-#endif // MI_PLATFORM_UNIX
+-
+ #include <mi/neuraylib/factory.h>
+ #include <mi/neuraylib/idebug_configuration.h>
+ #include <mi/neuraylib/idatabase.h>

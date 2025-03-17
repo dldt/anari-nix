@@ -1,0 +1,2551 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 22ffd5b..daaa2d0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -34,21 +34,16 @@ include(cmake/cmake_project_commands.cmake)
+ 
+ ## Dependencies ##
+ 
+-find_package(anari 0.11.0 REQUIRED)
++find_package(anari 0.13.0 REQUIRED)
+ find_package(ospray 3.2.0 REQUIRED)
+ find_package(Python3 REQUIRED COMPONENTS Interpreter)
+ 
+-## Code generation ##
+-
+-add_subdirectory(code_gen)
+-
+ ## Core device target ##
+ 
+ project_add_library(SHARED)
+ 
+ project_sources(PRIVATE
+   OSPRayDevice.cpp
+-  code_gen/OSPRayDeviceQueries.cpp
+   OSPRayGlobalState.cpp
+   OSPRayLibrary.cpp
+   Object.cpp
+@@ -97,6 +92,13 @@ project_sources(PRIVATE
+   scene/volume/spatial_field/UnstructuredField.cpp
+ )
+ 
++anari_generate_queries(
++  DEVICE_TARGET ${PROJECT_NAME}
++  CPP_NAMESPACE anari_ospray
++  JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/code_gen/ospray_device.json
++  JSON_ROOT_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/code_gen
++)
++
+ include(GenerateExportHeader)
+ generate_export_header(${PROJECT_NAME}
+   EXPORT_MACRO_NAME "ANARI_OSPRAY_DEVICE_INTERFACE"
+diff --git a/OSPRayDevice.cpp b/OSPRayDevice.cpp
+index 2ea2ab4..f96945f 100644
+--- a/OSPRayDevice.cpp
++++ b/OSPRayDevice.cpp
+@@ -264,7 +264,7 @@ int OSPRayDevice::getProperty(ANARIObject object,
+   } else {
+     if (mask == ANARI_WAIT) {
+       deviceState()->waitOnCurrentFrame();
+-      m_state->commitBufferFlush();
++      m_state->commitBuffer.flush();
+     }
+     return helium::referenceFromHandle(object).getProperty(
+         name, type, mem, mask);
+@@ -424,7 +424,7 @@ OSPRayDevice::~OSPRayDevice()
+ 
+   auto &state = *deviceState();
+ 
+-  state.commitBufferClear();
++  state.commitBuffer.clear();
+ 
+   reportMessage(ANARI_SEVERITY_DEBUG, "destroying ospray device (%p)", this);
+ 
+diff --git a/Object.cpp b/Object.cpp
+index 9d00a82..14faf65 100644
+--- a/Object.cpp
++++ b/Object.cpp
+@@ -12,9 +12,17 @@ namespace anari_ospray {
+ 
+ Object::Object(ANARIDataType type, OSPRayGlobalState *s)
+     : helium::BaseObject(type, s)
+-{}
++{
++  helium::BaseObject::markParameterChanged();
++  s->commitBuffer.addObjectToCommit(this);
++}
++
++void Object::commitParameters()
++{
++  // no-op
++}
+ 
+-void Object::commit()
++void Object::finalize()
+ {
+   // no-op
+ }
+diff --git a/Object.h b/Object.h
+index bdbd814..7470f53 100644
+--- a/Object.h
++++ b/Object.h
+@@ -21,11 +21,12 @@ struct Object : public helium::BaseObject
+   virtual bool getProperty(const std::string_view &name,
+       ANARIDataType type,
+       void *ptr,
+-      uint32_t flags);
++      uint32_t flags) override;
+ 
+-  virtual void commit();
++  virtual void commitParameters() override;
++  virtual void finalize() override;
+ 
+-  virtual bool isValid() const;
++  virtual bool isValid() const override;
+ 
+   OSPRayGlobalState *deviceState() const;
+ };
+diff --git a/README.md b/README.md
+index 78d8897..a4e6faf 100644
+--- a/README.md
++++ b/README.md
+@@ -8,8 +8,8 @@ to Intel® [OSPRay](https://www.ospray.org): ANARILibrary and ANARIDevice
+ 
+ - CMake
+ - C++11 compiler
+-- [ANARI-SDK](https://github.com/KhronosGroup/ANARI-SDK) v0.10.0 or later
+-- [OSPRay](https://www.github.com/ospray/ospray) v3.1.0+
++- [ANARI-SDK](https://github.com/KhronosGroup/ANARI-SDK) v0.13.0 or later
++- [OSPRay](https://www.github.com/ospray/ospray) v3.2.0+
+ - Python 3
+ 
+ ## Building
+diff --git a/array/Array.cpp b/array/Array.cpp
+index 33c914e..704abd9 100644
+--- a/array/Array.cpp
++++ b/array/Array.cpp
+@@ -98,17 +98,6 @@ size_t Array::totalCapacity() const
+   return totalSize();
+ }
+ 
+-bool Array::getProperty(
+-    const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
+-{
+-  return 0;
+-}
+-
+-void Array::commit()
+-{
+-  // no-op
+-}
+-
+ void *Array::map()
+ {
+   if (m_mapped) {
+@@ -132,11 +121,37 @@ void Array::unmap()
+   notifyChangeObservers();
+ }
+ 
++bool Array::isMapped() const
++{
++  return m_mapped;
++}
++
+ bool Array::wasPrivatized() const
+ {
+   return m_privatized;
+ }
+ 
++void Array::markDataModified()
++{
++  m_lastDataModified = helium::newTimeStamp();
++}
++
++bool Array::getProperty(
++    const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
++{
++  return 0;
++}
++
++void Array::commitParameters()
++{
++  // no-op
++}
++
++void Array::finalize()
++{
++  // no-op
++}
++
+ OSPData Array::osprayData()
+ {
+   if (!m_osprayData)
+diff --git a/array/Array.h b/array/Array.h
+index df59f3c..2a7dae8 100644
+--- a/array/Array.h
++++ b/array/Array.h
+@@ -45,17 +45,23 @@ struct Array : public helium::BaseArray
+   virtual size_t totalSize() const = 0;
+   virtual size_t totalCapacity() const;
+ 
+-  bool getProperty(const std::string_view &name,
+-      ANARIDataType type,
+-      void *ptr,
+-      uint32_t flags) override;
+-  void commit() override;
+-  void *map() override;
++  virtual void *map() override;
+   virtual void unmap() override;
+   virtual void privatize() override = 0;
+ 
++  bool isMapped() const;
++
+   bool wasPrivatized() const;
+ 
++  void markDataModified();
++
++  virtual bool getProperty(const std::string_view &name,
++      ANARIDataType type,
++      void *ptr,
++      uint32_t flags) override;
++  virtual void commitParameters() override;
++  virtual void finalize() override;
++
+   OSPData osprayData();
+ 
+   // CONSOLIDATE INTO anari_ospray::Object/////////////////////////////////////
+@@ -95,6 +101,7 @@ struct Array : public helium::BaseArray
+     } privatized;
+   } m_hostData;
+ 
++  helium::TimeStamp m_lastDataModified{0};
+   bool m_mapped{false};
+   OSPData m_osprayData{nullptr};
+ 
+diff --git a/array/Array1D.cpp b/array/Array1D.cpp
+index e964c56..b4261ac 100644
+--- a/array/Array1D.cpp
++++ b/array/Array1D.cpp
+@@ -11,11 +11,8 @@ Array1D::Array1D(OSPRayGlobalState *state, const Array1DMemoryDescriptor &d)
+   initManagedMemory();
+ }
+ 
+-void Array1D::commit()
++void Array1D::commitParameters()
+ {
+-  auto oldBegin = m_begin;
+-  auto oldEnd = m_end;
+-
+   m_begin = getParam<size_t>("begin", 0);
+   m_begin = std::clamp(m_begin, size_t(0), m_capacity - 1);
+   m_end = getParam<size_t>("end", m_capacity);
+@@ -31,9 +28,12 @@ void Array1D::commit()
+         "array 'begin' is not less than 'end', swapping values");
+     std::swap(m_begin, m_end);
+   }
++}
+ 
+-  if (m_begin != oldBegin || m_end != oldEnd)
+-    notifyChangeObservers();
++void Array1D::finalize()
++{
++  markDataModified();
++  notifyChangeObservers();
+ }
+ 
+ size_t Array1D::totalSize() const
+diff --git a/array/Array1D.h b/array/Array1D.h
+index 6e11894..29c10e7 100644
+--- a/array/Array1D.h
++++ b/array/Array1D.h
+@@ -18,7 +18,8 @@ struct Array1D : public Array
+ {
+   Array1D(OSPRayGlobalState *state, const Array1DMemoryDescriptor &d);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   size_t totalSize() const override;
+   size_t totalCapacity() const override;
+diff --git a/array/ObjectArray.cpp b/array/ObjectArray.cpp
+index 17787bd..a410e29 100644
+--- a/array/ObjectArray.cpp
++++ b/array/ObjectArray.cpp
+@@ -37,11 +37,8 @@ ObjectArray::~ObjectArray()
+       m_appendedHandles.begin(), m_appendedHandles.end(), refDecObject);
+ }
+ 
+-void ObjectArray::commit()
++void ObjectArray::commitParameters()
+ {
+-  auto oldBegin = m_begin;
+-  auto oldEnd = m_end;
+-
+   m_begin = getParam<size_t>("begin", 0);
+   m_begin = std::clamp(m_begin, size_t(0), m_capacity - 1);
+   m_end = getParam<size_t>("end", m_capacity);
+@@ -57,9 +54,12 @@ void ObjectArray::commit()
+         "array 'begin' is not less than 'end', swapping values");
+     std::swap(m_begin, m_end);
+   }
++}
+ 
+-  if (m_begin != oldBegin || m_end != oldEnd)
+-    notifyChangeObservers();
++void ObjectArray::finalize()
++{
++  markDataModified();
++  notifyChangeObservers();
+ }
+ 
+ size_t ObjectArray::totalSize() const
+diff --git a/array/ObjectArray.h b/array/ObjectArray.h
+index 99cf9bd..0c7f05c 100644
+--- a/array/ObjectArray.h
++++ b/array/ObjectArray.h
+@@ -12,7 +12,8 @@ struct ObjectArray : public Array
+   ObjectArray(OSPRayGlobalState *state, const Array1DMemoryDescriptor &d);
+   ~ObjectArray();
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   size_t totalSize() const override;
+   size_t totalCapacity() const override;
+diff --git a/camera/Camera.cpp b/camera/Camera.cpp
+index 899b760..749843d 100644
+--- a/camera/Camera.cpp
++++ b/camera/Camera.cpp
+@@ -30,18 +30,26 @@ Camera *Camera::createInstance(std::string_view type, OSPRayGlobalState *s)
+     return (Camera *)new UnknownObject(ANARI_CAMERA, s);
+ }
+ 
+-void Camera::commit()
++void Camera::commitParameters()
+ {
+-  auto pos = getParam<float3>("position", float3(0.f));
+-  auto dir = normalize(getParam<float3>("direction", float3(0.f, 0.f, 1.f)));
+-  auto up = normalize(getParam<float3>("up", float3(0.f, 1.f, 0.f)));
+-  float imgRegion[4] = {0.f, 0.f, 1.f, 1.f};
+-  getParam("imageRegion", ANARI_FLOAT32_BOX2, imgRegion);
+-  ospSetParam(osprayCamera(), "position", OSP_VEC3F, &pos);
+-  ospSetParam(osprayCamera(), "direction", OSP_VEC3F, &dir);
+-  ospSetParam(osprayCamera(), "up", OSP_VEC3F, &up);
+-  ospSetParam(osprayCamera(), "imageStart", OSP_VEC2F, &imgRegion[0]);
+-  ospSetParam(osprayCamera(), "imageEnd", OSP_VEC2F, &imgRegion[2]);
++  m_pos = getParam<float3>("position", float3(0.f));
++  m_dir = normalize(getParam<float3>("direction", float3(0.f, 0.f, 1.f)));
++  m_up = normalize(getParam<float3>("up", float3(0.f, 1.f, 0.f)));
++  if (!getParam("imageRegion", ANARI_FLOAT32_BOX2, m_imgRegion)) {
++    m_imgRegion[0] = 0.f;
++    m_imgRegion[1] = 0.f;
++    m_imgRegion[2] = 1.f;
++    m_imgRegion[3] = 1.f;
++  }
++}
++
++void Camera::finalize()
++{
++  ospSetParam(osprayCamera(), "position", OSP_VEC3F, &m_pos);
++  ospSetParam(osprayCamera(), "direction", OSP_VEC3F, &m_dir);
++  ospSetParam(osprayCamera(), "up", OSP_VEC3F, &m_up);
++  ospSetParam(osprayCamera(), "imageStart", OSP_VEC2F, &m_imgRegion[0]);
++  ospSetParam(osprayCamera(), "imageEnd", OSP_VEC2F, &m_imgRegion[2]);
+   markUpdated();
+ }
+ 
+diff --git a/camera/Camera.h b/camera/Camera.h
+index 12f23c3..ae2d73b 100644
+--- a/camera/Camera.h
++++ b/camera/Camera.h
+@@ -12,7 +12,8 @@ struct Camera : public Object
+   Camera(OSPRayGlobalState *s, const char *osptype);
+   ~Camera() override;
+ 
+-  virtual void commit() override;
++  virtual void commitParameters() override;
++  virtual void finalize() override;
+ 
+   static Camera *createInstance(
+       std::string_view type, OSPRayGlobalState *state);
+@@ -21,6 +22,10 @@ struct Camera : public Object
+ 
+  protected:
+   OSPCamera m_osprayCamera{nullptr};
++  float3 m_pos{0.f, 0.f, 0.f};
++  float3 m_dir{0.f, 0.f, 1.f};
++  float3 m_up{0.f, 1.f, 0.f};
++  float m_imgRegion[4];
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/camera/Orthographic.cpp b/camera/Orthographic.cpp
+index 27c9caa..9461588 100644
+--- a/camera/Orthographic.cpp
++++ b/camera/Orthographic.cpp
+@@ -7,13 +7,18 @@ namespace anari_ospray {
+ 
+ Orthographic::Orthographic(OSPRayGlobalState *s) : Camera(s, "orthographic") {}
+ 
+-void Orthographic::commit()
++void Orthographic::commitParameters()
+ {
+-  Camera::commit();
+-  const float aspect = getParam<float>("aspect", 1.f);
+-  const float height = getParam<float>("height", 1.f);
+-  ospSetParam(osprayCamera(), "aspect", OSP_FLOAT, &aspect);
+-  ospSetParam(osprayCamera(), "height", OSP_FLOAT, &height);
++  Camera::commitParameters();
++  m_aspect = getParam<float>("aspect", 1.f);
++  m_height = getParam<float>("height", 1.f);
++}
++
++void Orthographic::finalize()
++{
++  Camera::finalize();
++  ospSetParam(osprayCamera(), "aspect", OSP_FLOAT, &m_aspect);
++  ospSetParam(osprayCamera(), "height", OSP_FLOAT, &m_height);
+   ospCommit(osprayCamera());
+ }
+ 
+diff --git a/camera/Orthographic.h b/camera/Orthographic.h
+index 1802bba..5070c74 100644
+--- a/camera/Orthographic.h
++++ b/camera/Orthographic.h
+@@ -10,7 +10,11 @@ namespace anari_ospray {
+ struct Orthographic : public Camera
+ {
+   Orthographic(OSPRayGlobalState *s);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++ private:
++  float m_aspect{1.f};
++  float m_height{1.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/camera/Perspective.cpp b/camera/Perspective.cpp
+index dc0bdda..a3b8ccd 100644
+--- a/camera/Perspective.cpp
++++ b/camera/Perspective.cpp
+@@ -7,17 +7,21 @@ namespace anari_ospray {
+ 
+ Perspective::Perspective(OSPRayGlobalState *s) : Camera(s, "perspective") {}
+ 
+-void Perspective::commit()
++void Perspective::commitParameters()
+ {
+-  Camera::commit();
++  Camera::commitParameters();
+   // NOTE: demonstrate alternative 'raw' method for getting parameter values
+-  float fovy = 0.f;
+-  if (!getParam("fovy", ANARI_FLOAT32, &fovy))
+-    fovy = radians(60.f);
+-  fovy = degrees(fovy);
+-  float aspect = getParam<float>("aspect", 1.f);
+-  ospSetParam(osprayCamera(), "fovy", OSP_FLOAT, &fovy);
+-  ospSetParam(osprayCamera(), "aspect", OSP_FLOAT, &aspect);
++  if (!getParam("fovy", ANARI_FLOAT32, &m_fovy))
++    m_fovy = radians(60.f);
++  m_fovy = degrees(m_fovy);
++  m_aspect = getParam<float>("aspect", 1.f);
++}
++
++void Perspective::finalize()
++{
++  Camera::finalize();
++  ospSetParam(osprayCamera(), "fovy", OSP_FLOAT, &m_fovy);
++  ospSetParam(osprayCamera(), "aspect", OSP_FLOAT, &m_aspect);
+   ospCommit(osprayCamera());
+ }
+ 
+diff --git a/camera/Perspective.h b/camera/Perspective.h
+index 8b48306..f4adc23 100644
+--- a/camera/Perspective.h
++++ b/camera/Perspective.h
+@@ -10,7 +10,11 @@ namespace anari_ospray {
+ struct Perspective : public Camera
+ {
+   Perspective(OSPRayGlobalState *s);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++ private:
++  float m_fovy{0.f};
++  float m_aspect{1.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/code_gen/CMakeLists.txt b/code_gen/CMakeLists.txt
+deleted file mode 100644
+index 4164e52..0000000
+--- a/code_gen/CMakeLists.txt
++++ /dev/null
+@@ -1,17 +0,0 @@
+-## Copyright 2024 Intel Corporation
+-## SPDX-License-Identifier: Apache-2.0
+-
+-anari_generate_queries(
+-  NAME ospray
+-  PREFIX OSPRayDevice
+-  CPP_NAMESPACE anari_ospray
+-  JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ospray_device.json
+-  JSON_ROOT_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}
+-)
+-
+-add_custom_target(
+-  generate_queries
+-  COMMAND clang-format -style=file -i OSPRayDeviceQueries.cpp
+-  DEPENDS generate_ospray
+-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-)
+diff --git a/frame/Frame.cpp b/frame/Frame.cpp
+index 510a38e..16dee3b 100644
+--- a/frame/Frame.cpp
++++ b/frame/Frame.cpp
+@@ -39,21 +39,27 @@ OSPRayGlobalState *Frame::deviceState() const
+   return (OSPRayGlobalState *)helium::BaseObject::m_state;
+ }
+ 
+-void Frame::commit()
++void Frame::commitParameters()
+ {
+   m_renderer = getParamObject<Renderer>("renderer");
++  m_camera = getParamObject<Camera>("camera");
++  m_world = getParamObject<World>("world");
++  m_colorType = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
++  m_frameData.size = getParam<uint2>("size", uint2(10));
++}
++
++void Frame::finalize()
++{
+   if (!m_renderer) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'renderer' on frame");
+   }
+ 
+-  m_camera = getParamObject<Camera>("camera");
+   if (!m_camera) {
+     reportMessage(
+         ANARI_SEVERITY_WARNING, "missing required parameter 'camera' on frame");
+   }
+ 
+-  m_world = getParamObject<World>("world");
+   if (!m_world) {
+     reportMessage(
+         ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
+@@ -62,10 +68,6 @@ void Frame::commit()
+   m_valid = m_renderer && m_renderer->isValid() && m_camera
+       && m_camera->isValid() && m_world && m_world->isValid();
+ 
+-  m_colorType = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
+-
+-  m_frameData.size = getParam<uint2>("size", uint2(10));
+-
+   initFB(m_renderer->denoise());
+ }
+ 
+@@ -113,7 +115,7 @@ void Frame::renderFrame()
+ 
+   auto start = std::chrono::steady_clock::now();
+ 
+-  state->commitBufferFlush();
++  state->commitBuffer.flush();
+ 
+   if (m_denoising != m_renderer->denoise())
+     initFB(!m_denoising); // toggle denoiser
+@@ -132,7 +134,7 @@ void Frame::renderFrame()
+     return;
+   }
+ 
+-  if (state->commitBufferLastFlush() > m_frameLastRendered) {
++  if (state->commitBuffer.lastObjectFinalization() > m_frameLastRendered) {
+     m_world->setAmbientLightValues(
+         m_renderer->ambientColor(), m_renderer->ambientRadiance());
+     ospResetAccumulation(m_osprayFrameBuffer);
+diff --git a/frame/Frame.h b/frame/Frame.h
+index 81789b3..2911fbd 100644
+--- a/frame/Frame.h
++++ b/frame/Frame.h
+@@ -28,7 +28,8 @@ struct Frame : public helium::BaseFrame
+       void *ptr,
+       uint32_t flags) override;
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   void renderFrame() override;
+ 
+diff --git a/renderer/Debug.cpp b/renderer/Debug.cpp
+index ef01f19..0dd5776 100644
+--- a/renderer/Debug.cpp
++++ b/renderer/Debug.cpp
+@@ -6,18 +6,20 @@
+ namespace anari_ospray {
+ 
+ Debug::Debug(OSPRayGlobalState *s) : Renderer(s, "debug")
++{}
++
++void Debug::commitParameters()
+ {
+-  commit();
++  Renderer::commitParameters();
++  m_method = getParamString("method", "eyeLight");
+ }
+ 
+-void Debug::commit()
++void Debug::finalize()
+ {
+-  Renderer::commit();
+-
+-  auto method = getParamString("method", "eyeLight");
++  Renderer::finalize();
+ 
+   auto ospR = osprayRenderer();
+-  ospSetParam(ospR, "method", OSP_STRING, method.c_str());
++  ospSetParam(ospR, "method", OSP_STRING, m_method.c_str());
+   ospCommit(ospR);
+ }
+ 
+diff --git a/renderer/Debug.h b/renderer/Debug.h
+index 3cffe5e..5205cd3 100644
+--- a/renderer/Debug.h
++++ b/renderer/Debug.h
+@@ -10,7 +10,11 @@ namespace anari_ospray {
+ struct Debug : public Renderer
+ {
+   Debug(OSPRayGlobalState *s);
+-  virtual void commit() override;
++  virtual void commitParameters() override;
++  virtual void finalize() override;
++
++ private:
++  std::string m_method;
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/renderer/Pathtracer.cpp b/renderer/Pathtracer.cpp
+index 0f6e390..4dcd2c4 100644
+--- a/renderer/Pathtracer.cpp
++++ b/renderer/Pathtracer.cpp
+@@ -6,26 +6,28 @@
+ namespace anari_ospray {
+ 
+ Pathtracer::Pathtracer(OSPRayGlobalState *s) : Renderer(s, "pathtracer")
++{}
++
++void Pathtracer::commitParameters()
+ {
+-  commit();
++  Renderer::commitParameters();
++  m_lightSamples = getParam<int>("lightSamples", -1);
++  m_roulettePathLength = getParam<int>("roulettePathLength", 5);
++  m_maxScatteringEvents = getParam<int>("maxScatteringEvents", 20);
++  m_maxContribution = getParam<float>("maxContribution", 1e20f);
++  m_backgroundRefraction = getParam<bool>("backgroundRefraction", false);
+ }
+ 
+-void Pathtracer::commit()
++void Pathtracer::finalize()
+ {
+-  Renderer::commit();
+-
+-  bool lightSamples = getParam<int>("lightSamples", -1);
+-  int roulettePathLength = getParam<int>("roulettePathLength", 5);
+-  int maxScatteringEvents = getParam<int>("maxScatteringEvents", 20);
+-  float maxContribution = getParam<float>("maxContribution", 1e20f);
+-  bool backgroundRefraction = getParam<bool>("backgroundRefraction", false);
++  Renderer::finalize();
+ 
+   auto r = osprayRenderer();
+-  ospSetInt(r, "lightSamples", lightSamples);
+-  ospSetInt(r, "roulettePathLength", roulettePathLength);
+-  ospSetInt(r, "maxScatteringEvents", maxScatteringEvents);
+-  ospSetFloat(r, "maxContribution", maxContribution);
+-  ospSetBool(r, "backgroundRefraction", backgroundRefraction);
++  ospSetInt(r, "lightSamples", m_lightSamples);
++  ospSetInt(r, "roulettePathLength", m_roulettePathLength);
++  ospSetInt(r, "maxScatteringEvents", m_maxScatteringEvents);
++  ospSetFloat(r, "maxContribution", m_maxContribution);
++  ospSetBool(r, "backgroundRefraction", m_backgroundRefraction);
+   ospCommit(r);
+ }
+ 
+diff --git a/renderer/Pathtracer.h b/renderer/Pathtracer.h
+index 75fb3b5..c1ace90 100644
+--- a/renderer/Pathtracer.h
++++ b/renderer/Pathtracer.h
+@@ -10,7 +10,15 @@ namespace anari_ospray {
+ struct Pathtracer : public Renderer
+ {
+   Pathtracer(OSPRayGlobalState *s);
+-  virtual void commit() override;
++  virtual void commitParameters() override;
++  virtual void finalize() override;
++
++ private:
++  int m_lightSamples{-1};
++  int m_roulettePathLength{5};
++  int m_maxScatteringEvents{20};
++  float m_maxContribution{1e20f};
++  bool m_backgroundRefraction{false};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/renderer/Renderer.cpp b/renderer/Renderer.cpp
+index 7bfc0fb..f34fe0e 100644
+--- a/renderer/Renderer.cpp
++++ b/renderer/Renderer.cpp
+@@ -20,36 +20,42 @@ Renderer::~Renderer()
+   ospRelease(m_osprayRenderer);
+ }
+ 
+-void Renderer::commit()
++void Renderer::commitParameters()
+ {
+   m_bgColor = getParam<float4>("background", float4(float3(0.f), 1.f));
+   m_ambientRadiance = getParam<float>("ambientRadiance", 0.f);
+   m_ambientColor = getParam<float3>("ambientColor", float3(1, 1, 1));
++  m_pixelSamples = getParam<int>("pixelSamples", 1);
++  m_maxPathLength = getParam<int>("maxPathLength", 20);
++  m_minContribution = getParam<float>("minContribution", 0.001f);
++  m_varianceThreshold = getParam<float>("varianceThreshold", 0.f);
+   m_denoiseEnabled = getParam<bool>("denoise", false);
+   m_denoiseAlpha = getParam<bool>("denoiseAlpha", false);
+-  auto denoiseQuality = getParamString("denoiseQuality", "medium");
+-  auto pixelSamples = getParam<int>("pixelSamples", 1);
+-  auto maxPathLength = getParam<int>("maxPathLength", 20);
+-  auto minContribution = getParam<float>("minContribution", 0.001f);
+-  auto varianceThreshold = getParam<float>("varianceThreshold", 0.f);
++  m_denoiseQualityString = getParamString("denoiseQuality", "medium");
++}
+ 
++void Renderer::finalize()
++{
+   auto r = osprayRenderer();
+   ospSetParam(r, "backgroundColor", OSP_VEC4F, &m_bgColor);
+-  ospSetInt(r, "pixelSamples", pixelSamples);
+-  ospSetInt(r, "maxPathLength", maxPathLength);
+-  ospSetFloat(r, "minContribution", minContribution);
+-  ospSetFloat(r, "varianceThreshold", varianceThreshold);
++  ospSetInt(r, "pixelSamples", m_pixelSamples);
++  ospSetInt(r, "maxPathLength", m_maxPathLength);
++  ospSetFloat(r, "minContribution", m_minContribution);
++  ospSetFloat(r, "varianceThreshold", m_varianceThreshold);
+ 
+-  if (denoiseQuality == "low")
++  if (m_denoiseQualityString == "low")
+     m_denoiseQuality = OSP_DENOISER_QUALITY_LOW;
+-  else if (denoiseQuality == "high")
++  else if (m_denoiseQualityString == "high")
+     m_denoiseQuality = OSP_DENOISER_QUALITY_HIGH;
+   else {
+     m_denoiseQuality = OSP_DENOISER_QUALITY_MEDIUM;
+-    if (denoiseQuality != "medium")
++    if (m_denoiseQualityString.empty())
++      reportMessage(ANARI_SEVERITY_WARNING,
++          "Parameter denoiseQuality is empty. Acceptable values are: 'low', 'medium', 'high'.");
++    else if (m_denoiseQualityString != "medium")
+       reportMessage(ANARI_SEVERITY_WARNING,
+           "Invalid value for denoiseQuality: '%s'. Acceptable values are: 'low', 'medium', 'high'.",
+-          denoiseQuality);
++          m_denoiseQualityString);
+   }
+ 
+   if (m_denoiseEnabled && ospLoadModule("denoiser") != OSP_NO_ERROR) {
+diff --git a/renderer/Renderer.h b/renderer/Renderer.h
+index e87d3a9..e586e02 100644
+--- a/renderer/Renderer.h
++++ b/renderer/Renderer.h
+@@ -12,7 +12,8 @@ struct Renderer : public Object
+   Renderer(OSPRayGlobalState *s, const char *osptype);
+   ~Renderer() override;
+ 
+-  virtual void commit() override;
++  virtual void commitParameters() override;
++  virtual void finalize() override;
+ 
+   static Renderer *createInstance(
+       std::string_view subtype, OSPRayGlobalState *d);
+@@ -30,8 +31,13 @@ struct Renderer : public Object
+   float4 m_bgColor{float3(0.f), 1.f};
+   float m_ambientRadiance{0.f};
+   float3 m_ambientColor{1.f, 1.f, 1.f};
++  int m_pixelSamples{1};
++  int m_maxPathLength{20};
++  float m_minContribution{0.001f};
++  float m_varianceThreshold{0.f};
+   bool m_denoiseEnabled{false};
+   bool m_denoiseAlpha{false};
++  std::string m_denoiseQualityString;
+   OSPDenoiserQuality m_denoiseQuality{OSP_DENOISER_QUALITY_MEDIUM};
+ 
+   OSPRenderer m_osprayRenderer{nullptr};
+diff --git a/renderer/SciVis.cpp b/renderer/SciVis.cpp
+index 1c75bd4..dee41f5 100644
+--- a/renderer/SciVis.cpp
++++ b/renderer/SciVis.cpp
+@@ -7,23 +7,30 @@ namespace anari_ospray {
+ 
+ SciVis::SciVis(OSPRayGlobalState *s)
+     : Renderer(s, s->distributed ? "mpiRaycast" : "scivis")
++{}
++
++void SciVis::commitParameters()
+ {
+-  commit();
++  Renderer::commitParameters();
++  m_shadows = getParam<bool>("shadows", false);
++  m_visibleLights = getParam<bool>("visibleLights", false);
++  m_aoSamples = getParam<int>("aoSamples", 0);
++  m_aoDistance = getParam<float>("aoDistance", 1e20f);
++  m_volumeSamplingRate = getParam<float>("volumeSamplingRate", 1.f);
+ }
+ 
+-void SciVis::commit()
++void SciVis::finalize()
+ {
+-  Renderer::commit();
++  Renderer::finalize();
+ 
+   auto r = osprayRenderer();
+   if (!deviceState()->distributed) {
+-    ospSetBool(r, "shadows", getParam<bool>("shadows", false));
+-    ospSetBool(r, "visibleLights", getParam<bool>("visibleLights", false));
++    ospSetBool(r, "shadows", m_shadows);
++    ospSetBool(r, "visibleLights", m_visibleLights);
+   }
+-  ospSetInt(r, "aoSamples", getParam<int>("aoSamples", 0));
+-  ospSetFloat(r, "aoDistance", getParam<float>("aoDistance", 1e20f));
+-  ospSetFloat(
+-      r, "volumeSamplingRate", getParam<float>("volumeSamplingRate", 1.f));
++  ospSetInt(r, "aoSamples", m_aoSamples);
++  ospSetFloat(r, "aoDistance", m_aoDistance);
++  ospSetFloat(r, "volumeSamplingRate", m_volumeSamplingRate);
+   ospCommit(r);
+ }
+ 
+diff --git a/renderer/SciVis.h b/renderer/SciVis.h
+index 83391f5..af857d4 100644
+--- a/renderer/SciVis.h
++++ b/renderer/SciVis.h
+@@ -10,7 +10,15 @@ namespace anari_ospray {
+ struct SciVis : public Renderer
+ {
+   SciVis(OSPRayGlobalState *s);
+-  virtual void commit() override;
++  virtual void commitParameters() override;
++  virtual void finalize() override;
++
++ private:
++  bool m_shadows{false};
++  bool m_visibleLights{false};
++  int m_aoSamples{0};
++  float m_aoDistance{1e20f};
++  float m_volumeSamplingRate{1.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/Group.cpp b/scene/Group.cpp
+index dfc5907..bac32dc 100644
+--- a/scene/Group.cpp
++++ b/scene/Group.cpp
+@@ -29,7 +29,7 @@ bool Group::getProperty(
+   if (name == "bounds" && type == ANARI_FLOAT32_BOX3) {
+     if (flags & ANARI_WAIT) {
+       deviceState()->waitOnCurrentFrame();
+-      deviceState()->commitBufferFlush();
++      deviceState()->commitBuffer.flush();
+       ospraySceneConstruct();
+       ospraySceneCommit();
+     }
+@@ -41,18 +41,21 @@ bool Group::getProperty(
+   return Object::getProperty(name, type, ptr, flags);
+ }
+ 
+-void Group::commit()
++void Group::commitParameters()
+ {
+-  cleanup();
+-
+   m_surfaceData = getParamObject<ObjectArray>("surface");
+   m_volumeData = getParamObject<ObjectArray>("volume");
+   m_lightData = getParamObject<ObjectArray>("light");
+ }
+ 
+-void Group::markCommitted()
++void Group::finalize()
++{
++  cleanup();
++}
++
++void Group::markFinalized()
+ {
+-  Object::markCommitted();
++  Object::markFinalized();
+   deviceState()->objectUpdates.lastBLSReconstructSceneRequest =
+       helium::newTimeStamp();
+ }
+diff --git a/scene/Group.h b/scene/Group.h
+index 1cf570d..afaadde 100644
+--- a/scene/Group.h
++++ b/scene/Group.h
+@@ -20,9 +20,9 @@ struct Group : public Object
+       void *ptr,
+       uint32_t flags) override;
+ 
+-  void commit() override;
+-
+-  void markCommitted() override;
++  void commitParameters() override;
++  void finalize() override;
++  void markFinalized() override;
+ 
+   OSPGroup osprayGroup() const;
+   void ospraySceneConstruct();
+diff --git a/scene/Instance.cpp b/scene/Instance.cpp
+index 35eff75..8f9a610 100644
+--- a/scene/Instance.cpp
++++ b/scene/Instance.cpp
+@@ -15,9 +15,14 @@ Instance::~Instance()
+   ospRelease(m_osprayInstance);
+ }
+ 
+-void Instance::commit()
++void Instance::commitParameters()
+ {
+   m_group = getParamObject<Group>("group");
++  m_xfmSet = getParam("transform", ANARI_FLOAT32_MAT4, &m_xfm);
++}
++
++void Instance::finalize()
++{
+   if (!m_group) {
+     reportMessage(ANARI_SEVERITY_WARNING, "missing 'group' on ANARIInstance");
+     return;
+@@ -28,13 +33,12 @@ void Instance::commit()
+ 
+   ospSetParam(i, "group", OSP_GROUP, &g);
+ 
+-  mat4 xfm = linalg::identity;
+-  if (getParam("transform", ANARI_FLOAT32_MAT4, &xfm)) {
++  if (m_xfmSet) {
+     mat3x4 a3f;
+-    a3f[0] = float3(xfm[0].x, xfm[0].y, xfm[0].z);
+-    a3f[1] = float3(xfm[1].x, xfm[1].y, xfm[1].z);
+-    a3f[2] = float3(xfm[2].x, xfm[2].y, xfm[2].z);
+-    a3f[3] = float3(xfm[3].x, xfm[3].y, xfm[3].z);
++    a3f[0] = float3(m_xfm[0].x, m_xfm[0].y, m_xfm[0].z);
++    a3f[1] = float3(m_xfm[1].x, m_xfm[1].y, m_xfm[1].z);
++    a3f[2] = float3(m_xfm[2].x, m_xfm[2].y, m_xfm[2].z);
++    a3f[3] = float3(m_xfm[3].x, m_xfm[3].y, m_xfm[3].z);
+     ospSetParam(i, "transform", OSP_AFFINE3F, &a3f);
+   } else
+     ospRemoveParam(i, "transform");
+@@ -42,31 +46,31 @@ void Instance::commit()
+   ospCommit(i);
+ }
+ 
+-const Group *Instance::group() const
++void Instance::markFinalized()
+ {
+-  return m_group.ptr;
++  Object::markFinalized();
++  deviceState()->objectUpdates.lastTLSReconstructSceneRequest =
++      helium::newTimeStamp();
+ }
+ 
+-Group *Instance::group()
++bool Instance::isValid() const
+ {
+-  return m_group.ptr;
++  return m_group;
+ }
+ 
+-OSPInstance Instance::osprayInstance() const
++const Group *Instance::group() const
+ {
+-  return m_osprayInstance;
++  return m_group.ptr;
+ }
+ 
+-void Instance::markCommitted()
++Group *Instance::group()
+ {
+-  Object::markCommitted();
+-  deviceState()->objectUpdates.lastTLSReconstructSceneRequest =
+-      helium::newTimeStamp();
++  return m_group.ptr;
+ }
+ 
+-bool Instance::isValid() const
++OSPInstance Instance::osprayInstance() const
+ {
+-  return m_group;
++  return m_osprayInstance;
+ }
+ 
+ } // namespace anari_ospray
+diff --git a/scene/Instance.h b/scene/Instance.h
+index fb0cdaa..d1230e1 100644
+--- a/scene/Instance.h
++++ b/scene/Instance.h
+@@ -12,19 +12,20 @@ struct Instance : public Object
+   Instance(OSPRayGlobalState *s);
+   ~Instance() override;
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++  void markFinalized() override;
++  bool isValid() const override;
+ 
+   const Group *group() const;
+   Group *group();
+ 
+   OSPInstance osprayInstance() const;
+ 
+-  void markCommitted() override;
+-
+-  bool isValid() const override;
+-
+  private:
+   helium::IntrusivePtr<Group> m_group;
++  mat4 m_xfm{linalg::identity};
++  bool m_xfmSet{false};
+   OSPInstance m_osprayInstance{nullptr};
+ };
+ 
+diff --git a/scene/World.cpp b/scene/World.cpp
+index ad7e407..1500c64 100644
+--- a/scene/World.cpp
++++ b/scene/World.cpp
+@@ -41,7 +41,7 @@ bool World::getProperty(
+   if (name == "bounds" && type == ANARI_FLOAT32_BOX3) {
+     if (flags & ANARI_WAIT) {
+       deviceState()->waitOnCurrentFrame();
+-      deviceState()->commitBufferFlush();
++      deviceState()->commitBuffer.flush();
+       osprayWorldUpdate();
+     }
+     auto bounds = ospGetBounds(m_osprayWorld);
+@@ -52,12 +52,15 @@ bool World::getProperty(
+   return Object::getProperty(name, type, ptr, flags);
+ }
+ 
+-void World::commit()
++void World::commitParameters()
+ {
+   m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
+   m_zeroVolumeData = getParamObject<ObjectArray>("volume");
+   m_zeroLightData = getParamObject<ObjectArray>("light");
++}
+ 
++void World::finalize()
++{
+   const bool addZeroInstance =
+       m_zeroSurfaceData || m_zeroVolumeData || m_zeroLightData;
+   if (addZeroInstance)
+@@ -88,8 +91,10 @@ void World::commit()
+   } else
+     m_zeroGroup->removeParam("light");
+ 
+-  m_zeroGroup->commit();
+-  m_zeroInstance->commit();
++  m_zeroGroup->commitParameters();
++  m_zeroInstance->commitParameters();
++  m_zeroGroup->finalize();
++  m_zeroInstance->finalize();
+ 
+   m_instanceData = getParamObject<ObjectArray>("instance");
+ 
+diff --git a/scene/World.h b/scene/World.h
+index 34696f8..2a59647 100644
+--- a/scene/World.h
++++ b/scene/World.h
+@@ -17,7 +17,8 @@ struct World : public Object
+       void *ptr,
+       uint32_t flags) override;
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   const std::vector<Instance *> &instances() const;
+ 
+diff --git a/scene/light/Directional.cpp b/scene/light/Directional.cpp
+index b51e9d6..74166a7 100644
+--- a/scene/light/Directional.cpp
++++ b/scene/light/Directional.cpp
+@@ -7,28 +7,31 @@ namespace anari_ospray {
+ 
+ Directional::Directional(OSPRayGlobalState *s) : Light(s, "distant") {}
+ 
+-void Directional::commit()
++void Directional::commitParameters()
+ {
+-  Light::commit();
++  Light::commitParameters();
+ 
+-  auto direction = getParam<float3>("direction", float3(0, 0, -1));
+-  auto angularDiameter = degrees(getParam<float>("angularDiameter", 0.f));
++  m_direction = getParam<float3>("direction", float3(0, 0, -1));
++  m_angularDiameter = degrees(getParam<float>("angularDiameter", 0.f));
+ 
+-  OSPIntensityQuantity quantity = OSP_INTENSITY_QUANTITY_IRRADIANCE;
++  m_quantity = OSP_INTENSITY_QUANTITY_IRRADIANCE;
+   if (hasParam("irradiance")) {
+     intensity = getParam<float>("irradiance", 1.f);
+   } else if (hasParam("radiance")) {
+     intensity = getParam<float>("radiance", 1.f);
+-    quantity = OSP_INTENSITY_QUANTITY_RADIANCE;
++    m_quantity = OSP_INTENSITY_QUANTITY_RADIANCE;
+   }
++}
+ 
++void Directional::finalize()
++{
+   auto ol = osprayLight();
+   ospSetParam(ol, "visible", OSP_BOOL, &visible);
+   ospSetParam(ol, "color", OSP_VEC3F, &color);
+-  ospSetParam(ol, "direction", OSP_VEC3F, &direction);
++  ospSetParam(ol, "direction", OSP_VEC3F, &m_direction);
+   ospSetParam(ol, "intensity", OSP_FLOAT, &intensity);
+-  ospSetParam(ol, "intensityQuantity", OSP_UINT, &quantity);
+-  ospSetParam(ol, "angularDiameter", OSP_FLOAT, &angularDiameter);
++  ospSetParam(ol, "intensityQuantity", OSP_UINT, &m_quantity);
++  ospSetParam(ol, "angularDiameter", OSP_FLOAT, &m_angularDiameter);
+   ospCommit(ol);
+ }
+ 
+diff --git a/scene/light/Directional.h b/scene/light/Directional.h
+index c518061..c01b035 100644
+--- a/scene/light/Directional.h
++++ b/scene/light/Directional.h
+@@ -10,7 +10,12 @@ namespace anari_ospray {
+ struct Directional : public Light
+ {
+   Directional(OSPRayGlobalState *d);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++
++ private:
++  float3 m_direction{0, 0, -1};
++  float m_angularDiameter{0.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/light/HDRI.cpp b/scene/light/HDRI.cpp
+index a92cc81..d8d757b 100644
+--- a/scene/light/HDRI.cpp
++++ b/scene/light/HDRI.cpp
+@@ -7,15 +7,17 @@ namespace anari_ospray {
+ 
+ HDRI::HDRI(OSPRayGlobalState *s) : Light(s, "hdri"), m_image(this) {}
+ 
+-void HDRI::commit()
++void HDRI::commitParameters()
+ {
+-  Light::commit();
+-
+-  auto up = getParam<float3>("up", float3(0, 0, 1));
+-  auto direction = getParam<float3>("direction", float3(1, 0, 0));
++  Light::commitParameters();
++  m_up = getParam<float3>("up", float3(0, 0, 1));
++  m_direction = getParam<float3>("direction", float3(1, 0, 0));
+   intensity = getParam<float>("scale", 1.f);
+   m_image = getParamObject<Array2D>("radiance");
++}
+ 
++void HDRI::finalize()
++{
+   if (!m_image) {
+     reportMessage(
+         ANARI_SEVERITY_WARNING, "no radiance data provided to HDRI light");
+@@ -31,8 +33,8 @@ void HDRI::commit()
+   auto ol = osprayLight();
+   ospSetParam(ol, "visible", OSP_BOOL, &visible);
+   ospSetParam(ol, "color", OSP_VEC3F, &color);
+-  ospSetParam(ol, "up", OSP_VEC3F, &up);
+-  ospSetParam(ol, "direction", OSP_VEC3F, &direction);
++  ospSetParam(ol, "up", OSP_VEC3F, &m_up);
++  ospSetParam(ol, "direction", OSP_VEC3F, &m_direction);
+   ospSetParam(ol, "intensity", OSP_FLOAT, &intensity);
+ 
+   OSPTexture ot = ospNewTexture("texture2d");
+diff --git a/scene/light/HDRI.h b/scene/light/HDRI.h
+index 809c9f1..8190936 100644
+--- a/scene/light/HDRI.h
++++ b/scene/light/HDRI.h
+@@ -11,11 +11,14 @@ namespace anari_ospray {
+ struct HDRI : public Light
+ {
+   HDRI(OSPRayGlobalState *d);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+   bool isValid() const override;
+ 
+  private:
+   helium::ChangeObserverPtr<Array2D> m_image;
++  float3 m_up{0, 0, 1};
++  float3 m_direction{1, 0, 0};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/light/Light.cpp b/scene/light/Light.cpp
+index 82a770b..f8fbff4 100644
+--- a/scene/light/Light.cpp
++++ b/scene/light/Light.cpp
+@@ -37,19 +37,20 @@ Light *Light::createInstance(std::string_view subtype, OSPRayGlobalState *s)
+     return (Light *)new UnknownObject(ANARI_LIGHT, s);
+ }
+ 
+-void Light::markCommitted()
+-{
+-  Object::markCommitted();
+-  deviceState()->objectUpdates.lastBLSCommitSceneRequest =
+-      helium::newTimeStamp();
+-}
+-void Light::commit()
++void Light::commitParameters()
+ {
+   visible = getParam<bool>("visible", true);
+   color = getParam<float3>("color", float3(1, 1, 1));
+   intensity = 1.f;
+ }
+ 
++void Light::markFinalized()
++{
++  Object::markFinalized();
++  deviceState()->objectUpdates.lastBLSCommitSceneRequest =
++      helium::newTimeStamp();
++}
++
+ OSPLight Light::osprayLight() const
+ {
+   return m_osprayLight;
+diff --git a/scene/light/Light.h b/scene/light/Light.h
+index 8a70495..9ee4ebd 100644
+--- a/scene/light/Light.h
++++ b/scene/light/Light.h
+@@ -14,8 +14,8 @@ struct Light : public Object
+ 
+   static Light *createInstance(std::string_view subtype, OSPRayGlobalState *d);
+ 
+-  void markCommitted() override;
+-  void commit() override;
++  void commitParameters() override;
++  void markFinalized() override;
+ 
+   OSPLight osprayLight() const;
+ 
+@@ -23,6 +23,7 @@ struct Light : public Object
+   bool visible{true};
+   float3 color{1};
+   float intensity{1};
++  OSPIntensityQuantity m_quantity;
+ 
+  private:
+   OSPLight m_osprayLight{nullptr};
+diff --git a/scene/light/Point.cpp b/scene/light/Point.cpp
+index 93d0467..3e3047b 100644
+--- a/scene/light/Point.cpp
++++ b/scene/light/Point.cpp
+@@ -7,31 +7,32 @@ namespace anari_ospray {
+ 
+ Point::Point(OSPRayGlobalState *s) : Light(s, "sphere") {}
+ 
+-void Point::commit()
++void Point::commitParameters()
+ {
+-  Light::commit();
+-
+-  auto position = getParam<float3>("position", float3(0, 0, 0));
+-  auto radius = getParam<float>("radius", 0.f);
+-
+-  OSPIntensityQuantity quantity = OSP_INTENSITY_QUANTITY_INTENSITY;
++  Light::commitParameters();
++  m_position = getParam<float3>("position", float3(0, 0, 0));
++  m_radius = getParam<float>("radius", 0.f);
++  m_quantity = OSP_INTENSITY_QUANTITY_INTENSITY;
+   if (hasParam("intensity")) {
+     intensity = getParam<float>("intensity", 1.f);
+   } else if (hasParam("power")) {
+     intensity = getParam<float>("power", 1.f);
+-    quantity = OSP_INTENSITY_QUANTITY_POWER;
++    m_quantity = OSP_INTENSITY_QUANTITY_POWER;
+   } else if (hasParam("radiance")) {
+     intensity = getParam<float>("radiance", 1.f);
+-    quantity = OSP_INTENSITY_QUANTITY_RADIANCE;
++    m_quantity = OSP_INTENSITY_QUANTITY_RADIANCE;
+   }
++}
+ 
++void Point::finalize()
++{
+   auto ol = osprayLight();
+   ospSetParam(ol, "visible", OSP_BOOL, &visible);
+   ospSetParam(ol, "color", OSP_VEC3F, &color);
+-  ospSetParam(ol, "position", OSP_VEC3F, &position);
+-  ospSetParam(ol, "radius", OSP_FLOAT, &radius);
++  ospSetParam(ol, "position", OSP_VEC3F, &m_position);
++  ospSetParam(ol, "radius", OSP_FLOAT, &m_radius);
+   ospSetParam(ol, "intensity", OSP_FLOAT, &intensity);
+-  ospSetParam(ol, "intensityQuantity", OSP_UINT, &quantity);
++  ospSetParam(ol, "intensityQuantity", OSP_UINT, &m_quantity);
+   ospCommit(ol);
+ }
+ 
+diff --git a/scene/light/Point.h b/scene/light/Point.h
+index e17bc2f..46c9a58 100644
+--- a/scene/light/Point.h
++++ b/scene/light/Point.h
+@@ -10,7 +10,12 @@ namespace anari_ospray {
+ struct Point : public Light
+ {
+   Point(OSPRayGlobalState *d);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++
++ private:
++  float3 m_position{0, 0, 0};
++  float m_radius{0.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/light/Quad.cpp b/scene/light/Quad.cpp
+index 0dd1ab6..afec03c 100644
+--- a/scene/light/Quad.cpp
++++ b/scene/light/Quad.cpp
+@@ -7,35 +7,38 @@ namespace anari_ospray {
+ 
+ QuadLight::QuadLight(OSPRayGlobalState *s) : Light(s, "quad") {}
+ 
+-void QuadLight::commit()
++void QuadLight::commitParameters()
+ {
+-  Light::commit();
++  Light::commitParameters();
+ 
+-  auto position = getParam<float3>("position", float3(0, 0, 0));
+-  auto edge1 = getParam<float3>("edge1", float3(1, 0, 0));
+-  auto edge2 = getParam<float3>("edge2", float3(0, 1, 0));
++  m_position = getParam<float3>("position", float3(0, 0, 0));
++  m_edge1 = getParam<float3>("edge1", float3(1, 0, 0));
++  m_edge2 = getParam<float3>("edge2", float3(0, 1, 0));
+   if (getParamString("side", "front") == "back")
+-    std::swap(edge1, edge2);
++    std::swap(m_edge1, m_edge2);
+ 
+-  OSPIntensityQuantity quantity = OSP_INTENSITY_QUANTITY_INTENSITY;
++  m_quantity = OSP_INTENSITY_QUANTITY_INTENSITY;
+   if (hasParam("intensity")) {
+     intensity = getParam<float>("intensity", 1.f);
+   } else if (hasParam("power")) {
+     intensity = getParam<float>("power", 1.f);
+-    quantity = OSP_INTENSITY_QUANTITY_POWER;
++    m_quantity = OSP_INTENSITY_QUANTITY_POWER;
+   } else if (hasParam("radiance")) {
+     intensity = getParam<float>("radiance", 1.f);
+-    quantity = OSP_INTENSITY_QUANTITY_RADIANCE;
++    m_quantity = OSP_INTENSITY_QUANTITY_RADIANCE;
+   }
++}
+ 
++void QuadLight::finalize()
++{
+   auto ol = osprayLight();
+   ospSetParam(ol, "visible", OSP_BOOL, &visible);
+   ospSetParam(ol, "color", OSP_VEC3F, &color);
+-  ospSetParam(ol, "position", OSP_VEC3F, &position);
+-  ospSetParam(ol, "edge1", OSP_VEC3F, &edge1);
+-  ospSetParam(ol, "edge2", OSP_VEC3F, &edge2);
++  ospSetParam(ol, "position", OSP_VEC3F, &m_position);
++  ospSetParam(ol, "edge1", OSP_VEC3F, &m_edge1);
++  ospSetParam(ol, "edge2", OSP_VEC3F, &m_edge2);
+   ospSetParam(ol, "intensity", OSP_FLOAT, &intensity);
+-  ospSetParam(ol, "intensityQuantity", OSP_UINT, &quantity);
++  ospSetParam(ol, "intensityQuantity", OSP_UINT, &m_quantity);
+   ospCommit(ol);
+ }
+ 
+diff --git a/scene/light/Quad.h b/scene/light/Quad.h
+index d9551d6..209bc67 100644
+--- a/scene/light/Quad.h
++++ b/scene/light/Quad.h
+@@ -10,7 +10,13 @@ namespace anari_ospray {
+ struct QuadLight : public Light
+ {
+   QuadLight(OSPRayGlobalState *d);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++
++ private:
++  float3 m_position{0, 0, 0};
++  float3 m_edge1{1, 0, 0};
++  float3 m_edge2{0, 1, 0};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/light/Spot.cpp b/scene/light/Spot.cpp
+index 7256529..c24b6fd 100644
+--- a/scene/light/Spot.cpp
++++ b/scene/light/Spot.cpp
+@@ -7,35 +7,39 @@ namespace anari_ospray {
+ 
+ Spot::Spot(OSPRayGlobalState *s) : Light(s, "spot") {}
+ 
+-void Spot::commit()
++void Spot::commitParameters()
+ {
+-  Light::commit();
++  Light::commitParameters();
+ 
+-  auto position = getParam<float3>("position", float3(0, 0, 0));
+-  auto direction = getParam<float3>("direction", float3(0, 0, -1));
+-  auto openingAngle = degrees(getParam<float>("openingAngle", M_PI));
+-  auto falloffAngle = degrees(getParam<float>("falloffAngle", 0.1f));
+-  auto radius = getParam<float>("radius", 0.f);
+-  auto innerRadius = getParam<float>("innerRadius", 0.f);
++  m_position = getParam<float3>("position", float3(0, 0, 0));
++  m_direction = getParam<float3>("direction", float3(0, 0, -1));
++  m_openingAngle = degrees(getParam<float>("openingAngle", M_PI));
++  m_falloffAngle = degrees(getParam<float>("falloffAngle", 0.1f));
++  m_radius = getParam<float>("radius", 0.f);
++  m_innerRadius = getParam<float>("innerRadius", 0.f);
+ 
+-  OSPIntensityQuantity quantity = OSP_INTENSITY_QUANTITY_INTENSITY;
++  m_quantity = OSP_INTENSITY_QUANTITY_INTENSITY;
+   if (hasParam("intensity")) {
+     intensity = getParam<float>("intensity", 1.f);
+   } else if (hasParam("power")) {
+     intensity = getParam<float>("power", 1.f);
+-    quantity = OSP_INTENSITY_QUANTITY_POWER;
++    m_quantity = OSP_INTENSITY_QUANTITY_POWER;
+   }
++}
++
++void Spot::finalize()
++{
+   auto ol = osprayLight();
+   ospSetParam(ol, "visible", OSP_BOOL, &visible);
+   ospSetParam(ol, "color", OSP_VEC3F, &color);
+-  ospSetParam(ol, "position", OSP_VEC3F, &position);
+-  ospSetParam(ol, "direction", OSP_VEC3F, &direction);
+-  ospSetParam(ol, "openingAngle", OSP_FLOAT, &openingAngle);
+-  ospSetParam(ol, "penumbraAngle", OSP_FLOAT, &falloffAngle);
+-  ospSetParam(ol, "radius", OSP_FLOAT, &radius);
+-  ospSetParam(ol, "innerRadius", OSP_FLOAT, &innerRadius);
++  ospSetParam(ol, "position", OSP_VEC3F, &m_position);
++  ospSetParam(ol, "direction", OSP_VEC3F, &m_direction);
++  ospSetParam(ol, "openingAngle", OSP_FLOAT, &m_openingAngle);
++  ospSetParam(ol, "penumbraAngle", OSP_FLOAT, &m_falloffAngle);
++  ospSetParam(ol, "radius", OSP_FLOAT, &m_radius);
++  ospSetParam(ol, "innerRadius", OSP_FLOAT, &m_innerRadius);
+   ospSetParam(ol, "intensity", OSP_FLOAT, &intensity);
+-  ospSetParam(ol, "intensityQuantity", OSP_UINT, &quantity);
++  ospSetParam(ol, "intensityQuantity", OSP_UINT, &m_quantity);
+   ospCommit(ol);
+ }
+ 
+diff --git a/scene/light/Spot.h b/scene/light/Spot.h
+index 291eefc..3d9cace 100644
+--- a/scene/light/Spot.h
++++ b/scene/light/Spot.h
+@@ -10,7 +10,16 @@ namespace anari_ospray {
+ struct Spot : public Light
+ {
+   Spot(OSPRayGlobalState *d);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++
++ private:
++  float3 m_position{0, 0, 0};
++  float3 m_direction{0, 0, -1};
++  float m_openingAngle{M_PI};
++  float m_falloffAngle{0.1f};
++  float m_radius{0.f};
++  float m_innerRadius{0.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/surface/Surface.cpp b/scene/surface/Surface.cpp
+index 216172a..142b4f5 100644
+--- a/scene/surface/Surface.cpp
++++ b/scene/surface/Surface.cpp
+@@ -16,11 +16,14 @@ Surface::~Surface()
+   ospRelease(m_osprayModel);
+ }
+ 
+-void Surface::commit()
++void Surface::commitParameters()
+ {
+   m_geometry = getParamObject<Geometry>("geometry");
+   m_material = getParamObject<Material>("material");
++}
+ 
++void Surface::finalize()
++{
+   if (!m_material || !m_material->isValid()) {
+     reportMessage(ANARI_SEVERITY_WARNING, "missing 'material' on ANARISurface");
+     return;
+@@ -43,19 +46,9 @@ void Surface::commit()
+   ospCommit(om);
+ }
+ 
+-const Geometry *Surface::geometry() const
+-{
+-  return m_geometry.get();
+-}
+-
+-const Material *Surface::material() const
+-{
+-  return m_material.ptr;
+-}
+-
+-void Surface::markCommitted()
++void Surface::markFinalized()
+ {
+-  Object::markCommitted();
++  Object::markFinalized();
+   deviceState()->objectUpdates.lastBLSReconstructSceneRequest =
+       helium::newTimeStamp();
+ }
+@@ -72,6 +65,16 @@ bool Surface::isValid() const
+   }
+ }
+ 
++const Geometry *Surface::geometry() const
++{
++  return m_geometry.get();
++}
++
++const Material *Surface::material() const
++{
++  return m_material.ptr;
++}
++
+ OSPGeometricModel Surface::osprayModel() const
+ {
+   return m_osprayModel;
+diff --git a/scene/surface/Surface.h b/scene/surface/Surface.h
+index dca5b64..8334c0a 100644
+--- a/scene/surface/Surface.h
++++ b/scene/surface/Surface.h
+@@ -13,14 +13,15 @@ struct Surface : public Object
+   Surface(OSPRayGlobalState *s);
+   ~Surface() override;
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++  void markFinalized() override;
++  bool isValid() const override;
++
+ 
+   const Geometry *geometry() const;
+   const Material *material() const;
+ 
+-  void markCommitted() override;
+-  bool isValid() const override;
+-
+   OSPGeometricModel osprayModel() const;
+ 
+  private:
+diff --git a/scene/surface/geometry/Cone.cpp b/scene/surface/geometry/Cone.cpp
+index d4161a1..85bd3c8 100644
+--- a/scene/surface/geometry/Cone.cpp
++++ b/scene/surface/geometry/Cone.cpp
+@@ -14,10 +14,9 @@ Cone::Cone(OSPRayGlobalState *s)
+       m_vertexRadius(this)
+ {}
+ 
+-void Cone::commit()
++void Cone::commitParameters()
+ {
+-  Geometry::commit();
+-
++  Geometry::commitParameters();
+   m_index = getParamObject<Array1D>("primitive.index");
+   m_vertexPosition = getParamObject<Array1D>("vertex.position");
+   m_vertexRadius = getParamObject<Array1D>("vertex.radius");
+@@ -26,7 +25,11 @@ void Cone::commit()
+   m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+   m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+   m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
++  m_globalRadius = getParam<float>("radius", 1.f);
++}
+ 
++void Cone::finalize()
++{
+   if (!m_vertexPosition) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.position' on cone geometry");
+@@ -35,7 +38,6 @@ void Cone::commit()
+ 
+   const float *radius =
+       m_vertexRadius ? m_vertexRadius->beginAs<float>() : nullptr;
+-  m_globalRadius = getParam<float>("radius", 1.f);
+ 
+   std::vector<float4> osprayVertexRadius;
+   std::vector<uint32_t> osprayIndex;
+diff --git a/scene/surface/geometry/Cone.h b/scene/surface/geometry/Cone.h
+index 172d228..26ddb37 100644
+--- a/scene/surface/geometry/Cone.h
++++ b/scene/surface/geometry/Cone.h
+@@ -11,7 +11,8 @@ struct Cone : public Geometry
+ {
+   Cone(OSPRayGlobalState *s);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   void setColorAttribute(Attribute attr, OSPGeometricModel om) override;
+   void setTextureCoordinateAttribute(Attribute attr) override;
+diff --git a/scene/surface/geometry/Curve.cpp b/scene/surface/geometry/Curve.cpp
+index 9686238..8055967 100644
+--- a/scene/surface/geometry/Curve.cpp
++++ b/scene/surface/geometry/Curve.cpp
+@@ -14,10 +14,9 @@ Curve::Curve(OSPRayGlobalState *s)
+       m_vertexRadius(this)
+ {}
+ 
+-void Curve::commit()
++void Curve::commitParameters()
+ {
+-  Geometry::commit();
+-
++  Geometry::commitParameters();
+   m_index = getParamObject<Array1D>("primitive.index");
+   m_vertexPosition = getParamObject<Array1D>("vertex.position");
+   m_vertexRadius = getParamObject<Array1D>("vertex.radius");
+@@ -26,7 +25,11 @@ void Curve::commit()
+   m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+   m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+   m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
++  m_globalRadius = getParam<float>("radius", 1.f);
++}
+ 
++void Curve::finalize()
++{
+   if (!m_vertexPosition) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.position' on curve geometry");
+@@ -35,7 +38,6 @@ void Curve::commit()
+ 
+   const float *radius =
+       m_vertexRadius ? m_vertexRadius->beginAs<float>() : nullptr;
+-  m_globalRadius = getParam<float>("radius", 1.f);
+ 
+   std::vector<float4> osprayVertexRadius;
+   std::vector<uint32_t> osprayIndex;
+diff --git a/scene/surface/geometry/Curve.h b/scene/surface/geometry/Curve.h
+index 710ae58..123c286 100644
+--- a/scene/surface/geometry/Curve.h
++++ b/scene/surface/geometry/Curve.h
+@@ -11,7 +11,8 @@ struct Curve : public Geometry
+ {
+   Curve(OSPRayGlobalState *s);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   void setColorAttribute(Attribute attr, OSPGeometricModel om) override;
+   void setTextureCoordinateAttribute(Attribute attr) override;
+diff --git a/scene/surface/geometry/Cylinder.cpp b/scene/surface/geometry/Cylinder.cpp
+index 26d0787..1cba7ba 100644
+--- a/scene/surface/geometry/Cylinder.cpp
++++ b/scene/surface/geometry/Cylinder.cpp
+@@ -15,10 +15,9 @@ Cylinder::Cylinder(OSPRayGlobalState *s)
+       m_vertexPosition(this)
+ {}
+ 
+-void Cylinder::commit()
++void Cylinder::commitParameters()
+ {
+-  Geometry::commit();
+-
++  Geometry::commitParameters();
+   m_index = getParamObject<Array1D>("primitive.index");
+   m_radius = getParamObject<Array1D>("primitive.radius");
+   m_vertexPosition = getParamObject<Array1D>("vertex.position");
+@@ -27,7 +26,11 @@ void Cylinder::commit()
+   m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+   m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+   m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
++  m_globalRadius = getParam<float>("radius", 1.f);
++}
+ 
++void Cylinder::finalize()
++{
+   if (!m_vertexPosition) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.position' on cylinder geometry");
+@@ -35,7 +38,6 @@ void Cylinder::commit()
+   }
+ 
+   const float *radius = m_radius ? m_radius->beginAs<float>() : nullptr;
+-  m_globalRadius = getParam<float>("radius", 1.f);
+ 
+   std::vector<float4> osprayVertexRadius;
+   std::vector<uint32_t> osprayIndex;
+diff --git a/scene/surface/geometry/Cylinder.h b/scene/surface/geometry/Cylinder.h
+index 5f9f2ad..1fa4f77 100644
+--- a/scene/surface/geometry/Cylinder.h
++++ b/scene/surface/geometry/Cylinder.h
+@@ -11,7 +11,8 @@ struct Cylinder : public Geometry
+ {
+   Cylinder(OSPRayGlobalState *s);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   void setColorAttribute(Attribute attr, OSPGeometricModel om) override;
+   void setTextureCoordinateAttribute(Attribute attr) override;
+diff --git a/scene/surface/geometry/Geometry.cpp b/scene/surface/geometry/Geometry.cpp
+index c393bea..2775839 100644
+--- a/scene/surface/geometry/Geometry.cpp
++++ b/scene/surface/geometry/Geometry.cpp
+@@ -53,7 +53,7 @@ OSPGeometry Geometry::osprayGeometry() const
+   return m_osprayGeometry;
+ }
+ 
+-void Geometry::commit()
++void Geometry::commitParameters()
+ {
+   m_attributes[0] = getParamObject<Array1D>("primitive.attribute0");
+   m_attributes[1] = getParamObject<Array1D>("primitive.attribute1");
+@@ -62,9 +62,9 @@ void Geometry::commit()
+   m_attributes[4] = getParamObject<Array1D>("primitive.color");
+ }
+ 
+-void Geometry::markCommitted()
++void Geometry::markFinalized()
+ {
+-  Object::markCommitted();
++  Object::markFinalized();
+   deviceState()->objectUpdates.lastBLSCommitSceneRequest =
+       helium::newTimeStamp();
+ }
+diff --git a/scene/surface/geometry/Geometry.h b/scene/surface/geometry/Geometry.h
+index dfcb099..c15d71f 100644
+--- a/scene/surface/geometry/Geometry.h
++++ b/scene/surface/geometry/Geometry.h
+@@ -19,8 +19,8 @@ struct Geometry : public Object
+ 
+   OSPGeometry osprayGeometry() const;
+ 
+-  void commit() override;
+-  void markCommitted() override;
++  void commitParameters() override;
++  void markFinalized() override;
+ 
+   virtual void setColorAttribute(Attribute attr, OSPGeometricModel om);
+   virtual void setTextureCoordinateAttribute(Attribute attr);
+diff --git a/scene/surface/geometry/Isosurface.cpp b/scene/surface/geometry/Isosurface.cpp
+index c71b863..ceb0bfb 100644
+--- a/scene/surface/geometry/Isosurface.cpp
++++ b/scene/surface/geometry/Isosurface.cpp
+@@ -6,39 +6,38 @@
+ namespace anari_ospray {
+ 
+ Isosurface::Isosurface(OSPRayGlobalState *s)
+-    : Geometry(s, "isosurface"), m_isovalue(this)
++    : Geometry(s, "isosurface"), m_isovalueArray(this)
+ {}
+ 
+-void Isosurface::commit()
++void Isosurface::commitParameters()
+ {
+-  Geometry::commit();
+-
+-  m_isovalueValid = false;
+-
++  Geometry::commitParameters();
+   m_field = getParamObject<SpatialField>("field");
++  m_isovalueArray = getParamObject<Array1D>("isovalue");
++  m_isovalueSet = getParam("isovalue", ANARI_FLOAT32, &m_isovalue);
++}
+ 
++void Isosurface::finalize()
++{
+   if (!m_field) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "no spatial field provided to isosurface geometry");
+     return;
+   }
+ 
+-  m_isovalue = getParamObject<Array1D>("isovalue");
+-
+   auto og = osprayGeometry();
+ 
+-  if (m_isovalue && m_isovalue->size() > 0
+-      && m_isovalue->elementType() == ANARI_FLOAT32) {
+-    auto iv = m_isovalue->osprayData();
++  if (m_isovalueArray && m_isovalueArray->size() > 0
++      && m_isovalueArray->elementType() == ANARI_FLOAT32) {
++    auto iv = m_isovalueArray->osprayData();
+     ospSetParam(og, "isovalue", OSP_DATA, &iv);
+   } else {
+-    float isovalue;
+-    if (!getParam("isovalue", ANARI_FLOAT32, &isovalue)) {
++    if (!m_isovalueSet) {
+       reportMessage(ANARI_SEVERITY_WARNING,
+           "missing required parameter 'isovalue' on isosurface geometry");
+       return;
+     }
+-    ospSetParam(og, "isovalue", OSP_FLOAT, &isovalue);
++    ospSetParam(og, "isovalue", OSP_FLOAT, &m_isovalue);
+   }
+ 
+   m_isovalueValid = true;
+diff --git a/scene/surface/geometry/Isosurface.h b/scene/surface/geometry/Isosurface.h
+index cc82aea..e34fa35 100644
+--- a/scene/surface/geometry/Isosurface.h
++++ b/scene/surface/geometry/Isosurface.h
+@@ -12,14 +12,19 @@ struct Isosurface : public Geometry
+ {
+   Isosurface(OSPRayGlobalState *s);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   bool isValid() const override;
+ 
+  private:
+   helium::IntrusivePtr<SpatialField> m_field;
+-  helium::ChangeObserverPtr<Array1D> m_isovalue;
++  helium::ChangeObserverPtr<Array1D> m_isovalueArray;
+ 
++  float m_isovalue;
++  bool m_isovalueSet{false};
++ 
++  // Either scalar or array provided:
+   bool m_isovalueValid{false};
+ };
+ 
+diff --git a/scene/surface/geometry/Quad.cpp b/scene/surface/geometry/Quad.cpp
+index 678d313..ba46b39 100644
+--- a/scene/surface/geometry/Quad.cpp
++++ b/scene/surface/geometry/Quad.cpp
+@@ -11,10 +11,9 @@ Quad::Quad(OSPRayGlobalState *s)
+     : Geometry(s, "mesh"), m_index(this), m_vertexPosition(this)
+ {}
+ 
+-void Quad::commit()
++void Quad::commitParameters()
+ {
+-  Geometry::commit();
+-
++  Geometry::commitParameters();
+   m_index = getParamObject<Array1D>("primitive.index");
+   m_vertexPosition = getParamObject<Array1D>("vertex.position");
+   m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+@@ -22,7 +21,10 @@ void Quad::commit()
+   m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+   m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+   m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
++}
+ 
++void Quad::finalize()
++{
+   if (!m_vertexPosition) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.position' on quad geometry");
+diff --git a/scene/surface/geometry/Quad.h b/scene/surface/geometry/Quad.h
+index a4901b1..8827c36 100644
+--- a/scene/surface/geometry/Quad.h
++++ b/scene/surface/geometry/Quad.h
+@@ -11,7 +11,8 @@ struct Quad : public Geometry
+ {
+   Quad(OSPRayGlobalState *s);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   void setColorAttribute(Attribute attr, OSPGeometricModel om) override;
+   void setTextureCoordinateAttribute(Attribute attr) override;
+diff --git a/scene/surface/geometry/Sphere.cpp b/scene/surface/geometry/Sphere.cpp
+index 8e3cb47..edb8a92 100644
+--- a/scene/surface/geometry/Sphere.cpp
++++ b/scene/surface/geometry/Sphere.cpp
+@@ -12,10 +12,9 @@ Sphere::Sphere(OSPRayGlobalState *s)
+       m_vertexRadius(this)
+ {}
+ 
+-void Sphere::commit()
++void Sphere::commitParameters()
+ {
+-  Geometry::commit();
+-
++  Geometry::commitParameters();
+   m_index = getParamObject<Array1D>("primitive.index");
+   m_vertexPosition = getParamObject<Array1D>("vertex.position");
+   m_vertexRadius = getParamObject<Array1D>("vertex.radius");
+@@ -24,15 +23,17 @@ void Sphere::commit()
+   m_attributes[2] = getParamObject<Array1D>("vertex.attribute2");
+   m_attributes[3] = getParamObject<Array1D>("vertex.attribute3");
+   m_attributes[4] = getParamObject<Array1D>("vertex.color");
++  m_globalRadius = getParam<float>("radius", 0.01f);
++}
+ 
++void Sphere::finalize()
++{
+   if (!m_vertexPosition) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.position' on sphere geometry");
+     return;
+   }
+ 
+-  m_globalRadius = getParam<float>("radius", 0.01f);
+-
+   const float *radius = nullptr;
+   if (m_vertexRadius)
+     radius = m_vertexRadius->beginAs<float>();
+diff --git a/scene/surface/geometry/Sphere.h b/scene/surface/geometry/Sphere.h
+index 11e41f9..b1d16cc 100644
+--- a/scene/surface/geometry/Sphere.h
++++ b/scene/surface/geometry/Sphere.h
+@@ -11,7 +11,8 @@ struct Sphere : public Geometry
+ {
+   Sphere(OSPRayGlobalState *s);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   void setTextureCoordinateAttribute(Attribute attr) override;
+ 
+diff --git a/scene/surface/geometry/Triangle.cpp b/scene/surface/geometry/Triangle.cpp
+index aeae195..fab7565 100644
+--- a/scene/surface/geometry/Triangle.cpp
++++ b/scene/surface/geometry/Triangle.cpp
+@@ -11,10 +11,9 @@ Triangle::Triangle(OSPRayGlobalState *s)
+     : Geometry(s, "mesh"), m_index(this), m_vertexPosition(this)
+ {}
+ 
+-void Triangle::commit()
++void Triangle::commitParameters()
+ {
+-  Geometry::commit();
+-
++  Geometry::commitParameters();
+   m_index = getParamObject<Array1D>("primitive.index");
+   m_vertexPosition = getParamObject<Array1D>("vertex.position");
+   m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+@@ -22,7 +21,10 @@ void Triangle::commit()
+   m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+   m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+   m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
++}
+ 
++void Triangle::finalize()
++{
+   if (!m_vertexPosition) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.position' on triangle geometry");
+diff --git a/scene/surface/geometry/Triangle.h b/scene/surface/geometry/Triangle.h
+index 4bdc2d7..0dc5fd3 100644
+--- a/scene/surface/geometry/Triangle.h
++++ b/scene/surface/geometry/Triangle.h
+@@ -11,7 +11,8 @@ struct Triangle : public Geometry
+ {
+   Triangle(OSPRayGlobalState *s);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   void setColorAttribute(Attribute attr, OSPGeometricModel om) override;
+   void setTextureCoordinateAttribute(Attribute attr) override;
+diff --git a/scene/surface/material/Matte.cpp b/scene/surface/material/Matte.cpp
+index 0b456b0..12e8f83 100644
+--- a/scene/surface/material/Matte.cpp
++++ b/scene/surface/material/Matte.cpp
+@@ -7,14 +7,16 @@ namespace anari_ospray {
+ 
+ Matte::Matte(OSPRayGlobalState *s) : Material(s, "obj") {}
+ 
+-void Matte::commit()
++void Matte::commitParameters()
+ {
+   m_color = getParam<float3>("color", float3(0.8f));
+   m_colorAttribute = attributeFromString(getParamString("color", "none"));
+   m_colorSampler = getParamObject<Sampler>("color");
++  m_opacity = getParam<float>("opacity", 1.f);
++}
+ 
+-  auto opacity = getParam<float>("opacity", 1.f);
+-
++void Matte::finalize()
++{
+   OSPTexture ot = nullptr;
+   if (m_colorSampler && m_colorSampler->isValid()) {
+     m_texcoordAttribute = m_colorSampler->inAttribute();
+@@ -29,7 +31,7 @@ void Matte::commit()
+   else
+     ospRemoveParam(om, "map_kd");
+ 
+-  ospSetParam(om, "d", OSP_FLOAT, &opacity);
++  ospSetParam(om, "d", OSP_FLOAT, &m_opacity);
+ 
+   ospCommit(om);
+ }
+diff --git a/scene/surface/material/Matte.h b/scene/surface/material/Matte.h
+index 7c552b8..97a72b9 100644
+--- a/scene/surface/material/Matte.h
++++ b/scene/surface/material/Matte.h
+@@ -10,7 +10,11 @@ namespace anari_ospray {
+ struct Matte : public Material
+ {
+   Matte(OSPRayGlobalState *s);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++
++ private:
++  float m_opacity{1.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/surface/material/PBM.cpp b/scene/surface/material/PBM.cpp
+index 6f626ba..89fea36 100644
+--- a/scene/surface/material/PBM.cpp
++++ b/scene/surface/material/PBM.cpp
+@@ -7,27 +7,30 @@ namespace anari_ospray {
+ 
+ PBM::PBM(OSPRayGlobalState *s) : Material(s, "principled") {}
+ 
+-void PBM::commit()
++void PBM::commitParameters()
+ {
+   m_color = getParam<float3>("baseColor", float3(1.f));
+   m_colorAttribute = attributeFromString(getParamString("baseColor", "none"));
+   m_colorSampler = getParamObject<Sampler>("baseColor");
+ 
+-  auto opacity = getParam<float>("opacity", 1.f);
+-  auto metallic = getParam<float>("metallic", 1.f);
+-  auto roughness = getParam<float>("roughness", 1.f);
+-  auto specular = getParam<float>("specular", 0.f);
+-  auto clearcoat = getParam<float>("clearcoat", 0.f);
+-  auto clearcoatRoughness = getParam<float>("clearcoatRoughness", 0.f);
+-  auto transmission = getParam<float>("transmission", 0.f);
+-  auto ior = getParam<float>("ior", 1.5);
+-  auto thickness = getParam<float>("thickness", 0.f);
+-  auto attenuationDistance = getParam<float>("attenuationDistance", INFINITY);
+-  auto attenuationColor = getParam<float3>("attenuationColor", float3(1.f));
+-  auto sheen = getParam<float3>("sheen", float3(0.f));
+-  auto sheenRoughness = getParam<float>("sheenRoughness", 0.f);
+-  auto emissive = getParam<float3>("emissive", float3(0.f));
++  m_opacity = getParam<float>("opacity", 1.f);
++  m_metallic = getParam<float>("metallic", 1.f);
++  m_roughness = getParam<float>("roughness", 1.f);
++  m_specular = getParam<float>("specular", 0.f);
++  m_clearcoat = getParam<float>("clearcoat", 0.f);
++  m_clearcoatRoughness = getParam<float>("clearcoatRoughness", 0.f);
++  m_transmission = getParam<float>("transmission", 0.f);
++  m_ior = getParam<float>("ior", 1.5);
++  m_thickness = getParam<float>("thickness", 0.f);
++  m_attenuationDistance = getParam<float>("attenuationDistance", INFINITY);
++  m_attenuationColor = getParam<float3>("attenuationColor", float3(1.f));
++  m_sheen = getParam<float3>("sheen", float3(0.f));
++  m_sheenRoughness = getParam<float>("sheenRoughness", 0.f);
++  m_emissive = getParam<float3>("emissive", float3(0.f));
++}
+ 
++void PBM::finalize()
++{
+   OSPTexture ot = nullptr;
+   if (m_colorSampler && m_colorSampler->isValid()) {
+     m_texcoordAttribute = m_colorSampler->inAttribute();
+@@ -41,31 +44,31 @@ void PBM::commit()
+     ospSetParam(om, "map_baseColor", OSP_TEXTURE, &ot);
+   else
+     ospRemoveParam(om, "map_baseColor");
+-  ospSetParam(om, "opacity", OSP_FLOAT, &opacity);
+-  ospSetParam(om, "metallic", OSP_FLOAT, &metallic);
+-  ospSetParam(om, "roughness", OSP_FLOAT, &roughness);
+-  ospSetParam(om, "specular", OSP_FLOAT, &specular);
++  ospSetParam(om, "opacity", OSP_FLOAT, &m_opacity);
++  ospSetParam(om, "metallic", OSP_FLOAT, &m_metallic);
++  ospSetParam(om, "roughness", OSP_FLOAT, &m_roughness);
++  ospSetParam(om, "specular", OSP_FLOAT, &m_specular);
+   bool b = false;
+   ospSetParam(om, "specularMetallic", OSP_BOOL, &b);
+-  ospSetParam(om, "coat", OSP_FLOAT, &clearcoat);
+-  ospSetParam(om, "coatRoughness", OSP_FLOAT, &clearcoatRoughness);
+-  ospSetParam(om, "transmission", OSP_FLOAT, &transmission);
+-  if (transmission) {
+-    bool b = thickness > 0.0f;
++  ospSetParam(om, "coat", OSP_FLOAT, &m_clearcoat);
++  ospSetParam(om, "coatRoughness", OSP_FLOAT, &m_clearcoatRoughness);
++  ospSetParam(om, "transmission", OSP_FLOAT, &m_transmission);
++  if (m_transmission) {
++    bool b = m_thickness > 0.0f;
+     ospSetParam(om, "thin", OSP_BOOL, &b);
+     ospSetParam(om, "transmissionColor", OSP_VEC3F, &m_color);
+   }
+-  ospSetParam(om, "ior", OSP_FLOAT, &ior);
+-  ospSetParam(om, "thickness", OSP_FLOAT, &thickness);
+-  ospSetParam(om, "transmissionDepth", OSP_FLOAT, &attenuationDistance);
+-  ospSetParam(om, "transmissionColor", OSP_VEC3F, &attenuationColor);
+-  if (sum(sheen) > 0.0f) {
++  ospSetParam(om, "ior", OSP_FLOAT, &m_ior);
++  ospSetParam(om, "thickness", OSP_FLOAT, &m_thickness);
++  ospSetParam(om, "transmissionDepth", OSP_FLOAT, &m_attenuationDistance);
++  ospSetParam(om, "transmissionColor", OSP_VEC3F, &m_attenuationColor);
++  if (sum(m_sheen) > 0.0f) {
+     float f = 1.0f;
+     ospSetParam(om, "sheen", OSP_FLOAT, &f);
+   }
+-  ospSetParam(om, "sheenColor", OSP_VEC3F, &sheen);
+-  ospSetParam(om, "sheenRoughness", OSP_FLOAT, &sheenRoughness);
+-  ospSetParam(om, "emissiveColor", OSP_VEC3F, &emissive);
++  ospSetParam(om, "sheenColor", OSP_VEC3F, &m_sheen);
++  ospSetParam(om, "sheenRoughness", OSP_FLOAT, &m_sheenRoughness);
++  ospSetParam(om, "emissiveColor", OSP_VEC3F, &m_emissive);
+   ospCommit(om);
+ }
+ 
+diff --git a/scene/surface/material/PBM.h b/scene/surface/material/PBM.h
+index 822b86d..18d933f 100644
+--- a/scene/surface/material/PBM.h
++++ b/scene/surface/material/PBM.h
+@@ -10,7 +10,24 @@ namespace anari_ospray {
+ struct PBM : public Material
+ {
+   PBM(OSPRayGlobalState *s);
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
++
++ private:
++  float m_opacity{1.f};
++  float m_metallic{1.f};
++  float m_roughness{1.f};
++  float m_specular{0.f};
++  float m_clearcoat{0.f};
++  float m_clearcoatRoughness{0.f};
++  float m_transmission{0.f};
++  float m_ior{1.5f};
++  float m_thickness{0.f};
++  float m_attenuationDistance{INFINITY};
++  float3 m_attenuationColor{1.f};
++  float3 m_sheen{0.f};
++  float m_sheenRoughness{0.f};
++  float3 m_emissive{0.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/surface/material/sampler/Image1D.cpp b/scene/surface/material/sampler/Image1D.cpp
+index 845fadd..a9fe624 100644
+--- a/scene/surface/material/sampler/Image1D.cpp
++++ b/scene/surface/material/sampler/Image1D.cpp
+@@ -16,14 +16,17 @@ bool Image1D::isValid() const
+   return Sampler::isValid() && m_image;
+ }
+ 
+-void Image1D::commit()
++void Image1D::commitParameters()
+ {
+-  Sampler::commit();
++  Sampler::commitParameters();
+   m_image = getParamObject<Array1D>("image");
+   m_inAttribute =
+       attributeFromString(getParamString("inAttribute", "attribute0"));
+-  auto linearFilter = getParamString("filter", "linear") != "nearest";
++  m_filter = getParamString("filter", "linear");
++}
+ 
++void Image1D::finalize()
++{
+   if (!m_image) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'image' on image1D sampler");
+@@ -34,7 +37,7 @@ void Image1D::commit()
+   auto format = OSP_TEXTURE_RGBA32F;
+   ospSetParam(ot, "format", OSP_UINT, &format);
+   auto filter =
+-      linearFilter ? OSP_TEXTURE_FILTER_LINEAR : OSP_TEXTURE_FILTER_NEAREST;
++      m_filter == "linear" ? OSP_TEXTURE_FILTER_LINEAR : OSP_TEXTURE_FILTER_NEAREST;
+   ospSetParam(ot, "filter", OSP_UINT, &filter);
+ 
+   auto unpackedColors = convertToColorArray(*m_image);
+diff --git a/scene/surface/material/sampler/Image1D.h b/scene/surface/material/sampler/Image1D.h
+index 6df18a7..da8e04c 100644
+--- a/scene/surface/material/sampler/Image1D.h
++++ b/scene/surface/material/sampler/Image1D.h
+@@ -13,14 +13,15 @@ struct Image1D : public Sampler
+   Image1D(OSPRayGlobalState *d);
+ 
+   bool isValid() const override;
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   Attribute inAttribute() const override;
+ 
+  private:
+   helium::ChangeObserverPtr<Array1D> m_image;
+   Attribute m_inAttribute{Attribute::NONE};
+-  bool m_linearFilter{true};
++  std::string m_filter;
+   std::vector<float4> m_unpackedColors;
+ };
+ 
+diff --git a/scene/surface/material/sampler/Image2D.cpp b/scene/surface/material/sampler/Image2D.cpp
+index c903a9a..8db5aa8 100644
+--- a/scene/surface/material/sampler/Image2D.cpp
++++ b/scene/surface/material/sampler/Image2D.cpp
+@@ -16,14 +16,17 @@ bool Image2D::isValid() const
+   return Sampler::isValid() && m_image;
+ }
+ 
+-void Image2D::commit()
++void Image2D::commitParameters()
+ {
+-  Sampler::commit();
++  Sampler::commitParameters();
+   m_image = getParamObject<Array2D>("image");
+   m_inAttribute =
+       attributeFromString(getParamString("inAttribute", "attribute0"));
+-  auto linearFilter = getParamString("filter", "linear") != "nearest";
++  m_filter = getParamString("filter", "linear");
++}
+ 
++void Image2D::finalize()
++{
+   if (!m_image) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'image' on image1D sampler");
+@@ -34,7 +37,7 @@ void Image2D::commit()
+   auto format = OSP_TEXTURE_RGBA32F;
+   ospSetParam(ot, "format", OSP_UINT, &format);
+   auto filter =
+-      linearFilter ? OSP_TEXTURE_FILTER_LINEAR : OSP_TEXTURE_FILTER_NEAREST;
++      m_filter == "linear" ? OSP_TEXTURE_FILTER_LINEAR : OSP_TEXTURE_FILTER_NEAREST;
+   ospSetParam(ot, "filter", OSP_UINT, &filter);
+ 
+   auto unpackedColors = convertToColorArray(*m_image);
+diff --git a/scene/surface/material/sampler/Image2D.h b/scene/surface/material/sampler/Image2D.h
+index ce62a8f..046cb0c 100644
+--- a/scene/surface/material/sampler/Image2D.h
++++ b/scene/surface/material/sampler/Image2D.h
+@@ -13,14 +13,15 @@ struct Image2D : public Sampler
+   Image2D(OSPRayGlobalState *d);
+ 
+   bool isValid() const override;
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   Attribute inAttribute() const override;
+ 
+  private:
+   helium::ChangeObserverPtr<Array2D> m_image;
+   Attribute m_inAttribute{Attribute::NONE};
+-  bool m_linearFilter{true};
++  std::string m_filter;
+   std::vector<float4> m_unpackedColors;
+ };
+ 
+diff --git a/scene/volume/TransferFunction1D.cpp b/scene/volume/TransferFunction1D.cpp
+index 7715172..6e4d19a 100644
+--- a/scene/volume/TransferFunction1D.cpp
++++ b/scene/volume/TransferFunction1D.cpp
+@@ -16,18 +16,23 @@ TransferFunction1DVolume::~TransferFunction1DVolume()
+   ospRelease(m_osprayTF);
+ }
+ 
+-void TransferFunction1DVolume::commit()
++void TransferFunction1DVolume::commitParameters()
+ {
+   m_field = getParamObject<SpatialField>("value");
++  m_colorData = getParamObject<Array1D>("color");
++  m_opacityData = getParamObject<Array1D>("opacity");
++  getParam("valueRange", ANARI_FLOAT32_BOX1, &m_valueRange);
++  m_densityScale = getParam<float>("densityScale", 1.f);
++}
++
++void TransferFunction1DVolume::finalize()
++{
+   if (!m_field) {
+     reportMessage(
+         ANARI_SEVERITY_WARNING, "no spatial field provided to transfer function");
+     return;
+   }
+ 
+-  m_colorData = getParamObject<Array1D>("color");
+-  m_opacityData = getParamObject<Array1D>("opacity");
+-
+   if (!m_colorData) {
+     reportMessage(
+         ANARI_SEVERITY_WARNING, "no color data provided to transfer function");
+@@ -40,12 +45,8 @@ void TransferFunction1DVolume::commit()
+     return;
+   }
+ 
+-  float2 valueRange(0.f, 1.f);
+-  getParam("valueRange", ANARI_FLOAT32_BOX1, &valueRange);
+-  auto densityScale = getParam<float>("densityScale", 1.f);
+-
+   auto tf = m_osprayTF;
+-  ospSetParam(tf, "value", OSP_BOX1F, &valueRange);
++  ospSetParam(tf, "value", OSP_BOX1F, &m_valueRange);
+   auto cd = m_colorData->osprayData();
+   ospSetParam(tf, "color", OSP_DATA, &cd);
+   auto od = m_opacityData->osprayData();
+@@ -55,7 +56,7 @@ void TransferFunction1DVolume::commit()
+   auto om = osprayModel();
+   auto ov = m_field->osprayVolume();
+   ospSetParam(om, "volume", OSP_VOLUME, &ov);
+-  ospSetParam(om, "densityScale", OSP_FLOAT, &densityScale);
++  ospSetParam(om, "densityScale", OSP_FLOAT, &m_densityScale);
+   ospSetParam(om, "transferFunction", OSP_TRANSFER_FUNCTION, &tf);
+   ospCommit(om);
+ }
+diff --git a/scene/volume/TransferFunction1D.h b/scene/volume/TransferFunction1D.h
+index 81be670..c892ad5 100644
+--- a/scene/volume/TransferFunction1D.h
++++ b/scene/volume/TransferFunction1D.h
+@@ -14,7 +14,8 @@ struct TransferFunction1DVolume : public Volume
+   TransferFunction1DVolume(OSPRayGlobalState *d);
+   ~TransferFunction1DVolume();
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   bool isValid() const override;
+ 
+@@ -22,6 +23,8 @@ struct TransferFunction1DVolume : public Volume
+   helium::IntrusivePtr<SpatialField> m_field;
+   helium::ChangeObserverPtr<Array1D> m_colorData;
+   helium::ChangeObserverPtr<Array1D> m_opacityData;
++  float2 m_valueRange{0.f, 1.f};
++  float m_densityScale{1.f};
+ 
+   OSPTransferFunction m_osprayTF{nullptr};
+ };
+diff --git a/scene/volume/spatial_field/AMRField.cpp b/scene/volume/spatial_field/AMRField.cpp
+index c9a22a6..df5f710 100644
+--- a/scene/volume/spatial_field/AMRField.cpp
++++ b/scene/volume/spatial_field/AMRField.cpp
+@@ -31,12 +31,20 @@ AMRField::~AMRField()
+ #endif
+ }
+ 
+-void AMRField::commit()
++void AMRField::commitParameters()
+ {
+   m_cellWidth = getParamObject<Array1D>("cellWidth");
+   m_block_bounds = getParamObject<Array1D>("block.bounds");
+   m_block_level = getParamObject<Array1D>("block.level");
+   m_block_data = getParamObject<ObjectArray>("block.data");
++
++  m_origin = getParam<float3>("origin", float3(0.f));
++  m_spacing = getParam<float3>("spacing", float3(1.f));
++  m_method = amrMethodFromString(getParamString("method", "current"));
++}
++
++void AMRField::finalize()
++{
+   if (!m_block_data) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'block.data' on 'amr' field");
+@@ -55,10 +63,6 @@ void AMRField::commit()
+     }
+   }
+ 
+-  auto origin = getParam<float3>("origin", float3(0.f));
+-  auto spacing = getParam<float3>("spacing", float3(1.f));
+-  auto method = amrMethodFromString(getParamString("method", "current"));
+-
+   std::vector<OSPData> extracted_block_data;
+ 
+   std::for_each(
+@@ -71,8 +75,8 @@ void AMRField::commit()
+       extracted_block_data.data(), OSP_DATA, extracted_block_data.size());
+ 
+   auto ov = osprayVolume();
+-  ospSetParam(ov, "gridOrigin", OSP_VEC3F, &origin);
+-  ospSetParam(ov, "gridSpacing", OSP_VEC3F, &spacing);
++  ospSetParam(ov, "gridOrigin", OSP_VEC3F, &m_origin);
++  ospSetParam(ov, "gridSpacing", OSP_VEC3F, &m_spacing);
+   auto ocw = m_cellWidth->osprayData();
+   ospSetParam(ov, "cellWidth", OSP_DATA, &ocw);
+   auto obb = m_block_bounds->osprayData();
+diff --git a/scene/volume/spatial_field/AMRField.h b/scene/volume/spatial_field/AMRField.h
+index 1aecc22..a7701d3 100644
+--- a/scene/volume/spatial_field/AMRField.h
++++ b/scene/volume/spatial_field/AMRField.h
+@@ -14,7 +14,8 @@ struct AMRField : public SpatialField
+   AMRField(OSPRayGlobalState *d);
+   ~AMRField();
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   bool isValid() const override;
+ 
+@@ -24,6 +25,10 @@ struct AMRField : public SpatialField
+   helium::IntrusivePtr<Array1D> m_block_level;
+   helium::IntrusivePtr<ObjectArray> m_block_data;
+ 
++  float3 m_origin{0.f};
++  float3 m_spacing{1.f};
++  OSPAMRMethod m_method{OSP_AMR_CURRENT};
++
+   std::vector<OSPData> m_extracted_block_data;
+   OSPData m_ospray_block_data{nullptr};
+ };
+diff --git a/scene/volume/spatial_field/StructuredRegularField.cpp b/scene/volume/spatial_field/StructuredRegularField.cpp
+index f7a228f..5a8501a 100644
+--- a/scene/volume/spatial_field/StructuredRegularField.cpp
++++ b/scene/volume/spatial_field/StructuredRegularField.cpp
+@@ -11,21 +11,24 @@ StructuredRegularField::StructuredRegularField(OSPRayGlobalState *d)
+     : SpatialField(d, "structuredRegular")
+ {}
+ 
+-void StructuredRegularField::commit()
++void StructuredRegularField::commitParameters()
+ {
+   m_data = getParamObject<Array3D>("data");
++  m_origin = getParam<float3>("origin", float3(0.f));
++  m_spacing = getParam<float3>("spacing", float3(1.f));
++}
++
++void StructuredRegularField::finalize()
++{
+   if (!m_data) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing required parameter 'data' on 'structuredRegular' field");
+     return;
+   }
+ 
+-  auto origin = getParam<float3>("origin", float3(0.f));
+-  auto spacing = getParam<float3>("spacing", float3(1.f));
+-
+   auto ov = osprayVolume();
+-  ospSetParam(ov, "gridOrigin", OSP_VEC3F, &origin);
+-  ospSetParam(ov, "gridSpacing", OSP_VEC3F, &spacing);
++  ospSetParam(ov, "gridOrigin", OSP_VEC3F, &m_origin);
++  ospSetParam(ov, "gridSpacing", OSP_VEC3F, &m_spacing);
+   auto od = m_data->osprayData();
+   ospSetParam(ov, "data", OSP_DATA, &od);
+   auto filter = OSP_VOLUME_FILTER_LINEAR;
+diff --git a/scene/volume/spatial_field/StructuredRegularField.h b/scene/volume/spatial_field/StructuredRegularField.h
+index b5f7873..6213a8d 100644
+--- a/scene/volume/spatial_field/StructuredRegularField.h
++++ b/scene/volume/spatial_field/StructuredRegularField.h
+@@ -12,12 +12,15 @@ struct StructuredRegularField : public SpatialField
+ {
+   StructuredRegularField(OSPRayGlobalState *d);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   bool isValid() const override;
+ 
+  private:
+   helium::IntrusivePtr<Array3D> m_data;
++  float3 m_origin{0.f};
++  float3 m_spacing{1.f};
+ };
+ 
+ } // namespace anari_ospray
+diff --git a/scene/volume/spatial_field/UnstructuredField.cpp b/scene/volume/spatial_field/UnstructuredField.cpp
+index e6dea3a..256f75c 100644
+--- a/scene/volume/spatial_field/UnstructuredField.cpp
++++ b/scene/volume/spatial_field/UnstructuredField.cpp
+@@ -11,7 +11,7 @@ UnstructuredField::UnstructuredField(OSPRayGlobalState *d)
+     : SpatialField(d, "unstructured")
+ {}
+ 
+-void UnstructuredField::commit()
++void UnstructuredField::commitParameters()
+ {
+   m_vertex_position = getParamObject<Array1D>("vertex.position");
+   m_vertex_data = getParamObject<Array1D>("vertex.data");
+@@ -19,6 +19,15 @@ void UnstructuredField::commit()
+   m_cell_index = getParamObject<Array1D>("cell.index");
+   m_cell_data = getParamObject<Array1D>("cell.data");
+   m_cell_type = getParamObject<Array1D>("cell.type");
++  m_indexPrefixed = getParam<bool>("indexPrefixed", false);
++
++  m_hexIterative = getParam<bool>("hexIterative", false);
++  m_precomputedNormals = getParam<bool>("precomputedNormals", false);
++  m_maxIteratorDepth = getParam<int>("maxIteratorDepth", 6);
++}
++
++void UnstructuredField::finalize()
++{
+   if (!m_vertex_position) {
+     reportMessage(ANARI_SEVERITY_WARNING,
+         "missing 'vertex.position' on 'unstructured' field");
+@@ -37,11 +46,6 @@ void UnstructuredField::commit()
+     return;
+   }
+ 
+-  m_indexPrefixed = getParam<bool>("indexPrefixed", false);
+-  auto hexIterative = getParam<bool>("hexIterative", false);
+-  auto precomputedNormals = getParam<bool>("precomputedNormals", false);
+-  auto maxIteratorDepth = getParam<int>("maxIteratorDepth", 6);
+-
+   auto ov = osprayVolume();
+   auto ovp = m_vertex_position->osprayData();
+   ospSetParam(ov, "vertex.position", OSP_DATA, &ovp);
+@@ -64,9 +68,9 @@ void UnstructuredField::commit()
+     ospSetParam(ov, "cell.type", OSP_DATA, &oct);
+   }
+   ospSetParam(ov, "indexPrefixed", OSP_BOOL, &m_indexPrefixed);
+-  ospSetParam(ov, "hexIterative", OSP_BOOL, &hexIterative);
+-  ospSetParam(ov, "precomputedNormals", OSP_BOOL, &precomputedNormals);
+-  ospSetParam(ov, "maxIteratorDepth", OSP_INT, &maxIteratorDepth);
++  ospSetParam(ov, "hexIterative", OSP_BOOL, &m_hexIterative);
++  ospSetParam(ov, "precomputedNormals", OSP_BOOL, &m_precomputedNormals);
++  ospSetParam(ov, "maxIteratorDepth", OSP_INT, &m_maxIteratorDepth);
+   ospCommit(ov);
+ }
+ 
+diff --git a/scene/volume/spatial_field/UnstructuredField.h b/scene/volume/spatial_field/UnstructuredField.h
+index 5b066ed..96cd3a6 100644
+--- a/scene/volume/spatial_field/UnstructuredField.h
++++ b/scene/volume/spatial_field/UnstructuredField.h
+@@ -12,7 +12,8 @@ struct UnstructuredField : public SpatialField
+ {
+   UnstructuredField(OSPRayGlobalState *d);
+ 
+-  void commit() override;
++  void commitParameters() override;
++  void finalize() override;
+ 
+   bool isValid() const override;
+ 
+@@ -24,6 +25,10 @@ struct UnstructuredField : public SpatialField
+   helium::IntrusivePtr<Array1D> m_cell_data;
+   helium::IntrusivePtr<Array1D> m_cell_type;
+   bool m_indexPrefixed{false};
++
++  bool m_hexIterative{false};
++  bool m_precomputedNormals{false};
++  int m_maxIteratorDepth{6};
+ };
+ 
+ } // namespace anari_ospray

@@ -1,0 +1,74 @@
+diff --git a/src/mdl/codegenerators/generator_dag/generator_dag_generated_dag.cpp b/src/mdl/codegenerators/generator_dag/generator_dag_generated_dag.cpp
+index 87c023a7..738f057c 100644
+--- a/src/mdl/codegenerators/generator_dag/generator_dag_generated_dag.cpp
++++ b/src/mdl/codegenerators/generator_dag/generator_dag_generated_dag.cpp
+@@ -44,6 +44,7 @@
+ #include <mdl/codegenerators/generator_code/generator_code.h>
+ 
+ #include <cstring>
++#include <cstdint>
+ 
+ #include "generator_dag_generated_dag.h"
+ #include "generator_dag_walker.h"
+diff --git a/src/mdl/compiler/compiler_glsl/compiler_glsl_printers.h b/src/mdl/compiler/compiler_glsl/compiler_glsl_printers.h
+index 2677e478..0ae60996 100644
+--- a/src/mdl/compiler/compiler_glsl/compiler_glsl_printers.h
++++ b/src/mdl/compiler/compiler_glsl/compiler_glsl_printers.h
+@@ -36,6 +36,8 @@
+ #include "compiler_glsl_exprs.h"
+ #include "compiler_glsl_messages.h"
+ 
++#include <cstdint>
++
+ namespace mi {
+ namespace mdl {
+ namespace glsl {
+diff --git a/src/mdl/compiler/compiler_glsl/compiler_glsl_values.h b/src/mdl/compiler/compiler_glsl/compiler_glsl_values.h
+index 1a6636e4..9f43a36a 100644
+--- a/src/mdl/compiler/compiler_glsl/compiler_glsl_values.h
++++ b/src/mdl/compiler/compiler_glsl/compiler_glsl_values.h
+@@ -30,6 +30,7 @@
+ #define MDL_COMPILER_GLSL_VALUES_H 1
+ 
+ #include <cstddef>
++#include <cstdint>
+ 
+ #include <mi/mdl/mdl_iowned.h>
+ #include "compiler_glsl_cc_conf.h"
+diff --git a/src/mdl/compiler/compiler_hlsl/compiler_hlsl_printers.h b/src/mdl/compiler/compiler_hlsl/compiler_hlsl_printers.h
+index b59bccd5..c545a79b 100644
+--- a/src/mdl/compiler/compiler_hlsl/compiler_hlsl_printers.h
++++ b/src/mdl/compiler/compiler_hlsl/compiler_hlsl_printers.h
+@@ -36,6 +36,8 @@
+ #include "compiler_hlsl_exprs.h"
+ #include "compiler_hlsl_messages.h"
+ 
++#include <cstdint>
++
+ namespace mi {
+ namespace mdl {
+ namespace hlsl {
+diff --git a/src/mdl/compiler/compiler_hlsl/compiler_hlsl_values.h b/src/mdl/compiler/compiler_hlsl/compiler_hlsl_values.h
+index bdebdecb..55ab79a2 100644
+--- a/src/mdl/compiler/compiler_hlsl/compiler_hlsl_values.h
++++ b/src/mdl/compiler/compiler_hlsl/compiler_hlsl_values.h
+@@ -30,6 +30,7 @@
+ #define MDL_COMPILER_HLSL_VALUES_H 1
+ 
+ #include <cstddef>
++#include <cstdint>
+ 
+ #include <mi/mdl/mdl_iowned.h>
+ #include "compiler_hlsl_cc_conf.h"
+diff --git a/src/mdl/jit/llvm/dist/include/llvm/Support/Signals.h b/src/mdl/jit/llvm/dist/include/llvm/Support/Signals.h
+index 44f5a750..937e0572 100644
+--- a/src/mdl/jit/llvm/dist/include/llvm/Support/Signals.h
++++ b/src/mdl/jit/llvm/dist/include/llvm/Support/Signals.h
+@@ -14,6 +14,7 @@
+ #ifndef LLVM_SUPPORT_SIGNALS_H
+ #define LLVM_SUPPORT_SIGNALS_H
+ 
++#include <cstdint>
+ #include <string>
+ 
+ namespace llvm {
