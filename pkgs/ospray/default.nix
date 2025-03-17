@@ -12,14 +12,14 @@
 }:
 stdenv.mkDerivation {
   pname = "ospray";
-  version = "v3.2.0";
+  version = "v3.2.0-25-g675c216b9";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "RenderKit";
     repo = "ospray";
-    rev = "85af2929937d516997451cbd52d352cf93125ed2";
-    hash = "sha256-XUiQi3OZGC8JOcBMkLagMQHDuzCQ+mQ2BQXsqnJWSm0=";
+    rev = "675c216b91a765bbd1cf8c7ae8e2c3c0684f21a0";
+    hash = "sha256-/ufvfj4vNARw+LqPVRu5SJqbgFAKRG7Skbty8oz4EgM=";
   };
 
   nativeBuildInputs = [
