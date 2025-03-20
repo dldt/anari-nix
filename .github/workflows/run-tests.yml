@@ -1,7 +1,7 @@
 name: test
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened, enqueued]
+    types: [opened, synchronize, ready_for_review, reopened]
   push:
     branches:
       - main

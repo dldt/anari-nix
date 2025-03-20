@@ -22,6 +22,7 @@ jobs:
           author: "dldt bot <203830002+dldt-bot@users.noreply.github.com>"
           push-to-fork: dldt-bot/anari-nix
           base: "main"
+          maintainer-can-modify: false
           labels: "packages-version"
           draft: true
           delete-branch: true
