@@ -15,11 +15,17 @@ jobs:
       - run: nix-shell --command ./scripts/update-packages-version.py
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: peter-evans/create-pull-request@v7
-        id: cpr
+      - uses: actions/create-github-app-token@v1
+        id: generate-token
         with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: dldt-bot
+      - uses: peter-evans/create-pull-request@v7
+        id: create-pull-request
+        with:
+          branch-token: ${{ steps.generate-token.outputs.token }}
           token: ${{ secrets.DLDT_BOT_PAT }}
-          author: "dldt bot <203830002+dldt-bot@users.noreply.github.com>"
           push-to-fork: dldt-bot/anari-nix
           base: "main"
           labels: "packages-version"
@@ -30,6 +36,7 @@ jobs:
           branch: "update-packages"
           commit-message: "Update packages to latest version"
       - name: Enable Pull Request Automerge
-        run: gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --merge --auto
+        run: gh pr merge ${{ steps.create-pull-request.outputs.pull-request-number }} --merge --auto
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         env:
           GH_TOKEN: ${{ secrets.DLDT_BOT_PAT }}
