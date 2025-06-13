@@ -108,6 +108,7 @@ stdenv.mkDerivation {
 
   installPhase = ''
     cmake --build device --target install
+    cmake --build cycles --target install
   '';
 
   meta = with lib; {
