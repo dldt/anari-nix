@@ -21,7 +21,7 @@
   openjpeg,
   osl,
   sse2neon,
-  tbb_2021_11,
+  tbb_2021,
   pugixml,
   zlib,
 }:
@@ -69,7 +69,7 @@ stdenv.mkDerivation {
       osl
       libpng
       zlib
-      tbb_2021_11
+      tbb_2021
     ]
     ++ lib.optionals stdenv.isDarwin [
       apple-sdk_13
