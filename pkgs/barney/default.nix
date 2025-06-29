@@ -13,8 +13,8 @@ let
   src = fetchFromGitHub {
     owner = "ingowald";
     repo = "barney";
-    rev = "907279ac1703b076a804c8fe41f8fd1ad77f58e7";
-    hash = "sha256-me7FgvrO7sagAKh65HuUlxyFnvI/rLK/5Fh6IiRQPII=";
+    rev = "45877a0a3baa724cb3765821f56c889672eb9f77";
+    hash = "sha256-ufX4Sghg7FaK5PeaaqAwX79O3MJUsmAnRHRSzIc2iVM=";
     fetchSubmodules = true;
   };
 in
@@ -22,7 +22,7 @@ stdenv.mkDerivation {
   inherit src;
 
   pname = "barney";
-  version = "v0.9.10-2-g907279a";
+  version = "v0.9.10-4-g45877a0";
 
   patchPhase = ''
     echo Patching CMake files...
