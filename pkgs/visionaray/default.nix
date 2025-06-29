@@ -13,7 +13,7 @@
   openexr,
   ptex,
   stdenv,
-  tbb_2021_11,
+  tbb_2021,
 }:
 stdenv.mkDerivation {
   pname = "visionaray";
@@ -38,7 +38,7 @@ stdenv.mkDerivation {
 
   propagatedBuildInputs = [
     boost
-    tbb_2021_11
+    tbb_2021
   ];
 
   buildInputs =

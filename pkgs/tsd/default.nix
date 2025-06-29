@@ -14,7 +14,7 @@
   glm,
   hdf5,
   conduit,
-  tbb_2021_11,
+  tbb_2021,
   sdl3,
   openusd,
   xorg,
@@ -93,7 +93,7 @@ stdenv.mkDerivation {
       libGL
       hdf5
       openusd
-      tbb_2021_11
+      tbb_2021
     ]
     ++ lib.optionals stdenv.hostPlatform.isLinux [
       xorg.libX11

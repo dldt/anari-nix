@@ -3,7 +3,7 @@
   fetchFromGitHub,
   lib,
   stdenv,
-  tbb_2021_11,
+  tbb_2021,
 }:
 let
   version = "v1.14.2";
@@ -25,7 +25,7 @@ stdenv.mkDerivation {
   ];
 
   propagatedBuildInputs = [
-    tbb_2021_11
+    tbb_2021
   ];
 
   meta = with lib; {

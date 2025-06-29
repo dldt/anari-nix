@@ -7,7 +7,7 @@
   openvdb,
   rkcommon_0_14_2,
   stdenv,
-  tbb_2021_11,
+  tbb_2021,
 }:
 let
   version = "v2.0.1";
@@ -37,7 +37,7 @@ stdenv.mkDerivation {
     embree
     openvdb
     rkcommon_0_14_2
-    tbb_2021_11
+    tbb_2021
   ];
 
   meta = with lib; {
