@@ -4,8 +4,7 @@ let
 in
 {
   anari-barney = callPackage ./anari-barney {
-    inherit (self) anari-sdk barney;
-    nvidia-optix = self.nvidia-optix8;
+    inherit (self) anari-sdk barney nvidia-optix;
   };
   anari-cycles = callPackage ./anari-cycles {
     inherit (self) anari-sdk;
@@ -21,7 +20,7 @@ in
   };
   anari-sdk = callPackage ./anari-sdk { inherit (self) webpconfig_cmake tinygltf; };
   anari-visionaray = callPackage ./anari-visionaray { inherit (self) anari-sdk visionaray; };
-  barney = callPackage ./barney { nvidia-optix = self.nvidia-optix8; };
+  barney = callPackage ./barney { inherit (self) nvidia-optix; };
   cgns = callPackage ./cgns { };
   conduit = callPackage ./conduit { };
   hdanari = callPackage ./hdanari { inherit (self) anari-sdk; };
@@ -41,8 +40,7 @@ in
   visgl = callPackage ./visgl { inherit (self) anari-sdk; };
   visionaray = callPackage ./visionaray { };
   visrtx = callPackage ./visrtx {
-    inherit (self) anari-sdk mdl-sdk;
-    nvidia-optix = self.nvidia-optix8;
+    inherit (self) anari-sdk mdl-sdk nvidia-optix;
   };
   webpconfig_cmake = callPackage ./webpconfig_cmake { };
 }

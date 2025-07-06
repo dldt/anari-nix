@@ -1,11 +1,11 @@
 diff --git a/devices/rtx/CMakeLists.txt b/devices/rtx/CMakeLists.txt
-index 1538e14d..2cb71e40 100644
+index 5bc6084..8679045 100644
 --- a/devices/rtx/CMakeLists.txt
 +++ b/devices/rtx/CMakeLists.txt
-@@ -49,27 +49,6 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+@@ -62,33 +62,6 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
  set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
-
+ 
 -## Get OptiX headers ##
 -
 -set(OPTIX_FETCH_VERSION "7.7" CACHE STRING "Version of OptiX to get")
@@ -27,6 +27,12 @@ index 1538e14d..2cb71e40 100644
 -anari_sdk_fetch_project(NAME optix_headers URL ${OPTIX_URL})
 -list(APPEND CMAKE_PREFIX_PATH ${optix_headers_LOCATION})
 -
+-## Validate Neural Graphics Primitives support ##
+-
+-if(VISRTX_ENABLE_NEURAL AND NOT ${OPTIX_FETCH_VERSION} STREQUAL "9.0")
+-  message(FATAL_ERROR "OptiX 9.0+ must be used to enable Neural Graphics Primitives support in VisRTX")
+-endif()
+-
  ## Find dependencies ##
-
- find_package(CUDAToolkit 11.3.1 REQUIRED)
+ 
+ find_package(CUDAToolkit 12 REQUIRED)
