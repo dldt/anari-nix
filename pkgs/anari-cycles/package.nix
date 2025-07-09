@@ -8,7 +8,7 @@
   cudaSupport ? config.cudaSupport,
   optixSupport ? config.cudaSupport,
   cudaPackages,
-  nvidia-optix,
+  nvidia-optix8,
   anari-sdk,
   libjpeg,
   libpng,
@@ -82,29 +82,39 @@ stdenv.mkDerivation {
       libGL
     ]
     ++ lib.optionals optixSupport [
-      nvidia-optix
+      nvidia-optix8
     ];
 
   cmakeFlags =
+    with lib;
     [
-      "-DWITH_CYCLES_DEVICE_HIP=OFF"
-      "-DWITH_CYCLES_NANOVDB=ON"
-      "-DWITH_CYCLES_OPENVDB=ON"
-      "-DWITH_CYCLES_OSL=ON"
+      (cmakeBool "WITH_CYCLES_DEVICE_HIP" false)
+      (cmakeBool "WITH_CYCLES_NANOVDB" true)
+      (cmakeBool "WITH_CYCLES_OPENVDB" true)
+      (cmakeBool "WITH_CYCLES_OSL" true)
     ]
-    ++ lib.optionals stdenv.isDarwin [
-      "-DWITH_CYCLES_DEVICE_METAL=ON"
-      "-DSSE2NEON_INCLUDE_DIR=${lib.getDev sse2neon}/lib"
-    ]
-    ++ lib.optionals cudaSupport [
-      "-DWITH_CYCLES_DEVICE_CUDA=ON"
-      "-DWITH_CUDA_DYNLOAD=OFF"
-      "-DWITH_CYCLES_CUDA_BINARIES=ON"
-    ]
-    ++ lib.optionals optixSupport [
-      "-DWITH_CYCLES_DEVICE_OPTIX=ON"
-      "-DCYCLES_RUNTIME_OPTIX_ROOT_DIR=${nvidia-optix}"
-    ];
+    ++ lib.optionals stdenv.isDarwin (
+      with lib;
+      [
+        (cmakeBool "WITH_CYCLES_DEVICE_METAL" true)
+        (cmakeFeature "SSE2NEON_INCLUDE_DIR" "${lib.getDev sse2neon}/lib")
+      ]
+    )
+    ++ lib.optionals cudaSupport (
+      with lib;
+      [
+        (cmakeBool "WITH_CYCLES_DEVICE_CUDA" true)
+        (cmakeBool "WITH_CUDA_DYNLOAD" false)
+        (cmakeBool "WITH_CYCLES_CUDA_BINARIES" true)
+      ]
+    )
+    ++ lib.optionals optixSupport (
+      with lib;
+      [
+        (cmakeBool "WITH_CYCLES_DEVICE_OPTIX" true)
+        (cmakeFeature "CYCLES_RUNTIME_OPTIX_ROOT_DIR" (builtins.toString nvidia-optix8))
+      ]
+    );
 
   installPhase = ''
     cmake --build device --target install

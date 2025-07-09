@@ -43,18 +43,17 @@ stdenv.mkDerivation {
     python3
   ];
 
-  cmakeFlags = [
-    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-    "-DMDL_BUILD_CORE_EXAMPLES=OFF"
-    "-DMDL_BUILD_DOCUMENTATION=OFF"
-    "-DMDL_BUILD_SDK_EXAMPLES=OFF"
-    "-DMDL_ENABLE_CUDA_EXAMPLES=OFF"
-    "-DMDL_ENABLE_OPENGL_EXAMPLES=OFF"
-    "-DMDL_ENABLE_QT_EXAMPLES=OFF"
-    "-DMDL_ENABLE_SLANG=OFF" # Have to be on at some point
-    "-DMDL_ENABLE_UNIT_TESTS=ON"
-    "-DMDL_ENABLE_VULKAN_EXAMPLES=OFF"
-    "-Dpython_PATH=${python3}/bin/python"
+  cmakeFlags = with lib; [
+    (cmakeBool "MDL_BUILD_CORE_EXAMPLES" false)
+    (cmakeBool "MDL_BUILD_DOCUMENTATION" false)
+    (cmakeBool "MDL_BUILD_SDK_EXAMPLES" false)
+    (cmakeBool "MDL_ENABLE_CUDA_EXAMPLES" false)
+    (cmakeBool "MDL_ENABLE_OPENGL_EXAMPLES" false)
+    (cmakeBool "MDL_ENABLE_QT_EXAMPLES" false)
+    (cmakeBool "MDL_ENABLE_SLANG" false)
+    (cmakeBool "MDL_ENABLE_UNIT_TESTS" true)
+    (cmakeBool "MDL_ENABLE_VULKAN_EXAMPLES" false)
+    (cmakeFeature "python_PATH" "${python3}/bin/python")
   ];
 
   meta = with lib; {

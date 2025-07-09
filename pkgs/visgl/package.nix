@@ -20,10 +20,10 @@ stdenv.mkDerivation {
     hash = "sha256-TFl7goqe0yAfUNlaXUFOqCNa+PB/Z7mCF1Nz0nHJTZA=";
   };
 
-  cmakeFlags = [
-    "-DVISRTX_BUILD_RTX_DEVICE=OFF"
-    "-DVISRTX_BUILD_GL_DEVICE=ON"
-    "-DVISRTX_PRECOMPILE_SHADERS=OFF"
+  cmakeFlags = with lib; [
+    (cmakeBool "VISRTX_BUILD_RTX_DEVICE" false)
+    (cmakeBool "VISRTX_BUILD_GL_DEVICE" true)
+    (cmakeBool "VISRTX_PRECOMPILE_SHADERS" false)
   ];
 
   nativeBuildInputs = [

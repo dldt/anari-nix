@@ -65,14 +65,14 @@ stdenv.mkDerivation {
     rm -fr ''${out}/lib/cmake/pbrtParser
   '';
 
-  cmakeFlags = [
-    "-DVSNRAY_ENABLE_PBRT_PARSER=ON"
-    "-DVSNRAY_ENABLE_PTEX=ON"
-    "-DVSNRAY_ENABLE_TBB=ON"
-    "-DVSNRAY_ENABLE_EXAMPLES=OFF"
-    "-DVSNRAY_ENABLE_VIEWER=OFF"
-    "-DVSNRAY_ENABLE_COMMON=OFF"
-    "-DVSNRAY_ENABLE_CUDA=${if cudaSupport then "ON" else "OFF"}"
+  cmakeFlags = with lib; [
+    (cmakeBool "VSNRAY_ENABLE_PBRT_PARSER" true)
+    (cmakeBool "VSNRAY_ENABLE_PTEX" true)
+    (cmakeBool "VSNRAY_ENABLE_TBB" true)
+    (cmakeBool "VSNRAY_ENABLE_EXAMPLES" false)
+    (cmakeBool "VSNRAY_ENABLE_VIEWER" false)
+    (cmakeBool "VSNRAY_ENABLE_COMMON" false)
+    (cmakeBool "VSNRAY_ENABLE_CUDA" cudaSupport)
   ];
 
   meta = with lib; {

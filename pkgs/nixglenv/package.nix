@@ -9,8 +9,8 @@ let
   src = fetchFromGitHub {
     owner = "nix-community";
     repo = "nixGL";
-    rev = "310f8e49a149e4c9ea52f1adf70cdc768ec53f8a";
-    hash = "sha256-lnzZQYG0+EXl/6NkGpyIz+FEOc/DSEG57AP1VsdeNrM=";
+    rev = "ea8baea3b9d854bf9cf5c834a805c50948dd2603";
+    hash = "sha256-JlT4VFs8aVlW+l151HZIZumfFsccZXcO/k5WpbYF09Y=";
   };
 
   nixgl = import src {

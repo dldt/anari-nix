@@ -92,18 +92,18 @@ stdenv.mkDerivation {
     webpconfig_cmake
   ];
 
-  cmakeFlags = [
-    "-DBUILD_CTS=OFF"
-    "-DBUILD_EXAMPLES=ON"
-    "-DBUILD_TESTING=OFF"
-    "-DBUILD_VIEWER=ON"
-    "-DFETCHCONTENT_FULLY_DISCONNECTED=ON"
-    "-DUSE_DRACO=ON"
-    "-DUSE_KTX=OFF"
-    "-DUSE_WEBP=ON"
-    "-DVIEWER_ENABLE_GLTF=ON"
+  cmakeFlags = with lib; [
+    (cmakeBool "BUILD_CTS" false)
+    (cmakeBool "BUILD_EXAMPLES" true)
+    (cmakeBool "BUILD_TESTING" false)
+    (cmakeBool "BUILD_VIEWER" true)
+    (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
+    (cmakeBool "USE_DRACO" true)
+    (cmakeBool "USE_KTX" false)
+    (cmakeBool "USE_WEBP" true)
+    (cmakeBool "VIEWER_ENABLE_GLTF" true)
 
-    "-DBUILD_HELIDE_DEVICE=OFF"
+    (cmakeBool "BUILD_HELIDE_DEVICE" false)
   ];
 
   meta = with lib; {
