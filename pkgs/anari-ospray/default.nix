@@ -12,18 +12,18 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-ospray";
-  version = "v0.0.0-47-g469438";
+  version = "v0.0.0-52-gf385a67";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "ospray";
     repo = "anari-ospray";
-    rev = "469438d10c0cc92cb6dc05733b40bde6ecca0070";
-    hash = "sha256-CvjdEjVEfdH1ETI+HDx2jxiCq3a8A79odLQqClKXu3E=";
+    rev = "f385a67d21ba0db314c2539bbe2f2f7e3437d97e";
+    hash = "sha256-s8+89VjGjJLXKrm/Kalt4s6V18Swpl1Y7GKR6OCEfHQ=";
   };
 
   patches = [
-    ./fix-anari-0.13-sdk.patch # extrcted from https://github.com/ospray/anari-ospray/pull/24
+    ./add-get-property-size-parameter.patch
   ];
 
   nativeBuildInputs = [

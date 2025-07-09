@@ -28,6 +28,10 @@ stdenv.mkDerivation {
   pname = "anari-barney";
   version = "v0.9.10-4-g45877a0";
 
+  patches = [
+    ./add-get-property-size-parameter.patch
+  ];
+
   postPatch = ''
     echo Patching CMake files...
     for i in CMakeLists.txt barney/CMakeLists.txt anari/CMakeLists.txt
