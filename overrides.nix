@@ -1,6 +1,6 @@
-self: pkgs:
+final: prev:
 {
-  embree = pkgs.embree.overrideAttrs (old: {
+  embree = prev.embree.overrideAttrs (old: {
     cmakeFlags = old.cmakeFlags ++ [
       "-DEMBREE_ISPC_SUPPORT=ON"
     ];
@@ -12,11 +12,11 @@ self: pkgs:
     overrideWithSetupHook =
       cudaPackages:
       cudaPackages.overrideScope (
-        self: super:
+        final': prev':
         let
-          inherit (super.backendStdenv) cc;
-          update-what = if super ? "cuda_nvcc" then "cuda_nvcc" else "cudatoolkit";
-          setupHook = pkgs.makeSetupHook {
+          inherit (prev'.backendStdenv) cc;
+          update-what = if prev' ? "cuda_nvcc" then "cuda_nvcc" else "cudatoolkit";
+          setupHook = prev.makeSetupHook {
             name = "cmake-filter-implicit-paths-hook";
             substitutions = {
               # Will be used to compute exclusion path.
@@ -25,7 +25,7 @@ self: pkgs:
           } ./hooks/cuda-filter-cmake-implicit-paths-hook.sh;
         in
         {
-          ${update-what} = super.${update-what}.overrideAttrs (old: {
+          ${update-what} = prev'.${update-what}.overrideAttrs (old: {
             propagatedBuildInputs =
               (if old ? "propagatedBuildInputs" then old.propagatedBuildInputs else [ ])
               ++ [ setupHook ];
@@ -33,14 +33,14 @@ self: pkgs:
         }
       );
 
-    allCudaPackagesNames = builtins.filter (x: pkgs.lib.strings.hasPrefix "cudaPackages" x) (
-      builtins.attrNames pkgs
+    allCudaPackagesNames = builtins.filter (x: prev.lib.strings.hasPrefix "cudaPackages" x) (
+      builtins.attrNames prev
     );
   in
   builtins.foldl' (
     acc: elem:
     {
-      ${elem} = overrideWithSetupHook pkgs.${elem};
+      ${elem} = overrideWithSetupHook prev.${elem};
     }
     // acc
   ) { } allCudaPackagesNames

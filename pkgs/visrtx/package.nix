@@ -22,12 +22,15 @@ stdenv.mkDerivation {
     hash = "sha256-TFl7goqe0yAfUNlaXUFOqCNa+PB/Z7mCF1Nz0nHJTZA=";
   };
 
-  cmakeFlags = [
-    "-DFETCHCONTENT_FULLY_DISCONNECTED=ON"
-    "-DOptiX_ROOT_DIR=${nvidia-optix}"
-    "-DVISRTX_BUILD_GL_DEVICE=OFF"
-    "-DVISRTX_ENABLE_MDL_SUPPORT=ON"
-    "-DVISRTX_PRECOMPILE_SHADERS=OFF"
+  cmakeFlags = with lib; [
+    (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
+    (cmakeFeature "OptiX_ROOT_DIR" (builtins.toString nvidia-optix))
+    (cmakeBool "VISRTX_BUILD_GL_DEVICE" false)
+    (cmakeBool "VISRTX_ENABLE_MDL_SUPPORT" true)
+    (cmakeBool "VISRTX_PRECOMPILE_SHADERS" false)
+
+    (cmakeFeature "OPTIX_FETCH_VERSION" "9.0")
+    (cmakeBool "VISRTX_ENABLE_NEURAL" true)
   ];
 
   patches = [

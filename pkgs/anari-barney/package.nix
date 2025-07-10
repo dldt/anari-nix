@@ -1,4 +1,7 @@
 {
+  autoPatchelfHook,
+  anari-sdk,
+  barney,
   lib,
   stdenv,
   fetchFromGitHub,
@@ -6,6 +9,7 @@
   cudaPackages,
   nvidia-optix,
   openimagedenoise,
+  python3,
   libGL,
   tbb_2021,
 }:
@@ -21,10 +25,14 @@ in
 stdenv.mkDerivation {
   inherit src;
 
-  pname = "barney";
+  pname = "anari-barney";
   version = "v0.9.10-4-g45877a0";
 
-  patchPhase = ''
+  patches = [
+    ./add-get-property-size-parameter.patch
+  ];
+
+  postPatch = ''
     echo Patching CMake files...
     for i in CMakeLists.txt barney/CMakeLists.txt anari/CMakeLists.txt
     do
@@ -33,26 +41,25 @@ stdenv.mkDerivation {
     echo done
   '';
 
-  cmakeFlags = [
-    "-DBARNEY_MPI=OFF"
-    "-DBARNEY_BUILD_ANARI=OFF"
-    "-DBARNEY_BACKEND_OPTIX=ON"
-    "-DBARNEY_BACKEND_EMBREE=OFF"
-    "-DCMAKE_CUDA_ARCHITECTURES=all-major"
+  cmakeFlags = with lib; [
+    (cmakeBool "BARNEY_MPI" false)
+    (cmakeBool "BARNEY_BUILD_ANARI" false)
+    (cmakeBool "BARNEY_BACKEND_OPTIX" true)
+    (cmakeBool "BARNEY_BACKEND_EMBREE" false)
+    (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" "all-major")
   ];
 
   nativeBuildInputs = [
-    cudaPackages.cuda_nvcc
-
+    autoPatchelfHook
     cmake
-  ];
-
-  propagatedBuildInputs = [
-    cudaPackages.cuda_cudart
-    cudaPackages.cuda_cccl
+    cudaPackages.cuda_nvcc
+    python3
   ];
 
   buildInputs = [
+    anari-sdk
+    barney
+
     cudaPackages.cuda_cudart
     cudaPackages.cuda_cccl
     cudaPackages.libcurand
@@ -63,6 +70,11 @@ stdenv.mkDerivation {
 
     tbb_2021
   ];
+
+  postInstall = ''
+    # in case it is installed. It is provided by the main barney package.
+    rm  -f "''${out}/lib/libbarney.so"
+  '';
 
   meta = with lib; {
     description = "VisRTX is an experimental, scientific visualization-focused implementation of the Khronos ANARI standard.";

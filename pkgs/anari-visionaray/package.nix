@@ -43,9 +43,9 @@ stdenv.mkDerivation {
       cudaPackages_12_6.cuda_cccl
     ];
 
-  cmakeFlags = [
-    "-DANARI_VISIONARAY_ENABLE_CUDA=${if cudaSupport then "ON" else "OFF"}"
-    "-DANARI_VISIONARAY_ENABLE_NANOVDB=ON"
+  cmakeFlags = with lib; [
+    (cmakeBool "ANARI_VISIONARAY_ENABLE_CUDA" cudaSupport)
+    (cmakeBool "ANARI_VISIONARAY_ENABLE_NANOVDB" true)
   ];
 
   meta = with lib; {

@@ -19,6 +19,7 @@
   openusd,
   xorg,
   applyPatches,
+  vtk,
 }:
 let
   visrtx-src =
@@ -62,11 +63,13 @@ stdenv.mkDerivation {
   '';
 
   cmakeFlags = [
-    "-DTSD_ENABLE_SERIALIZATION=ON"
-    "-DTSD_USE_CUDA=${if cudaSupport then "ON" else "OFF"}"
-    "-DTSD_USE_ASSIMP=ON"
-    "-DTSD_USE_HDF5=ON"
-    "-DTSD_USE_SDL3=ON"
+    (lib.cmakeBool "TSD_ENABLE_SERIALIZATION" true)
+    (lib.cmakeBool "TSD_USE_CUDA" cudaSupport)
+    (lib.cmakeBool "TSD_USE_ASSIMP" true)
+    (lib.cmakeBool "TSD_USE_HDF5" true)
+    (lib.cmakeBool "TSD_USE_SDL3" true)
+    (lib.cmakeBool "TSD_USE_USD" true)
+    (lib.cmakeBool "TSD_USE_VTK" true)
   ];
 
   installPhase = ''
@@ -94,6 +97,7 @@ stdenv.mkDerivation {
       hdf5
       openusd
       tbb_2021
+      vtk
     ]
     ++ lib.optionals stdenv.hostPlatform.isLinux [
       xorg.libX11

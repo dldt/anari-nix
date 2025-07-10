@@ -1,1 +1,5 @@
-self: super: import ./pkgs/all-packages.nix self super
+final: prev:
+prev.lib.packagesFromDirectoryRecursive {
+  inherit (prev) callPackage newScope;
+  directory = ./pkgs;
+}

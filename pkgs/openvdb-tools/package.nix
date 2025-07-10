@@ -46,14 +46,14 @@ stdenv.mkDerivation {
     zlib
   ];
 
-  cmakeFlags = [
-    "-DOPENVDB_BUILD_BINARIES=ON"
-    "-DOPENVDB_BUILD_CORE=OFF"
-    "-DOPENVDB_BUILD_VDB_LOD=ON"
-    "-DOPENVDB_BUILD_VDB_PRINT=OFF"
-    "-DOPENVDB_BUILD_VDB_RENDER=ON"
-    "-DOPENVDB_BUILD_VDB_TOOL=ON"
-    "-DOPENVDB_BUILD_VDB_VIEW=ON"
+  cmakeFlags = with lib; [
+    (cmakeBool "OPENVDB_BUILD_BINARIES" true)
+    (cmakeBool "OPENVDB_BUILD_CORE" false)
+    (cmakeBool "OPENVDB_BUILD_VDB_LOD" true)
+    (cmakeBool "OPENVDB_BUILD_VDB_PRINT" false)
+    (cmakeBool "OPENVDB_BUILD_VDB_RENDER" true)
+    (cmakeBool "OPENVDB_BUILD_VDB_TOOL" true)
+    (cmakeBool "OPENVDB_BUILD_VDB_VIEW" true)
   ];
 
   meta = with lib; {

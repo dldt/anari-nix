@@ -51,17 +51,21 @@ stdenv.mkDerivation {
     ];
 
   cmakeFlags =
+    with lib;
     [
-      "-DNANOVDB_BUILD_TOOLS=ON"
-      "-DNANOVDB_USE_OPENVDB=ON"
-      "-DOPENVDB_BUILD_BINARIES=ON"
-      "-DOPENVDB_BUILD_CORE=OFF"
-      "-DOPENVDB_BUILD_VDB_PRINT=OFF"
-      "-DUSE_NANOVDB=ON"
+      (cmakeBool "NANOVDB_BUILD_TOOLS" true)
+      (cmakeBool "NANOVDB_USE_OPENVDB" true)
+      (cmakeBool "OPENVDB_BUILD_BINARIES" true)
+      (cmakeBool "OPENVDB_BUILD_CORE" false)
+      (cmakeBool "OPENVDB_BUILD_VDB_PRINT" false)
+      (cmakeBool "USE_NANOVDB" true)
     ]
-    ++ lib.optionals cudaSupport [
-      "-DNANOVDB_USE_CUDA=ON"
-    ];
+    ++ lib.optionals cudaSupport (
+      with lib;
+      [
+        (cmakeBool "NANOVDB_USE_CUDA" true)
+      ]
+    );
 
   meta = with lib; {
     description = "Open framework for voxel (NanoVDB tools)";

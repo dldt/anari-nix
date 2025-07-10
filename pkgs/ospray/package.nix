@@ -35,10 +35,10 @@ stdenv.mkDerivation {
     rkcommon_0_14_2
   ];
 
-  cmakeFlags = [
-    "-DOSPRAY_ENABLE_APPS=OFF"
-    "-DOSPRAY_MODULE_DENOISER=ON"
-    "-DOSPRAY_MODULE_BILINEAR_PATCH=ON"
+  cmakeFlags = with lib; [
+    (cmakeBool "OSPRAY_ENABLE_APPS" false)
+    (cmakeBool "OSPRAY_MODULE_DENOISER" true)
+    (cmakeBool "OSPRAY_MODULE_BILINEAR_PATCH" true)
   ];
 
   meta = with lib; {

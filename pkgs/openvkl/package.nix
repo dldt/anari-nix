@@ -29,8 +29,8 @@ stdenv.mkDerivation {
     ispc
   ];
 
-  cmakeFlags = [
-    "-DBUILD_EXAMPLES=OFF"
+  cmakeFlags = with lib; [
+    (cmakeBool "BUILD_EXAMPLES" false)
   ];
 
   buildInputs = [

@@ -66,14 +66,18 @@ stdenv.mkDerivation {
     ];
 
   cmakeFlags =
+    with lib;
     [
-      "-DCGNS_ENABLE_HDF5=ON"
-      "-DCMAKE_C_FLAGS=-I${src_tk_private}"
-      "-DCMAKE_CXX_FLAGS=-I${src_tk_private}"
+      (cmakeBool "CGNS_ENABLE_HDF5" true)
+      (cmakeFeature "CMAKE_C_FLAGS" "-I${src_tk_private}")
+      (cmakeFeature "CMAKE_CXX_FLAGS" "-I${src_tk_private}")
     ]
-    ++ lib.optionals hostPlatform.isLinux [
-      "-DCGNS_BUILD_CGNSTOOLS=ON"
-    ];
+    ++ lib.optionals hostPlatform.isLinux (
+      with lib;
+      [
+        (cmakeBool "CGNS_BUILD_CGNSTOOLS" true)
+      ]
+    );
 
   meta = with lib; {
     description = "The CFD General Notation System (CGNS) provides a standard for recording and recovering computer data associated with the numerical solution of fluid dynamics equations.";

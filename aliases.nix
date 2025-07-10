@@ -1,7 +1,7 @@
-self: pkgs:
+final: prev:
 let
-  inherit (pkgs) lib;
+  inherit (prev) lib;
 in
 {
-  nvidia-mdl = lib.warnOnInstantiate "nvidia-mdl has been renamed to mdl-sdk to better follow upstream name usage" pkgs.mdl-sdk;
+  nvidia-mdl = lib.warnOnInstantiate "nvidia-mdl has been renamed to mdl-sdk to better follow upstream name usage" prev.mdl-sdk;
 }
