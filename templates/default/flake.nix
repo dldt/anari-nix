@@ -1,6 +1,6 @@
 {
   description = ''
-    An simple anari-nix template
+    A simple anari-nix template
   '';
 
   nixConfig = {
