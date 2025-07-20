@@ -4,11 +4,11 @@
   fetchFromGitHub,
 }:
 let
-  version = "v7.7.0";
+  version = "7.7.0";
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "optix-dev";
-    tag = version;
+    tag = "v${version}";
     hash = "sha256-1sX4qgtIv/tO9+LQhTXES7Pmspk6yoiolCL/D9jvsTE=";
   };
 
