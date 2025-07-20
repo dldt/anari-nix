@@ -30,9 +30,6 @@ stdenv.mkDerivation {
     outPath = anari-sdk-src.outPath + "/src/hdanari";
   };
 
-  patches = [ ./0001-Search-MaterialX-deps-on-Linux.patch ];
-  patchFlags = [ "-p3" ];
-
   nativeBuildInputs = [
     cmake
     python3
