@@ -29,7 +29,7 @@ stdenv.mkDerivation {
     (cmakeBool "VISRTX_ENABLE_MDL_SUPPORT" true)
     (cmakeBool "VISRTX_PRECOMPILE_SHADERS" false)
 
-    (cmakeFeature "OPTIX_FETCH_VERSION" "9.0")
+    (cmakeFeature "OPTIX_FETCH_VERSION" "${versions.majorMinor nvidia-optix.version}")
     (cmakeBool "VISRTX_ENABLE_NEURAL" true)
   ];
 
