@@ -139,7 +139,6 @@
               nix-prefetch-git
               python3Packages.pygit2
               python3Packages.pygithub
-              renovate
             ];
           };
         }
