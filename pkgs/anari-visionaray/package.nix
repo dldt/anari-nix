@@ -23,25 +23,23 @@ stdenv.mkDerivation {
     fetchSubmodules = true;
   };
 
-  nativeBuildInputs =
-    [
-      cmake
-      python3
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages_12_6.cuda_nvcc
-    ];
+  nativeBuildInputs = [
+    cmake
+    python3
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages_12_6.cuda_nvcc
+  ];
 
-  buildInputs =
-    [
-      anari-sdk
-      visionaray
-    ]
-    ++ lib.optionals cudaSupport [
-      # CUDA and OptiX
-      cudaPackages_12_6.cuda_cudart
-      cudaPackages_12_6.cuda_cccl
-    ];
+  buildInputs = [
+    anari-sdk
+    visionaray
+  ]
+  ++ lib.optionals cudaSupport [
+    # CUDA and OptiX
+    cudaPackages_12_6.cuda_cudart
+    cudaPackages_12_6.cuda_cccl
+  ];
 
   cmakeFlags = with lib; [
     (cmakeBool "ANARI_VISIONARAY_ENABLE_CUDA" cudaSupport)

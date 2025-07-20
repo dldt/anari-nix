@@ -77,36 +77,34 @@ stdenv.mkDerivation {
     cp ./tsdViewer "''${out}/bin"
   '';
 
-  nativeBuildInputs =
-    [
-      cmake
-      pkg-config
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages.cuda_nvcc
-    ];
+  nativeBuildInputs = [
+    cmake
+    pkg-config
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_nvcc
+  ];
 
-  buildInputs =
-    [
-      anari-sdk
-      assimp
-      conduit
-      sdl3
-      glm
-      libGL
-      hdf5
-      openusd
-      tbb_2021
-      vtk
-    ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [
-      xorg.libX11
-      xorg.libXt
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages.cuda_cudart
-      cudaPackages.cuda_cccl
-    ];
+  buildInputs = [
+    anari-sdk
+    assimp
+    conduit
+    sdl3
+    glm
+    libGL
+    hdf5
+    openusd
+    tbb_2021
+    vtk
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
+    xorg.libX11
+    xorg.libXt
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_cudart
+    cudaPackages.cuda_cccl
+  ];
 
   meta = with lib; {
     description = "This project started as a medium to learn 3D scene graph library design in C++ as well as be an ongoing study on how a scene graph and ANARI can be paired.";

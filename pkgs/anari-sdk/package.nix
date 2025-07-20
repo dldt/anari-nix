@@ -65,27 +65,25 @@ stdenv.mkDerivation {
       cp "anariViewer" "''${out}/bin/anariViewer"
     '';
 
-  nativeBuildInputs =
-    [
-      cmake
-      python3
-    ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [
-      pkg-config
-      autoPatchelfHook
-    ];
-  buildInputs =
-    [
-      sdl3
-      tinygltf
-      libwebp
-    ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [
-      libGL
-    ]
-    ++ lib.optionals stdenv.hostPlatform.isDarwin [
-      apple-sdk_11
-    ];
+  nativeBuildInputs = [
+    cmake
+    python3
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
+    pkg-config
+    autoPatchelfHook
+  ];
+  buildInputs = [
+    sdl3
+    tinygltf
+    libwebp
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
+    libGL
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [
+    apple-sdk_11
+  ];
 
   propagatedBuildInputs = [
     draco

@@ -38,23 +38,22 @@ stdenv.mkDerivation {
     python3
   ];
 
-  buildInputs =
-    [
-      anari-sdk
-      materialx
-      openusd
-      opensubdiv
-      tbb
-    ]
-    ++ lib.optionals stdenv.isLinux [
-      # What's need for MaterialX on Linux
-      xorg.libX11
-      xorg.libXt
-      libGL
-    ]
-    ++ lib.optionals stdenv.isDarwin [
-      apple-sdk_11
-    ];
+  buildInputs = [
+    anari-sdk
+    materialx
+    openusd
+    opensubdiv
+    tbb
+  ]
+  ++ lib.optionals stdenv.isLinux [
+    # What's need for MaterialX on Linux
+    xorg.libX11
+    xorg.libXt
+    libGL
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    apple-sdk_11
+  ];
 
   # Special case for OPENUSD_PLUGIN_INSTALL_PREFIX...
   # Ideally we'd like to pass this as a relative path to the installation folder in the cmakeFlags, but this does end up

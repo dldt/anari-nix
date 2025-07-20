@@ -52,18 +52,17 @@ stdenv.mkDerivation {
     cmake
   ];
 
-  buildInputs =
-    [
-      hdf5
-      tcl
-      tk
-    ]
-    ++ lib.optionals hostPlatform.isLinux [
-      libGL
-      libGLU
-      libSM
-      libXmu
-    ];
+  buildInputs = [
+    hdf5
+    tcl
+    tk
+  ]
+  ++ lib.optionals hostPlatform.isLinux [
+    libGL
+    libGLU
+    libSM
+    libXmu
+  ];
 
   cmakeFlags =
     with lib;

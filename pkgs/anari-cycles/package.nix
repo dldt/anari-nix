@@ -47,43 +47,41 @@ stdenv.mkDerivation {
     ./0005-Do-not-build-cycles-standalone-app.patch
   ];
 
-  nativeBuildInputs =
-    [
-      cmake
-      python3
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages.cuda_nvcc
-    ];
+  nativeBuildInputs = [
+    cmake
+    python3
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_nvcc
+  ];
 
-  buildInputs =
-    [
-      anari-sdk
-      libjpeg
-      openimageio
-      openjpeg
-      pugixml
-      libtiff
-      openexr
-      openvdb
-      osl
-      libpng
-      zlib
-      tbb_2021
-    ]
-    ++ lib.optionals stdenv.isDarwin [
-      apple-sdk_13
-      sse2neon
-    ]
-    ++ lib.optionals cudaSupport [
-      # CUDA and OptiX
-      cudaPackages.cuda_cudart
-      cudaPackages.cuda_cccl
-      libGL
-    ]
-    ++ lib.optionals optixSupport [
-      nvidia-optix8
-    ];
+  buildInputs = [
+    anari-sdk
+    libjpeg
+    openimageio
+    openjpeg
+    pugixml
+    libtiff
+    openexr
+    openvdb
+    osl
+    libpng
+    zlib
+    tbb_2021
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    apple-sdk_13
+    sse2neon
+  ]
+  ++ lib.optionals cudaSupport [
+    # CUDA and OptiX
+    cudaPackages.cuda_cudart
+    cudaPackages.cuda_cccl
+    libGL
+  ]
+  ++ lib.optionals optixSupport [
+    nvidia-optix8
+  ];
 
   cmakeFlags =
     with lib;
