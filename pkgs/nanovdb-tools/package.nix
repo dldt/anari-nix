@@ -29,26 +29,24 @@ stdenv.mkDerivation {
 
   pname = "nanovdb-tools";
 
-  nativeBuildInputs =
-    [
-      cmake
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages.cuda_nvcc
-    ];
+  nativeBuildInputs = [
+    cmake
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_nvcc
+  ];
 
-  buildInputs =
-    [
-      boost
-      c-blosc
-      jemalloc
-      openvdb
-      tbb
-      zlib
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages.cuda_cudart
-    ];
+  buildInputs = [
+    boost
+    c-blosc
+    jemalloc
+    openvdb
+    tbb
+    zlib
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_cudart
+  ];
 
   cmakeFlags =
     with lib;

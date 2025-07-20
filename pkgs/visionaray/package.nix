@@ -28,32 +28,30 @@ stdenv.mkDerivation {
     fetchSubmodules = true;
   };
 
-  nativeBuildInputs =
-    [
-      cmake
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages.cuda_nvcc
-    ];
+  nativeBuildInputs = [
+    cmake
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_nvcc
+  ];
 
   propagatedBuildInputs = [
     boost
     tbb_2021
   ];
 
-  buildInputs =
-    [
-      freeglut
-      libjpeg
-      libpng
-      libtiff
-      openexr
-      ptex
-    ]
-    ++ lib.optionals cudaSupport [
-      cudaPackages.cuda_cccl
-      cudaPackages.cuda_cudart
-    ];
+  buildInputs = [
+    freeglut
+    libjpeg
+    libpng
+    libtiff
+    openexr
+    ptex
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_cccl
+    cudaPackages.cuda_cudart
+  ];
 
   postUnpack = ''
     substituteInPlace \
