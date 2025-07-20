@@ -1,0 +1,25 @@
+From b51475e728c208629d85e803fd9ce68eb7cf93b2 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 20 Jul 2025 18:10:27 -0400
+Subject: [PATCH 2/6] Find X11 and OpenGL as dependencies of OpenUSD/MaterialX
+
+---
+ UsdBridge/CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/UsdBridge/CMakeLists.txt b/UsdBridge/CMakeLists.txt
+index 50b47b5..7e1007d 100644
+--- a/UsdBridge/CMakeLists.txt
++++ b/UsdBridge/CMakeLists.txt
+@@ -83,6 +83,8 @@ if(NOT DEFINED MaterialX_DIR)
+ endif()
+ 
+ # Search in config mode
++find_package(X11)
++find_package(OpenGL)
+ list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils)
+ find_package(pxr REQUIRED COMPONENTS ${USD_INIT_TARGETS}
+   PATHS ${USD_ROOT_DIR_CURRENT})
+-- 
+2.49.0
+
