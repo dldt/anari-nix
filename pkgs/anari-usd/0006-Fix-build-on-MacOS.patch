@@ -1,0 +1,42 @@
+From dfe16cbdb1291cb8a855ae123fafa604b5e0b31d Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 20 Jul 2025 20:39:28 -0400
+Subject: [PATCH 6/6] Fix build on MacOS
+
+---
+ UsdBridge/CMakeLists.txt                     | 5 ++++-
+ UsdBridge/Connection/UsdBridgeConnection.cpp | 2 +-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/UsdBridge/CMakeLists.txt b/UsdBridge/CMakeLists.txt
+index 7e1007d..bc23b12 100644
+--- a/UsdBridge/CMakeLists.txt
++++ b/UsdBridge/CMakeLists.txt
+@@ -195,7 +195,10 @@ if (WIN32)
+   # Make sure to set link dirs public, since this is a static lib, so the dynamic boost libs will propagate to the parent project. 
+   target_link_directories(UsdBridge PUBLIC "${USD_PYTHON_LINK_DIRS}" "${USD_LIB_DIR}")
+ else()
+-  set(PLATFORM_LIBS pthread dl stdc++fs)
++  set(PLATFORM_LIBS pthread dl)
++  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
++    list(APPEND PLATFORM_LIBS  stdc++fs)
++  endif()
+   target_link_libraries(UsdBridge PRIVATE general ${PLATFORM_LIBS} )
+   if(NOT ${USD_DEVICE_USE_CXX11_ABI})
+     target_compile_definitions(UsdBridge PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
+diff --git a/UsdBridge/Connection/UsdBridgeConnection.cpp b/UsdBridge/Connection/UsdBridgeConnection.cpp
+index d000ed3..6a518ab 100644
+--- a/UsdBridge/Connection/UsdBridgeConnection.cpp
++++ b/UsdBridge/Connection/UsdBridgeConnection.cpp
+@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
+ namespace fs = std::experimental::filesystem;
+ #endif
+ #else
+-#if (__GNUC__ < 8 || __cplusplus < 201703L)
++#if (defined(__clang__) && __clang_major__ < 5) || (!defined(__clang__) && __GNUC__ < 8) || __cplusplus < 201703L
+ #include <experimental/filesystem>
+ namespace fs = std::experimental::filesystem;
+ #else
+-- 
+2.49.0
+

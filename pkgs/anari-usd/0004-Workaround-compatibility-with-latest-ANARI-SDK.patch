@@ -1,0 +1,56 @@
+From 0ce257260aca12ba85148d7e8ef0c8ad446c6539 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 20 Jul 2025 18:37:05 -0400
+Subject: [PATCH 4/6] Workaround compatibility with latest ANARI-SDK
+
+---
+ UsdDataArray.cpp | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/UsdDataArray.cpp b/UsdDataArray.cpp
+index 8b3ed0a..65e27fe 100644
+--- a/UsdDataArray.cpp
++++ b/UsdDataArray.cpp
+@@ -176,7 +176,7 @@ void UsdDataArray::incRef(const ANARIObject* anariObjects, uint64_t numAnariObje
+ {
+   for (int i = 0; i < numAnariObjects; ++i)
+   {
+-    const UsdBaseObject* baseObj = (reinterpret_cast<const UsdBaseObject*>(anariObjects[i]));
++    UsdBaseObject* baseObj = reinterpret_cast<UsdBaseObject*>(const_cast<ANARIObject>(anariObjects[i]));
+     if (baseObj)
+       baseObj->refInc(helium::RefType::INTERNAL);
+   }
+@@ -186,7 +186,7 @@ void UsdDataArray::decRef(const ANARIObject* anariObjects, uint64_t numAnariObje
+ {
+   for (int i = 0; i < numAnariObjects; ++i)
+   {
+-    const UsdBaseObject* baseObj = (reinterpret_cast<const UsdBaseObject*>(anariObjects[i]));
++    UsdBaseObject* baseObj = reinterpret_cast<UsdBaseObject*>(const_cast<ANARIObject>(anariObjects[i]));
+ #ifdef CHECK_MEMLEAKS
+     allocDevice->logObjDeallocation(baseObj);
+ #endif
+@@ -264,8 +264,8 @@ void UsdDataArray::TransferAndRemoveMappedObjectCopy()
+   // First, increase reference counts of all objects that different in the new object array
+   for (int i = 0; i < numAnariObjects; ++i)
+   {
+-    const UsdBaseObject* newObj = (reinterpret_cast<const UsdBaseObject*>(newAnariObjects[i]));
+-    const UsdBaseObject* oldObj = (reinterpret_cast<const UsdBaseObject*>(oldAnariObjects[i]));
++    UsdBaseObject* newObj = reinterpret_cast<UsdBaseObject*>(const_cast<ANARIObject>(newAnariObjects[i]));
++    UsdBaseObject* oldObj = reinterpret_cast<UsdBaseObject*>(const_cast<ANARIObject>(oldAnariObjects[i]));
+ 
+     if (newObj != oldObj && newObj)
+       newObj->refInc(helium::RefType::INTERNAL);
+@@ -274,8 +274,8 @@ void UsdDataArray::TransferAndRemoveMappedObjectCopy()
+   // Then, decrease reference counts of all objects that are different in the original array (which will delete those that not referenced anymore)
+   for (int i = 0; i < numAnariObjects; ++i)
+   {
+-    const UsdBaseObject* newObj = (reinterpret_cast<const UsdBaseObject*>(newAnariObjects[i]));
+-    const UsdBaseObject* oldObj = (reinterpret_cast<const UsdBaseObject*>(oldAnariObjects[i]));
++    UsdBaseObject* newObj = reinterpret_cast<UsdBaseObject*>(const_cast<ANARIObject>(newAnariObjects[i]));
++    UsdBaseObject* oldObj = reinterpret_cast<UsdBaseObject*>(const_cast<ANARIObject>(oldAnariObjects[i]));
+ 
+     if (newObj != oldObj && oldObj)
+     {
+-- 
+2.49.0
+

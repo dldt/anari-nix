@@ -1,0 +1,38 @@
+From 0023607e81607e97fa666a0276c3a52b1d1db89b Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 20 Jul 2025 18:06:34 -0400
+Subject: [PATCH 1/6] Use find components instead of explicitely iterating over
+ libraries
+
+PXR_LIBARIES holds what we are expected to use.
+---
+ UsdBridge/CMakeLists.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/UsdBridge/CMakeLists.txt b/UsdBridge/CMakeLists.txt
+index 9d33da2..50b47b5 100644
+--- a/UsdBridge/CMakeLists.txt
++++ b/UsdBridge/CMakeLists.txt
+@@ -83,7 +83,8 @@ if(NOT DEFINED MaterialX_DIR)
+ endif()
+ 
+ # Search in config mode
+-find_package(pxr REQUIRED
++list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils)
++find_package(pxr REQUIRED COMPONENTS ${USD_INIT_TARGETS}
+   PATHS ${USD_ROOT_DIR_CURRENT})
+ 
+ if(NOT (USD_ROOT_DIR_DEBUG STREQUAL USD_ROOT_DIR_RELEASE))
+@@ -96,8 +97,7 @@ if(NOT (USD_ROOT_DIR_DEBUG STREQUAL USD_ROOT_DIR_RELEASE))
+   endif()
+ endif()
+ 
+-list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils)
+-flatten_and_cleanup_targets(USD_TARGETS "${USD_INIT_TARGETS}")
++flatten_and_cleanup_targets(USD_TARGETS "${PXR_LIBRARIES}")
+ message(STATUS "USD_TARGETS: ${USD_TARGETS}")
+ 
+ # Find out whether USD was compiled with or without the CXX11 ABI
+-- 
+2.49.0
+
