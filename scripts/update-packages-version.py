@@ -136,7 +136,7 @@ with Github(auth=auth) as g:
                 if len(desc["rev"]) in (40, 64) and all(
                     c in "0123456789abcdef" for c in desc["rev"]
                 ):
-                    remotehead = desc.get("branchName", nixrepo.default_branch)
+                    remotehead = desc.get("ref", nixrepo.default_branch)
                     newhead = nixrepo.get_branch(remotehead).commit.sha
                 else:
                     newhead = next(
