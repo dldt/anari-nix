@@ -13,6 +13,7 @@ let
   src = fetchFromGitHub {
     owner = "ingowald";
     repo = "barney";
+    branchName = "devel";
     rev = "45877a0a3baa724cb3765821f56c889672eb9f77";
     hash = "sha256-ufX4Sghg7FaK5PeaaqAwX79O3MJUsmAnRHRSzIc2iVM=";
     fetchSubmodules = true;
