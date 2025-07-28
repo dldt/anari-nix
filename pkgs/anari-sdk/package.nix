@@ -7,7 +7,6 @@
   cmake,
   python3,
   libGL,
-  glfw3,
   pkg-config,
   apple-sdk_11,
   tinygltf,
@@ -18,11 +17,6 @@
 }:
 let
   # Additional CMAKE FetchContent support. Outputs to ${CMAKE_SOURCE_DIR}/.anari_deps/${FETCH_SOURCE_NAME}
-  anari_helide_embree = fetchurl {
-    url = "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip";
-    hash = "sha256-Y9ZOWHlb3fbpxWT2aJVky4WHaU4CXn7HeQdyzIIYs7k=";
-  };
-
   anari_viewer_imgui_sdl = fetchurl {
     url = "https://github.com/ocornut/imgui/archive/refs/tags/v1.91.7-docking.zip";
     hash = "sha256-glnDJORdpGuZ8PQ4uBYfeOh0kmCzJmNnI9zHOnSwePQ=";
@@ -41,8 +35,6 @@ stdenv.mkDerivation {
   };
 
   postUnpack = ''
-    mkdir -p "''${sourceRoot}/.anari_deps/anari_helide_embree/"
-    cp "${anari_helide_embree}" "''${sourceRoot}/.anari_deps/anari_helide_embree/v4.3.3.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/"
     cp "${anari_viewer_imgui_sdl}" "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/v1.91.7-docking.zip"
   '';
