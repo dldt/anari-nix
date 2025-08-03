@@ -10,7 +10,7 @@
   openexr,
 }:
 let
-  version = "2024.1.3";
+  version = "2024.1.4";
 in
 stdenv.mkDerivation {
   inherit version;
@@ -20,7 +20,7 @@ stdenv.mkDerivation {
     owner = "NVIDIA";
     repo = "MDL-SDK";
     rev = version;
-    hash = "sha256-SoxS+lKxSM0gvfrXwPhRHXCBWFaD+pDv/WX8zojprwY=";
+    hash = "sha256-QA5z8CjFWzTPBkC2XD6D/wt8ShYYrY6EcTC1HVavzrw=";
   };
 
   patches = [

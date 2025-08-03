@@ -14,8 +14,8 @@ let
     owner = "ingowald";
     repo = "barney";
     branchName = "devel";
-    rev = "00f357b9f9a08c88cfad3720397c1899a738d4af";
-    hash = "sha256-WZyu1+jiPXHuix+gLPKzer/rXbgPBHceYKGxNR9evFs=";
+    rev = "68c1ef2468cfcb283b35b3a1abeb6cb8220c01f6";
+    hash = "sha256-TJgIz766Z7ALSdpmZ4bOMQu9+ZpXhyzHzwnnuSocewU=";
     fetchSubmodules = true;
   };
 in
@@ -23,7 +23,7 @@ stdenv.mkDerivation {
   inherit src;
 
   pname = "barney";
-  version = "v0.9.10-22-g00f357b";
+  version = "v0.9.10-24-g68c1ef2";
 
   patchPhase = ''
     echo Patching CMake files...
