@@ -19,7 +19,16 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: x86_64-linux
+            check: packages
+          - os: ubuntu-latest
+            platform: x86_64-linux
+            check: packagesCuda
+          - os: macos-latest
+            platform: aarch64-darwin
+            check: packages
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -35,4 +44,7 @@ jobs:
       - name: Remove conflicting Python framework on MacOS
         run: sudo rm -fr /Library/Frameworks/Python.framework
         if: ${{ runner.os == 'macOS' }}
-      - run: nix flake check --accept-flake-config
+      - name: Nix flake check --no-build
+        run: nix flake check --accept-flake-config --no-build
+      - name: Nix flake check ${{ matrix.check }} on ${{ matrix.platform }}
+        run: nix flake check --accept-flake-config --arg-from-file ./flake.nix checks.${{ matrix.platform }}.${{ matrix.check }}
