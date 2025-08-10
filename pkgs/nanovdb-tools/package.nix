@@ -6,7 +6,6 @@
   c-blosc,
   cmake,
   fetchFromGitHub,
-  fetchpatch,
   jemalloc,
   lib,
   openvdb,
@@ -29,6 +28,10 @@ stdenv.mkDerivation {
 
   pname = "nanovdb-tools";
 
+  patches = [
+    ./0001-Find-CCCL-from-nix-instead-getting-it-from-github.patch
+  ];
+
   nativeBuildInputs = [
     cmake
   ]
@@ -46,6 +49,8 @@ stdenv.mkDerivation {
   ]
   ++ lib.optionals cudaSupport [
     cudaPackages.cuda_cudart
+    cudaPackages.cuda_cccl
+    cudaPackages.nccl
   ];
 
   cmakeFlags =
