@@ -16,12 +16,12 @@
 }:
 let
   # Main source.
-  version = "v12.0.1";
+  version = "v12.1.0";
   src = fetchFromGitHub {
     owner = "AcademySoftwareFoundation";
     repo = "openvdb";
     rev = version;
-    hash = "sha256-ofVhwULBDzjA+bfhkW12tgTMnFB/Mku2P2jDm74rutY=";
+    hash = "sha256-28vrIlruPl1tvw2JhjIAARtord45hqCqnA9UNnu4Z70=";
   };
 in
 stdenv.mkDerivation {
