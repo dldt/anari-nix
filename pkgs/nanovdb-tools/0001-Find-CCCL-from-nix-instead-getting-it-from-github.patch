@@ -1,0 +1,35 @@
+From 028a300e3ec482e33ebdec826fe5b4b2bad25861 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 10 Aug 2025 11:19:17 -0400
+Subject: [PATCH] Find CCCL from nix instead getting it from github
+
+---
+ nanovdb/nanovdb/CMakeLists.txt | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/nanovdb/nanovdb/CMakeLists.txt b/nanovdb/nanovdb/CMakeLists.txt
+index fee6ef87..0b5deade 100644
+--- a/nanovdb/nanovdb/CMakeLists.txt
++++ b/nanovdb/nanovdb/CMakeLists.txt
+@@ -115,17 +115,7 @@ if(NANOVDB_USE_CUDA)
+   endif()
+ 
+   find_package(CUDAToolkit)
+-
+-
+-  include(../../cmake/CPM.cmake)
+-
+-  # This will automatically clone CCCL from GitHub and make the exported cmake targets available
+-  CPMAddPackage(
+-      NAME CCCL
+-      GITHUB_REPOSITORY nvidia/cccl
+-      GIT_TAG main # Fetches the latest commit on the main branch
+-  )
+-
++  find_package(CCCL)
+   find_package(NCCL)
+ endif()
+ 
+-- 
+2.50.1
+
