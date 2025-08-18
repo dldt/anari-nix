@@ -70,7 +70,7 @@ diff --git a/device/SpatialField.cpp b/device/SpatialField.cpp
 index d2cacb1..077ffce 100644
 --- a/device/SpatialField.cpp
 +++ b/device/SpatialField.cpp
-@@ -10,6 +10,7 @@
+@@ -9,6 +9,7 @@
  // cycles
  #include "scene/volume.h"
  #include "util/hash.h"
@@ -78,15 +78,14 @@ index d2cacb1..077ffce 100644
  
  namespace anari_cycles {
  
-@@ -80,7 +81,7 @@ std::unique_ptr<ccl::Geometry> StructuredRegularField::makeCyclesGeometry()
+@@ -79,7 +80,7 @@ std::unique_ptr<ccl::Geometry> StructuredRegularField::makeCyclesGeometry()
  #endif
  
    Attribute *attr = volume->attributes.add(
 -      ustring("voxels"), TypeDesc::TypeFloat, ATTR_ELEMENT_VOXEL);
 +      ustring("voxels"), ccl::TypeFloat, ATTR_ELEMENT_VOXEL);
-   auto loader = std::make_unique<ANARIImageLoader>(this);
+   auto loader = std::make_unique<VolumeImageLoader>(this);
    ImageParams params;
    auto &state = *deviceState();
--- 
-2.49.0
 
+2.49.0
