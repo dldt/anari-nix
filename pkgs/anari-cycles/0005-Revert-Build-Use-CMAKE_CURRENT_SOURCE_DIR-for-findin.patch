@@ -1,0 +1,31 @@
+From 152a8638501ffc56389aa3c3e89a575d418bd958 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 17 Aug 2025 19:28:27 -0400
+Subject: [PATCH 5/5] Revert "Build: Use CMAKE_CURRENT_SOURCE_DIR for finding
+ libs"
+
+This reverts commit 43d8c14920f7535ce9b7b02f4e0815f5abc8c904.
+---
+ cycles/src/cmake/external_libs.cmake | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cycles/src/cmake/external_libs.cmake b/cycles/src/cmake/external_libs.cmake
+index c4e9006a9..fe88c162d 100644
+--- a/cycles/src/cmake/external_libs.cmake
++++ b/cycles/src/cmake/external_libs.cmake
+@@ -67,10 +67,10 @@ else()
+   endif()
+ endif()
+ 
+-set(_cycles_lib_dir "${CMAKE_CURRENT_SOURCE_DIR}/lib/${_cycles_lib_platform}")
++set(_cycles_lib_dir "${CMAKE_SOURCE_DIR}/lib/${_cycles_lib_platform}")
+ 
+ # Use legacy libraries for compatibility with Houdini or USD without oneTBB.
+-set(_cycles_lib_dir_legacy "${CMAKE_CURRENT_SOURCE_DIR}/lib/legacy/${_cycles_lib_platform}")
++set(_cycles_lib_dir_legacy "${CMAKE_SOURCE_DIR}/lib/legacy/${_cycles_lib_platform}")
+ if((HOUDINI_ROOT AND HOUDINI_VERSION_MAJOR VERSION_LESS 21) OR WITH_LEGACY_LIBRARIES)
+   set(_cycles_use_legacy_libs ON)
+   set(_cycles_lib_dir "${_cycles_lib_dir_legacy}")
+-- 
+2.50.1
+

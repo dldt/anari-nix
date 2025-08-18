@@ -5,7 +5,7 @@
   cmake,
   anari-sdk,
   python3,
-  embree,
+  embree-ispc,
   ospray,
   openvkl,
   rkcommon_0_14_2,
@@ -33,7 +33,7 @@ stdenv.mkDerivation {
 
   buildInputs = [
     anari-sdk
-    embree
+    embree-ispc
     ospray
     openvkl
     rkcommon_0_14_2

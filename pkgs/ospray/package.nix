@@ -1,6 +1,6 @@
 {
   cmake,
-  embree,
+  embree-ispc,
   fetchFromGitHub,
   ispc,
   lib,
@@ -28,7 +28,7 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    embree
+    embree-ispc
     libGL
     openimagedenoise
     openvkl
