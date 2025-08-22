@@ -75,6 +75,8 @@ stdenv.mkDerivation {
   installPhase = ''
     mkdir -p "''${out}/bin"
     cp ./tsdViewer "''${out}/bin"
+    cp ./tsdRender "''${out}/bin"
+    cp ./printTSD "''${out}/bin/tsdPrint"
   '';
 
   nativeBuildInputs = [
