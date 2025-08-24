@@ -1,5 +1,6 @@
 {
   anari-sdk,
+  applyPatches,
   cmake,
   apple-sdk_11,
   fetchFromGitHub,
@@ -10,15 +11,26 @@
   opensubdiv,
   materialx,
   libGL,
+  mdl-sdk,
   xorg,
   tbb,
 }:
 let
-  anari-sdk-src = fetchFromGitHub {
-    owner = "KhronosGroup";
-    repo = "ANARI-SDK";
-    rev = "1994f0b10d36b22519381931324e940bcb563a8d";
-    hash = "sha256-Vi/nvZzT8t6P7YHicvzaXRN46x5TWAfJF14jvhkai/U=";
+  anari-sdk-src =
+    let
+      owner = "KhronosGroup";
+      repo = "ANARI-SDK";
+    in
+    applyPatches {
+      src = fetchFromGitHub {
+        inherit owner repo;
+        rev = "1994f0b10d36b22519381931324e940bcb563a8d";
+        hash = "sha256-Vi/nvZzT8t6P7YHicvzaXRN46x5TWAfJF14jvhkai/U=";
+      };
+      patches = [ ./0001-Fix-build-on-MacOS.patch ];
+    };
+  hdanari-src = anari-sdk-src // {
+    outPath = anari-sdk-src.outPath + "/src/hdanari";
   };
 in
 stdenv.mkDerivation {
@@ -26,9 +38,7 @@ stdenv.mkDerivation {
   version = "v0.14.1-15-g1994f0b";
 
   # Main source
-  src = anari-sdk-src // {
-    outPath = anari-sdk-src.outPath + "/src/hdanari";
-  };
+  src = hdanari-src;
 
   nativeBuildInputs = [
     cmake
@@ -38,6 +48,7 @@ stdenv.mkDerivation {
   buildInputs = [
     anari-sdk
     materialx
+    mdl-sdk
     openusd
     opensubdiv
     tbb
@@ -50,6 +61,10 @@ stdenv.mkDerivation {
   ]
   ++ lib.optionals stdenv.isDarwin [
     apple-sdk_11
+  ];
+
+  cmakeFlags = [
+    (lib.cmakeBool "HDANARI_ENABLE_MDL" true)
   ];
 
   # Special case for OPENUSD_PLUGIN_INSTALL_PREFIX...
