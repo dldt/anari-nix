@@ -14,12 +14,14 @@
   glm,
   hdf5,
   conduit,
-  tbb_2021,
+  tbb,
+  find-tbb-cmake,
   sdl3,
   openusd,
   xorg,
   applyPatches,
   vtk,
+  runCommandNoCC,
 }:
 let
   visrtx-src =
@@ -49,6 +51,10 @@ let
     url = "https://github.com/ocornut/imgui/archive/refs/tags/v1.91.7-docking.zip";
     hash = "sha256-glnDJORdpGuZ8PQ4uBYfeOh0kmCzJmNnI9zHOnSwePQ=";
   };
+  tbb_cmake = runCommandNoCC "findtbb.cmake" { FIND_TBB = ./FindTBB.cmake; } ''
+    mkdir $out
+    cp $FIND_TBB $out/
+  '';
 in
 stdenv.mkDerivation {
   pname = "tsd";
@@ -70,6 +76,7 @@ stdenv.mkDerivation {
     (lib.cmakeBool "TSD_USE_SDL3" true)
     (lib.cmakeBool "TSD_USE_USD" true)
     (lib.cmakeBool "TSD_USE_VTK" true)
+    (lib.cmakeFeature "CMAKE_MODULE_PATH" "${find-tbb-cmake}/lib/cmake")
   ];
 
   installPhase = ''
@@ -96,7 +103,8 @@ stdenv.mkDerivation {
     libGL
     hdf5
     openusd
-    tbb_2021
+    tbb
+    find-tbb-cmake
     vtk
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [

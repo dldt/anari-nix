@@ -21,7 +21,7 @@
   openjpeg,
   osl,
   sse2neon,
-  tbb_2021,
+  tbb,
   pugixml,
   zlib,
 }:
@@ -68,7 +68,7 @@ stdenv.mkDerivation {
     osl
     pugixml
     pugixml
-    tbb_2021
+    tbb
     zlib
   ]
   ++ lib.optionals stdenv.isDarwin [

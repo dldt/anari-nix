@@ -3,7 +3,8 @@
   fetchFromGitHub,
   lib,
   stdenv,
-  tbb_2021,
+  tbb,
+  find-tbb-cmake,
 }:
 let
   version = "v1.14.2";
@@ -18,14 +19,25 @@ let
 in
 stdenv.mkDerivation {
   inherit src version;
+
   pname = "rkcommon0_14_2";
+
+  prePatch = ''
+    substituteInPlace cmake/FindTBB.cmake --replace-fail \
+      'set(TBB_ROOT "''${TBB_ROOT}" CACHE PATH "The root path of TBB.")' \
+      'set(TBB_ROOT "${tbb}" CACHE PATH "The root path of TBB.")''\nset(TBB_INCLUDE_DIR "${lib.getDev tbb}/include" CACHE PATH "The include directories of TBB.")'
+  '';
 
   nativeBuildInputs = [
     cmake
   ];
 
-  propagatedBuildInputs = [
-    tbb_2021
+  transitiveBuildInputs = [
+    tbb
+  ];
+
+  cmakeFlags = [
+    (lib.cmakeFeature "TBB_DIR" "${tbb}")
   ];
 
   meta = with lib; {

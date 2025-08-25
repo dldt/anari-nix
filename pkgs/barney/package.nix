@@ -7,7 +7,7 @@
   nvidia-optix,
   openimagedenoise,
   libGL,
-  tbb_2021,
+  tbb,
 }:
 let
   src = fetchFromGitHub {
@@ -62,7 +62,7 @@ stdenv.mkDerivation {
     openimagedenoise
     libGL
 
-    tbb_2021
+    tbb
   ];
 
   meta = with lib; {

@@ -11,7 +11,7 @@
   openimagedenoise,
   python3,
   libGL,
-  tbb_2021,
+  tbb,
 }:
 let
   src = fetchFromGitHub {
@@ -65,7 +65,7 @@ stdenv.mkDerivation {
     openimagedenoise
     libGL
 
-    tbb_2021
+    tbb
   ];
 
   postInstall = ''

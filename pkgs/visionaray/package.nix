@@ -13,7 +13,8 @@
   openexr,
   ptex,
   stdenv,
-  tbb_2021,
+  tbb,
+  find-tbb-cmake,
 }:
 stdenv.mkDerivation {
   pname = "visionaray";
@@ -35,18 +36,16 @@ stdenv.mkDerivation {
     cudaPackages.cuda_nvcc
   ];
 
-  propagatedBuildInputs = [
-    boost
-    tbb_2021
-  ];
-
   buildInputs = [
+    boost
+    tbb
     freeglut
     libjpeg
     libpng
     libtiff
     openexr
     ptex
+    find-tbb-cmake
   ]
   ++ lib.optionals cudaSupport [
     cudaPackages.cuda_cccl
@@ -71,6 +70,7 @@ stdenv.mkDerivation {
     (cmakeBool "VSNRAY_ENABLE_VIEWER" false)
     (cmakeBool "VSNRAY_ENABLE_COMMON" false)
     (cmakeBool "VSNRAY_ENABLE_CUDA" cudaSupport)
+    (cmakeFeature "CMAKE_MODULE_PATH" "${find-tbb-cmake}/lib/cmake")
   ];
 
   meta = with lib; {
