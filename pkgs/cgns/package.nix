@@ -33,8 +33,10 @@ let
     hash =
       if tk.version == "8.6.15" then
         "sha256-8UXJ9oJnvdUrZEn3dEoty+tOVOHMj1rbzN1oNoQInwo="
+      else if tk.version == "8.6.16" then
+        "sha256-iI8RNzpEALT+wE61Rs/nmqLqjlhNozmhSMVDIULivZo="
       else
-        builtins.trace tk.version lib.fakeHash;
+        builtins.warn "Untested tk.version ${tk.version}" lib.fakeHash;
     postFetch = ''
       mkdir ''${out}/tk-private
       ln -s ../generic ''${out}/tk-private
