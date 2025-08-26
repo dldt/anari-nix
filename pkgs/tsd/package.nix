@@ -14,12 +14,14 @@
   glm,
   hdf5,
   conduit,
-  tbb_2021,
+  tbb,
+  find-tbb-cmake,
   sdl3,
   openusd,
   xorg,
   applyPatches,
   vtk,
+  runCommandNoCC,
 }:
 let
   visrtx-src =
@@ -31,8 +33,8 @@ let
       inherit owner repo; # Those are not used by applyPatches, but are used by our update script.
       src = fetchFromGitHub {
         inherit owner repo;
-        rev = "b3411bc99b9ce55e9fbd1ea51c8824b3445c2db3";
-        hash = "sha256-Qt1AgnMgv3ChmK6hc8duW7zS6D4Jake/qQiKV6w8+VM=";
+        rev = "7d04a7010ea6acbf5155c520a7036876059cdba7";
+        hash = "sha256-zU04BD9OZRDfmEXCCd4mVMnHhFNjLmdVNYS3ojLeQBY=";
       };
       postPatch = ''
         cp -rv ./external/fmtlib ./tsd/external/fmtlib
@@ -49,10 +51,14 @@ let
     url = "https://github.com/ocornut/imgui/archive/refs/tags/v1.91.7-docking.zip";
     hash = "sha256-glnDJORdpGuZ8PQ4uBYfeOh0kmCzJmNnI9zHOnSwePQ=";
   };
+  tbb_cmake = runCommandNoCC "findtbb.cmake" { FIND_TBB = ./FindTBB.cmake; } ''
+    mkdir $out
+    cp $FIND_TBB $out/
+  '';
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "v0.12.0-118-gb3411bc";
+  version = "v0.12.0-119-g7d04a70";
 
   # Main source. Hosted as part of VisRTX.
   src = tsd-src;
@@ -70,6 +76,7 @@ stdenv.mkDerivation {
     (lib.cmakeBool "TSD_USE_SDL3" true)
     (lib.cmakeBool "TSD_USE_USD" true)
     (lib.cmakeBool "TSD_USE_VTK" true)
+    (lib.cmakeFeature "CMAKE_MODULE_PATH" "${find-tbb-cmake}/lib/cmake")
   ];
 
   installPhase = ''
@@ -96,7 +103,8 @@ stdenv.mkDerivation {
     libGL
     hdf5
     openusd
-    tbb_2021
+    tbb
+    find-tbb-cmake
     vtk
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [

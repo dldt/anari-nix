@@ -21,9 +21,10 @@
   openjpeg,
   osl,
   sse2neon,
-  tbb_2021,
+  tbb,
   pugixml,
   zlib,
+  zstd,
 }:
 assert lib.assertMsg (!optixSupport || cudaSupport) "OptiX support requires CUDA support";
 stdenv.mkDerivation {
@@ -68,8 +69,9 @@ stdenv.mkDerivation {
     osl
     pugixml
     pugixml
-    tbb_2021
+    tbb
     zlib
+    zstd
   ]
   ++ lib.optionals stdenv.isDarwin [
     apple-sdk_13
