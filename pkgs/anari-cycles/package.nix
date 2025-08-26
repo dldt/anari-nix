@@ -24,6 +24,7 @@
   tbb,
   pugixml,
   zlib,
+  zstd,
 }:
 assert lib.assertMsg (!optixSupport || cudaSupport) "OptiX support requires CUDA support";
 stdenv.mkDerivation {
@@ -70,6 +71,7 @@ stdenv.mkDerivation {
     pugixml
     tbb
     zlib
+    zstd
   ]
   ++ lib.optionals stdenv.isDarwin [
     apple-sdk_13
