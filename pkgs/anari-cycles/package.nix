@@ -30,13 +30,13 @@ assert lib.assertMsg (!optixSupport || cudaSupport) "OptiX support requires CUDA
 stdenv.mkDerivation {
 
   pname = "anari-cycles";
-  version = "v0.0.0-37-gb49b4ef";
+  version = "v0.0.0-43-g747fd90";
 
   src = fetchFromGitHub {
     owner = "jeffamstutz";
     repo = "anari-cycles";
-    rev = "b49b4ef9b639d8ac183b4a0194d2dc6b75771788";
-    hash = "sha256-1XCB9jtdEPZLZIs03Ief6MzFsASbENOV01mdKf5KAkw=";
+    rev = "747fd9027405dfd894823982d8e65fb27559b1bf";
+    hash = "sha256-CNE7Z+zJgcPO+Av+fa5D1s4CBZeQCWg+fA9dqeHbMuU=";
     fetchSubmodules = true;
   };
 
@@ -46,7 +46,6 @@ stdenv.mkDerivation {
     ./0003-Link-with-IOKit-on-when-building-Metal.patch
     ./0004-Do-not-build-cycles-standalone-app.patch
     ./0005-Revert-Build-Use-CMAKE_CURRENT_SOURCE_DIR-for-findin.patch
-    ./0006-Fix-compilation-using-TypeFloat-and-other-TypeDescs.patch
   ];
 
   nativeBuildInputs = [
