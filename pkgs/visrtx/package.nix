@@ -30,7 +30,7 @@ stdenv.mkDerivation {
     (cmakeBool "VISRTX_PRECOMPILE_SHADERS" false)
 
     (cmakeFeature "OPTIX_FETCH_VERSION" "${versions.majorMinor nvidia-optix.version}")
-    (cmakeBool "VISRTX_ENABLE_NEURAL" true)
+    (cmakeBool "VISRTX_ENABLE_NEURAL" false)
   ];
 
   patches = [
