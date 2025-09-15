@@ -1,0 +1,81 @@
+From 334bd3a104e42210084cababfcde310a7307dff4 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 14 Sep 2025 21:14:45 -0400
+Subject: [PATCH] Fix build
+
+---
+ .../demos/animated_particles/SimulationControls.cpp         | 2 +-
+ .../demos/animated_particles/tsdDemoAnimatedParticles.cpp   | 4 ++--
+ .../interactive/demos/animated_volume/SolverControls.cpp    | 6 +++---
+ .../demos/animated_volume/tsdDemoAnimatedVolume.cpp         | 2 +-
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/tsd/apps/interactive/demos/animated_particles/SimulationControls.cpp b/tsd/apps/interactive/demos/animated_particles/SimulationControls.cpp
+index dab3fdc..78468c3 100644
+--- a/tsd/apps/interactive/demos/animated_particles/SimulationControls.cpp
++++ b/tsd/apps/interactive/demos/animated_particles/SimulationControls.cpp
+@@ -95,7 +95,7 @@ void SimulationControls::remakeDataArrays()
+   auto &scene = appCore()->tsd.scene;
+   auto resetArrayRef = [&](auto &ref) {
+     if (ref)
+-      scene.removeObject(*ref);
++      scene.removeObject(ref.data());
+     ref = {};
+   };
+ 
+diff --git a/tsd/apps/interactive/demos/animated_particles/tsdDemoAnimatedParticles.cpp b/tsd/apps/interactive/demos/animated_particles/tsdDemoAnimatedParticles.cpp
+index 13a131a..ad16c62 100644
+--- a/tsd/apps/interactive/demos/animated_particles/tsdDemoAnimatedParticles.cpp
++++ b/tsd/apps/interactive/demos/animated_particles/tsdDemoAnimatedParticles.cpp
+@@ -102,14 +102,14 @@ class Application : public TSDApplication
+     surface->setParameterObject("geometry", *particles);
+     surface->setParameterObject("material", *particleMat);
+     scene.defaultLayer()->root()->insert_first_child(
+-        tsd::core::Any(ANARI_SURFACE, surface.index()));
++        {ANARI_SURFACE, surface.index(), &scene});
+ 
+     surface = scene.createObject<tsd::core::Surface>();
+     surface->setName("bh_surface");
+     surface->setParameterObject("geometry", *blackHoles);
+     surface->setParameterObject("material", *bhMat);
+     scene.defaultLayer()->root()->insert_first_child(
+-        tsd::core::Any(ANARI_SURFACE, surface.index()));
++        {ANARI_SURFACE, surface.index(), &scene});
+ 
+     // Setup app //
+ 
+diff --git a/tsd/apps/interactive/demos/animated_volume/SolverControls.cpp b/tsd/apps/interactive/demos/animated_volume/SolverControls.cpp
+index 96f7e47..52f3d28 100644
+--- a/tsd/apps/interactive/demos/animated_volume/SolverControls.cpp
++++ b/tsd/apps/interactive/demos/animated_volume/SolverControls.cpp
+@@ -97,11 +97,11 @@ void SolverControls::remakeDataArray()
+ 
+   auto &scene = appCore()->tsd.scene;
+   if (m_dataHost)
+-    scene.removeObject(*m_dataHost);
++    scene.removeObject(m_dataHost.data());
+   if (m_dataCUDA_1)
+-    scene.removeObject(*m_dataCUDA_1);
++    scene.removeObject(m_dataCUDA_1.data());
+   if (m_dataCUDA_2)
+-    scene.removeObject(*m_dataCUDA_2);
++    scene.removeObject(m_dataCUDA_2.data());
+ 
+   m_dataHost = {};
+   m_dataCUDA_1 = {};
+diff --git a/tsd/apps/interactive/demos/animated_volume/tsdDemoAnimatedVolume.cpp b/tsd/apps/interactive/demos/animated_volume/tsdDemoAnimatedVolume.cpp
+index 0318131..4b18ff9 100644
+--- a/tsd/apps/interactive/demos/animated_volume/tsdDemoAnimatedVolume.cpp
++++ b/tsd/apps/interactive/demos/animated_volume/tsdDemoAnimatedVolume.cpp
+@@ -80,7 +80,7 @@ class Application : public TSDApplication
+     volume->setParameterObject("color", *colorArray);
+ 
+     scene.defaultLayer()->root()->insert_first_child(
+-        tsd::core::Any(ANARI_VOLUME, volume.index()));
++        {ANARI_VOLUME, volume.index(), &scene});
+ 
+     // Setup app //
+ 
+-- 
+2.50.1
+
