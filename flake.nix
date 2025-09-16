@@ -16,6 +16,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs?ref=release-25.05";
     systems.url = "github:nix-systems/default";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
@@ -24,6 +25,7 @@
     {
       self,
       nixpkgs,
+      nixpkgs-stable,
       systems,
       treefmt-nix,
     }:
@@ -49,6 +51,16 @@
       filterOutNixGLEnv =
         packages: lib.attrsets.filterAttrs (packageName: packageDesc: packageName != "nixglenv") packages;
 
+      pkgs-stable =
+        system:
+        import nixpkgs-stable {
+          inherit system;
+          config = {
+            allowUnfree = true;
+            cudaSupport = false;
+          };
+        };
+
       pkgs =
         system:
         import nixpkgs {
@@ -58,7 +70,12 @@
             cudaSupport = false;
           };
           # Make sure we first apply our local overrides
-          overlays = [ (import ./overrides.nix) ];
+          overlays = [
+            (import ./overrides.nix)
+            (_: _: {
+              inherit ((pkgs-stable system)) llvmPackages_12;
+            })
+          ];
         };
 
       packages =
