@@ -68,8 +68,9 @@ def checkrepostatus(repo):
 # Get repo and nix uri information
 nixreporoot = discover_repository(".")
 nixrepo = Repository(nixreporoot)
-nixworkdir = nixrepo.workdir
+nixworkdir = str(scriptdir.resolve().parent.resolve()) + "/"
 
+print(nixworkdir)
 if (packages := getpackages(nixworkdir)) is None:
     sys.exit(1)
 if type(packages) is not dict:

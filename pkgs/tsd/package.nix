@@ -13,7 +13,6 @@
   cudaPackages,
   glm,
   hdf5,
-  conduit,
   tbb,
   find-tbb-cmake,
   sdl3,
@@ -33,12 +32,9 @@ let
       inherit owner repo; # Those are not used by applyPatches, but are used by our update script.
       src = fetchFromGitHub {
         inherit owner repo;
-        rev = "5f243bf5a81b510e6f7866e4c6ba6bfc4c5bc868";
-        hash = "sha256-+kp/J6Q+LMHl/OZox1nWK2y3IH76ESH7ZS+z5v0HXtE=";
+        rev = "1a63d26182c7089b78cd9ecd19ea8d12a3af2dff";
+        hash = "sha256-JIlc7cNXjaF3TRXsvEihEvn2EeBpkPKqqUjqpimWqAc=";
       };
-      patches = [
-        ./0001-Fix-build.patch
-      ];
       postPatch = ''
         cp -rv ./external/fmtlib ./tsd/external/fmtlib
         cp -rv ./external/stb_image ./tsd/external/stb_image
@@ -54,10 +50,6 @@ let
     url = "https://github.com/ocornut/imgui/archive/refs/tags/v1.91.7-docking.zip";
     hash = "sha256-glnDJORdpGuZ8PQ4uBYfeOh0kmCzJmNnI9zHOnSwePQ=";
   };
-  tbb_cmake = runCommandNoCC "findtbb.cmake" { FIND_TBB = ./FindTBB.cmake; } ''
-    mkdir $out
-    cp $FIND_TBB $out/
-  '';
   imnodes-src = fetchurl {
     url = "https://github.com/Nelarius/imnodes/archive/refs/tags/v0.5.zip";
     hash = "sha256-hRWz07KXmeLX00bSWHZ9izaqpBTEeeViOCkPySivNNk=";
@@ -65,7 +57,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "v0.12.0-150-g5f243bf";
+  version = "v0.12.0-153-g1a63d26";
 
   # Main source. Hosted as part of VisRTX.
   src = tsd-src;
@@ -106,7 +98,6 @@ stdenv.mkDerivation {
   buildInputs = [
     anari-sdk
     assimp
-    conduit
     sdl3
     glm
     libGL
