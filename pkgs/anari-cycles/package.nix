@@ -36,7 +36,7 @@ stdenv.mkDerivation {
     owner = "jeffamstutz";
     repo = "anari-cycles";
     rev = "747fd9027405dfd894823982d8e65fb27559b1bf";
-    hash = "sha256-CNE7Z+zJgcPO+Av+fa5D1s4CBZeQCWg+fA9dqeHbMuU=";
+    hash = "sha256-SRO6gNVeaKGONpE8xeSHCQht7aVSFd1YAQfWhNmVqQE=";
     fetchSubmodules = true;
   };
 
@@ -126,6 +126,6 @@ stdenv.mkDerivation {
     description = "Blender Cycles, exposed through ANARI.";
     homepage = "https://github.com/jeffamstutz/anari-cycles";
     license = licenses.bsd3;
-    platforms = platforms.unix;
+    platforms = platforms.linux;
   };
 }

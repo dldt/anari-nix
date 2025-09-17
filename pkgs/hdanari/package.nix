@@ -40,6 +40,12 @@ stdenv.mkDerivation {
   # Main source
   src = hdanari-src;
 
+  patches = [
+    ./0001-hdanari-Fix-CMakeLists-and-MacOS-build.patch
+  ];
+
+  patchFlags = [ "-p3" ];
+
   nativeBuildInputs = [
     cmake
     python3

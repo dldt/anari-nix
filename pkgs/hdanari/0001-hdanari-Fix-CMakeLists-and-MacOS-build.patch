@@ -1,0 +1,35 @@
+From 5c47738ae2545e2742ee3df845f3d86e99fdd3d4 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Wed, 17 Sep 2025 09:03:53 -0400
+Subject: [PATCH] hdanari: Fix CMakeLists and MacOS build
+
+---
+ src/hdanari/CMakeLists.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/hdanari/CMakeLists.txt b/src/hdanari/CMakeLists.txt
+index fb16100..c7acb69 100644
+--- a/src/hdanari/CMakeLists.txt
++++ b/src/hdanari/CMakeLists.txt
+@@ -2,6 +2,7 @@
+ ## SPDX-License-Identifier: Apache-2.0
+ 
+ cmake_minimum_required(VERSION 3.20)
++project(hdanari C CXX)
+ 
+ set(CMAKE_INSTALL_MESSAGE LAZY)
+ 
+@@ -22,8 +23,9 @@ if(LINUX)
+   # targets. Try and find those packages as optional
+   # so they don't actually break the build if missing.
+   find_package(X11)
+-  find_package(OpenGL)
+ endif()
++# Same as above, but this is required on macOS too
++find_package(OpenGL)
+ 
+ if(GCC OR CLANG)
+   project_add_compile_options(-Wl,--no-undefined)
+-- 
+2.50.1 (Apple Git-155)
+
