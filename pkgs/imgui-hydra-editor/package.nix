@@ -1,9 +1,16 @@
 {
+  alembic,
   cmake,
+  draco,
+  embree,
   fetchFromGitHub,
+  imath,
   lib,
   libGL,
+  openimageio_2,
+  opensubdiv,
   openusd,
+  osl,
   stdenv,
   tbb,
   xorg,
@@ -29,8 +36,15 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
+    alembic
+    draco
+    embree
+    imath
     libGL
+    openimageio_2
+    opensubdiv
     openusd
+    osl
     tbb
     xorg.libX11
     xorg.libXcursor
