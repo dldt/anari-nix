@@ -126,6 +126,6 @@ stdenv.mkDerivation {
     description = "Blender Cycles, exposed through ANARI.";
     homepage = "https://github.com/jeffamstutz/anari-cycles";
     license = licenses.bsd3;
-    platforms = platforms.unix;
+    platforms = platforms.linux;
   };
 }
