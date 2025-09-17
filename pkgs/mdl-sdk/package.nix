@@ -3,7 +3,7 @@
   fetchFromGitHub,
   cmake,
   stdenv,
-  llvmPackages,
+  llvmPackages_12,
   python3,
   boost,
   openimageio,
@@ -36,8 +36,8 @@ stdenv.mkDerivation {
 
   buildInputs = [
     boost
-    llvmPackages.libllvm
-    llvmPackages.libclang
+    llvmPackages_12.libllvm
+    llvmPackages_12.libclang
     openimageio
     openexr
     python3
