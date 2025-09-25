@@ -18,8 +18,8 @@ let
     owner = "ingowald";
     repo = "barney";
     branchName = "devel";
-    rev = "64e25d38cd0ff6f396a3e8dbc901d641b79e77c5";
-    hash = "sha256-gtWRmXYr1v6E+8VjWfWRqv5+LA4JETYQWBXqDeGK0Y4=";
+    rev = "53609cb77b5d56f10076b47790d692f8bce005d6";
+    hash = "sha256-66BWWWim+4Mz5kpSO9pYfiovA/Qrt7wHADf6P4wNVYM=";
     fetchSubmodules = true;
   };
 in
@@ -27,7 +27,7 @@ stdenv.mkDerivation {
   inherit src;
 
   pname = "anari-barney";
-  version = "pynari-1.3.0-26-g64e25d3";
+  version = "pynari-1.3.0-35-g53609cb";
 
   postPatch = ''
     echo Patching CMake files...
