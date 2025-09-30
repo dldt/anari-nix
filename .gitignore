@@ -1,2 +1,4 @@
 /.direnv/
-/result
+/result/
+/result-*/
+/.vscode/settings.json
