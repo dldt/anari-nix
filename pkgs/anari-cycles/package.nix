@@ -15,7 +15,7 @@
   libtiff,
   libGL,
   python3,
-  openimageio,
+  openimageio_2,
   openvdb,
   openexr,
   openjpeg,
@@ -62,7 +62,7 @@ stdenv.mkDerivation {
     libpng
     libtiff
     openexr
-    openimageio
+    openimageio_2
     openjpeg
     openvdb
     osl
@@ -126,6 +126,6 @@ stdenv.mkDerivation {
     description = "Blender Cycles, exposed through ANARI.";
     homepage = "https://github.com/jeffamstutz/anari-cycles";
     license = licenses.bsd3;
-    platforms = platforms.linux;
+    platforms = platforms.unix;
   };
 }
