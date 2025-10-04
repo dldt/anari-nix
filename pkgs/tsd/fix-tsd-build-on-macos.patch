@@ -1,0 +1,16 @@
+diff --git a/src/tsd/core/scene/Animation.cpp b/src/tsd/core/scene/Animation.cpp
+index e48ff8670a..091a224143 100644
+--- a/src/tsd/core/scene/Animation.cpp
++++ b/src/tsd/core/scene/Animation.cpp
+@@ -7,6 +7,11 @@
+ // std
+ #include <algorithm>
+ 
++namespace anari {
++static_assert(sizeof(std::size_t) == 8, "ANARI_UINT64 must be 64 bits");
++ANARI_TYPEFOR_SPECIALIZATION(std::size_t, ANARI_UINT64);
++}
++
+ namespace tsd::core {
+ 
+ Animation::Animation(Scene *s, const char *name) : m_scene(s), m_name(name) {}

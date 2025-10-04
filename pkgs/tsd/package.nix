@@ -62,6 +62,10 @@ stdenv.mkDerivation {
   # Main source. Hosted as part of VisRTX.
   src = tsd-src;
 
+  patches = lib.optionals stdenv.isDarwin [
+    ./fix-tsd-build-on-macos.patch
+  ];
+
   postUnpack = ''
     mkdir -p "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/"
     cp "${anari_viewer_imgui_sdl}" "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/v1.91.7-docking.zip"
