@@ -25,8 +25,6 @@ stdenv.mkDerivation {
     fetchSubmodules = true;
   };
 
-  patches = ./cuda-build-fix.patch;
-
   nativeBuildInputs = [
     cmake
     python3
