@@ -1,0 +1,17 @@
+diff --git a/devices/rtx/mdl/MaterialRegistry.cpp b/devices/rtx/mdl/MaterialRegistry.cpp
+index d39b05677f..da31242362 100644
+--- a/devices/rtx/mdl/MaterialRegistry.cpp
++++ b/devices/rtx/mdl/MaterialRegistry.cpp
+@@ -232,10 +232,12 @@
+       textureDesc.colorSpace = libmdl::ColorSpace::sRGB;
+       break;
+     }
++#if MI_NEURAYLIB_API_VERSION < 57
+     case mi::neuraylib::ITarget_code::GM_FORCE_32_BIT: {
+       assert(false);
+       break;
+     }
++#endif
+     }
+ 
+     textureDescs.push_back(textureDesc);

@@ -35,6 +35,7 @@ stdenv.mkDerivation {
 
   patches = [
     ./disable-optix-headers-fetch.patch
+    ./fix-build-with-mdl-sdk-2025.patch
   ];
 
   postFixup = ''
