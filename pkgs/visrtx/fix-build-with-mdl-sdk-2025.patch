@@ -1,7 +1,7 @@
-diff --git a/devices/rtx/mdl/MaterialRegistry.cpp b/devices/rtx/mdl/MaterialRegistry.cpp
+diff --git a/devices/rtx/src/mdl/MaterialRegistry.cpp b/devices/rtx/src/mdl/MaterialRegistry.cpp
 index d39b05677f..da31242362 100644
---- a/devices/rtx/mdl/MaterialRegistry.cpp
-+++ b/devices/rtx/mdl/MaterialRegistry.cpp
+--- a/devices/rtx/src/mdl/MaterialRegistry.cpp
++++ b/devices/rtx/src/mdl/MaterialRegistry.cpp
 @@ -232,10 +232,12 @@
        textureDesc.colorSpace = libmdl::ColorSpace::sRGB;
        break;
