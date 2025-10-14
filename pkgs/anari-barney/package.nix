@@ -12,14 +12,15 @@
   python3,
   libGL,
   tbb,
+  glfw,
 }:
 let
   src = fetchFromGitHub {
     owner = "ingowald";
     repo = "barney";
     branchName = "devel";
-    rev = "6431f04d077b58b73e26636e628d923c049b0c81";
-    hash = "sha256-1UqlT+BZ54BEYKykuPbqLuw/R+WWweokJSv09P21L3Q=";
+    rev = "b5f01c59ce45939e492103b9687124dc6a00fa75";
+    hash = "sha256-Bono2O6LztyLC4iVZildudm6l/dq4PdusTmlaZLWZGk=";
     fetchSubmodules = true;
   };
 in
@@ -27,7 +28,7 @@ stdenv.mkDerivation {
   inherit src;
 
   pname = "anari-barney";
-  version = "pynari-1.3.0-59-g6431f04";
+  version = "pynari-1.3.0-65-gb5f01c5";
 
   postPatch = ''
     echo Patching CMake files...
@@ -64,6 +65,7 @@ stdenv.mkDerivation {
 
     openimagedenoise
     libGL
+    glfw
 
     tbb
   ];

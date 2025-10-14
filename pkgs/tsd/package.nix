@@ -20,7 +20,6 @@
   xorg,
   applyPatches,
   vtk,
-  runCommandNoCC,
 }:
 let
   visrtx-src =
@@ -32,15 +31,15 @@ let
       inherit owner repo; # Those are not used by applyPatches, but are used by our update script.
       src = fetchFromGitHub {
         inherit owner repo;
-        rev = "714c4ecf39d47a5d26cb03e452b0b8be683fdba4";
-        hash = "sha256-kgSR1VB6OLb/Fl89wKcvbSKyQbII+gszBGMgmCUCr3M=";
+        rev = "6f01a0356e79454b4d42cb4cea74bb0cf423f39f";
+        hash = "sha256-Rf6ZF61fRMerQAwKE0cltXrsaSKSTmtQcFMXLP6+GNk=";
       };
       postPatch = ''
-        cp -rv ./external/fmtlib ./tsd/external/fmtlib
-        cp -rv ./external/stb_image ./tsd/external/stb_image
+        cp -rv ./devices/rtx/external/fmtlib ./tsd/external/fmtlib
+        cp -rv ./devices/rtx/external/stb_image ./tsd/external/stb_image
         substituteInPlace ./tsd/external/CMakeLists.txt \
-          --replace-fail "../../external/fmtlib" "fmtlib" \
-          --replace-fail "../../external/stb_image" "stb_image"
+          --replace-fail "../../devices/rtx/external/fmtlib" "fmtlib" \
+          --replace-fail "../../devices/rtx/external/stb_image" "stb_image"
       '';
     };
   tsd-src = visrtx-src // {
@@ -57,7 +56,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "v0.12.0-215-g714c4ec";
+  version = "v0.12.0-218-g6f01a03";
 
   # Main source. Hosted as part of VisRTX.
   src = tsd-src;
