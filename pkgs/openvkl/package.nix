@@ -31,6 +31,7 @@ stdenv.mkDerivation {
 
   cmakeFlags = with lib; [
     (cmakeBool "BUILD_EXAMPLES" false)
+    (cmakeFeature "CMAKE_POLICY_VERSION_MINIMUM" "3.5")
   ];
 
   buildInputs = [

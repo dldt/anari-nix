@@ -4,7 +4,6 @@
   lib,
   stdenv,
   tbb,
-  find-tbb-cmake,
 }:
 let
   version = "v1.14.2";

@@ -7,7 +7,7 @@
   imath,
   lib,
   libGL,
-  openimageio_2,
+  openimageio,
   opensubdiv,
   openusd,
   osl,
@@ -41,7 +41,7 @@ stdenv.mkDerivation {
     embree
     imath
     libGL
-    openimageio_2
+    openimageio
     opensubdiv
     openusd
     osl

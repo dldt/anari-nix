@@ -10,7 +10,6 @@
   python3,
   visionaray,
   tbb,
-  find-tbb-cmake,
 }:
 stdenv.mkDerivation {
   pname = "anari-visionaray";
@@ -37,7 +36,6 @@ stdenv.mkDerivation {
     anari-sdk
     visionaray
     tbb
-    find-tbb-cmake
   ]
   ++ lib.optionals cudaSupport [
     # CUDA and OptiX
@@ -48,7 +46,6 @@ stdenv.mkDerivation {
   cmakeFlags = with lib; [
     (cmakeBool "ANARI_VISIONARAY_ENABLE_CUDA" cudaSupport)
     (cmakeBool "ANARI_VISIONARAY_ENABLE_NANOVDB" true)
-    (cmakeFeature "CMAKE_MODULE_PATH" "${find-tbb-cmake}/lib/cmake")
   ];
 
   meta = with lib; {

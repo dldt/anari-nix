@@ -15,7 +15,7 @@
   libtiff,
   libGL,
   python3,
-  openimageio_2,
+  openimageio,
   openvdb,
   openexr,
   openjpeg,
@@ -62,7 +62,7 @@ stdenv.mkDerivation {
     libpng
     libtiff
     openexr
-    openimageio_2
+    openimageio
     openjpeg
     openvdb
     osl

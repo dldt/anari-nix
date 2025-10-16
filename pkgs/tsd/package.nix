@@ -14,7 +14,6 @@
   glm,
   hdf5,
   tbb,
-  find-tbb-cmake,
   sdl3,
   openusd,
   xorg,
@@ -80,7 +79,6 @@ stdenv.mkDerivation {
     (lib.cmakeBool "TSD_USE_SDL3" true)
     (lib.cmakeBool "TSD_USE_USD" true)
     (lib.cmakeBool "TSD_USE_VTK" true)
-    (lib.cmakeFeature "CMAKE_MODULE_PATH" "${find-tbb-cmake}/lib/cmake")
   ];
 
   installPhase = ''
@@ -107,7 +105,6 @@ stdenv.mkDerivation {
     hdf5
     openusd
     tbb
-    find-tbb-cmake
     vtk
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
