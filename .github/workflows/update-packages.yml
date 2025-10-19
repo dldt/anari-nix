@@ -31,10 +31,10 @@ jobs:
           labels: "packages-version"
           delete-branch: true
           sign-commits: true
-          title: "Update packages to latest version"
-          body: "This PR updates packages to latest version."
-          branch: "update-packages"
-          commit-message: "Update packages to latest version"
+          title: "Update `${{ github.ref_name }}` packages to latest version"
+          body: "This PR updates `${{ github.ref_name }}` packages to latest version."
+          branch: "update-packages-${{ github.ref_name }}"
+          commit-message: "Update `${{ github.ref_name }}` packages to latest version"
       - name: Enable Pull Request Automerge
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |

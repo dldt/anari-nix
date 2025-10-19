@@ -30,10 +30,10 @@ jobs:
           labels: "dependencies"
           delete-branch: true
           sign-commits: true
-          title: "Update flake.lock"
-          body: "This PR updates the flake.lock file."
-          branch: "update-flake-lock"
-          commit-message: "Update flake.lock"
+          title: "Update `${{ github.ref_name }}` flake.lock"
+          body: "This PR updates `${{ github.ref_name }}` flake.lock file."
+          branch: "update-flake-lock-${{ github.ref_name }}"
+          commit-message: "Update `${{ github.ref_name }}` flake.lock"
       - name: Enable Pull Request Automerge
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
