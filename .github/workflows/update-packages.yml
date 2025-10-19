@@ -27,7 +27,7 @@ jobs:
           branch-token: ${{ steps.generate-token.outputs.token }}
           token: ${{ secrets.DLDT_BOT_PAT }}
           push-to-fork: dldt-bot/anari-nix
-          base: "main"
+          base: ${{ github.ref_name }}
           labels: "packages-version"
           delete-branch: true
           sign-commits: true
