@@ -26,7 +26,7 @@ jobs:
           token: ${{ secrets.DLDT_BOT_PAT }}
           author: "dldt bot <203830002+dldt-bot@users.noreply.github.com>"
           push-to-fork: dldt-bot/anari-nix
-          base: "main"
+          base: ${{ github.ref_name }}
           labels: "dependencies"
           delete-branch: true
           sign-commits: true
