@@ -30,8 +30,8 @@ let
       inherit owner repo; # Those are not used by applyPatches, but are used by our update script.
       src = fetchFromGitHub {
         inherit owner repo;
-        rev = "6f01a0356e79454b4d42cb4cea74bb0cf423f39f";
-        hash = "sha256-Rf6ZF61fRMerQAwKE0cltXrsaSKSTmtQcFMXLP6+GNk=";
+        rev = "4656a254b674839a13b0ae58ab95d243d9237338";
+        hash = "sha256-WNQgKndiUeGn1i4lbh38t2r9YwtXLXH7zFgtt9sUczQ=";
       };
       postPatch = ''
         cp -rv ./devices/rtx/external/fmtlib ./tsd/external/fmtlib
@@ -55,7 +55,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "v0.12.0-218-g6f01a03";
+  version = "v0.12.0-236-g4656a25";
 
   # Main source. Hosted as part of VisRTX.
   src = tsd-src;
@@ -85,7 +85,7 @@ stdenv.mkDerivation {
     mkdir -p "''${out}/bin"
     cp ./tsdViewer "''${out}/bin"
     cp ./tsdRender "''${out}/bin"
-    cp ./printTSD "''${out}/bin/tsdPrint"
+    cp ./tsdPrint "''${out}/bin"
   '';
 
   nativeBuildInputs = [
