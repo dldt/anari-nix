@@ -16,7 +16,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs?ref=nixpkgs-unstable";
-    nixpkgs-2505.url = "github:NixOS/nixpkgs?ref=release-25.05";
     systems.url = "github:nix-systems/default";
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -28,7 +27,6 @@
     {
       self,
       nixpkgs,
-      nixpkgs-2505,
       systems,
       treefmt-nix,
     }:
@@ -56,15 +54,6 @@
 
       pkgs =
         system:
-        let
-          pkgs-2505 = import nixpkgs-2505 {
-            inherit system;
-            config = {
-              allowUnfree = true;
-              cudaSupport = false;
-            };
-          };
-        in
         import nixpkgs {
           inherit system;
           config = {
@@ -73,7 +62,6 @@
           };
           # Make sure we first apply our local overrides
           overlays = [
-            (_: _: { inherit (pkgs-2505) llvmPackages_12; })
             (import ./overrides.nix)
           ];
         };
@@ -94,15 +82,6 @@
       # Same, enabling CUDA support
       pkgsCuda =
         system:
-        let
-          pkgs-2505 = import nixpkgs-2505 {
-            inherit system;
-            config = {
-              allowUnfree = true;
-              cudaSupport = false;
-            };
-          };
-        in
         import nixpkgs {
           inherit system;
           config = {
@@ -111,7 +90,6 @@
           };
           # Make sure we first apply our local overrides
           overlays = [
-            (_: _: { inherit (pkgs-2505) llvmPackages_12; })
             (import ./overrides.nix)
           ];
         };

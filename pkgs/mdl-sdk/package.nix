@@ -3,14 +3,36 @@
   fetchFromGitHub,
   cmake,
   stdenv,
-  llvmPackages_12,
   python3,
   boost,
   openimageio,
   openexr,
+  targetPackages,
+  recurseIntoAttrs,
+  windows,
+  netbsd,
+  pkgs,
 }:
 let
   version = "2025";
+
+  # Some LLVM 12 rip off from nixpkgs 25.05
+  # These are used when buiding compiler-rt / libgcc, prior to building libc.
+  preLibcCrossHeaders =
+    let
+      inherit (stdenv.targetPlatform) libc;
+    in
+    if stdenv.targetPlatform.isMinGW then
+      targetPackages.windows.mingw_w64_headers or windows.mingw_w64_headers
+    else if libc == "nblibc" then
+      targetPackages.netbsd.headers or netbsd.headers
+    else
+      null;
+  pkgsLlvmOverlay = pkgs.appendOverlays [ (self: super: { inherit llvmPackages_12; }) ];
+  llvmPackagesSet = recurseIntoAttrs (
+    pkgsLlvmOverlay.callPackages ./llvm { inherit preLibcCrossHeaders; }
+  );
+  llvmPackages_12 = llvmPackagesSet."12";
 in
 stdenv.mkDerivation {
   inherit version;
