@@ -24,14 +24,14 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-sdk";
-  version = "v0.14.1-21-g07c87de";
+  version = "v0.14.1-23-g4598cac";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "07c87dec0d68677a1159ef26631aee8236c20e7a";
-    hash = "sha256-0khXUcbDoPHUInt441wxJQmy+YZ+zqzH3BwmhnEBPTo=";
+    rev = "4598cac4058011b3f92ec7cc5d0fb229a5bfc00b";
+    hash = "sha256-n3egrExfKRKKlFKp2DtoJJT0vP/1t3iouwSk1XOPeTA=";
   };
 
   postUnpack = ''
