@@ -25,8 +25,8 @@ let
       inherit owner repo;
       src = fetchFromGitHub {
         inherit owner repo;
-        rev = "4598cac4058011b3f92ec7cc5d0fb229a5bfc00b";
-        hash = "sha256-n3egrExfKRKKlFKp2DtoJJT0vP/1t3iouwSk1XOPeTA=";
+        rev = "b956cf362e3d98e7223ae02651622a0d9394b0cf";
+        hash = "sha256-yrdnWiQ0wSPP5VkNU7FAayP53sTwO497QonMvJJKeP4=";
       };
     };
   hdanari-src = anari-sdk-src // {
@@ -35,7 +35,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "hdanari";
-  version = "v0.14.1-23-g4598cac";
+  version = "v0.14.1-24-gb956cf3";
 
   # Main source
   src = hdanari-src;
