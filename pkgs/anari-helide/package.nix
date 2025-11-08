@@ -12,8 +12,8 @@ let
   anari-sdk-src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "b956cf362e3d98e7223ae02651622a0d9394b0cf";
-    hash = "sha256-yrdnWiQ0wSPP5VkNU7FAayP53sTwO497QonMvJJKeP4=";
+    rev = "323d6f48880fac9c9e70b35aca620dd5767862cc";
+    hash = "sha256-N+dRLbaRz2lbWKjsSzVdopV+wDMGy8Ku3sl5s3tHZ0k=";
   };
   embree_for_helide-src = fetchurl {
     url = "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip";
@@ -22,7 +22,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-helide";
-  version = "v0.14.1-24-gb956cf3";
+  version = "v0.14.1-32-g323d6f4";
 
   # Main source
   src = anari-sdk-src // {
