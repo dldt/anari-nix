@@ -4,4 +4,7 @@ final: prev: {
       "-DEMBREE_ISPC_SUPPORT=ON"
     ];
   });
+
+  # Workaround ucx being broken with cuda
+  ucx = prev.ucx.override { enableCuda = false; };
 }

@@ -16,11 +16,10 @@
 }:
 let
   src = fetchFromGitHub {
-    owner = "ingowald";
+    owner = "NVIDIA";
     repo = "barney";
-    branchName = "devel";
-    rev = "c3b99c27f74f4c8f122fd00db0535c3cc8f23211";
-    hash = "sha256-yPeO+ga++LGfHOzZ/QYTHLGRyCyjrcfs1PdbwHyyrCQ=";
+    rev = "e61e3a51144dbd98a8278c1a92e104e78f9c7175";
+    hash = "sha256-EJfUnXzCPccye/6AuZekBdD3eyiVsbdOey8AGhAHMkE=";
     fetchSubmodules = true;
   };
 in
