@@ -2,7 +2,6 @@
   boost,
   c-blosc,
   cmake,
-  fetchFromGitHub,
   jemalloc,
   lib,
   openvdb,
@@ -14,18 +13,8 @@
   libGLU,
   glfw,
 }:
-let
-  # Main source.
-  version = "v12.1.1";
-  src = fetchFromGitHub {
-    owner = "AcademySoftwareFoundation";
-    repo = "openvdb";
-    rev = version;
-    hash = "sha256-FYXySDWceby/oLdNDMqzrR1sR5OF0T5u+j2qJH5cBMQ=";
-  };
-in
 stdenv.mkDerivation {
-  inherit src version;
+  inherit (openvdb) src version;
 
   pname = "openvdb-tools";
 

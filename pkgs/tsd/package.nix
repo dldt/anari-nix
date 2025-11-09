@@ -31,8 +31,8 @@ let
       inherit owner repo; # Those are not used by applyPatches, but are used by our update script.
       src = fetchFromGitHub {
         inherit owner repo;
-        rev = "39da6c3f7574b0c5bb94c1fe006e9b4d678f3262";
-        hash = "sha256-ewYXIuXKz1tGHuvTPYwneCPCy/nm1DpDVKOhEorD94A=";
+        rev = "1faeab38f5b0bc592df8bfabdd0fcbd7eb70c75e";
+        hash = "sha256-dYLFH2QBOOUNtRFPL+WCKy1wWhLN1rHY89Pi5T+e+yg=";
       };
       postPatch = ''
         cp -rv ./devices/rtx/external/fmtlib ./tsd/external/fmtlib
@@ -56,7 +56,7 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "v0.12.0-278-g39da6c3";
+  version = "v0.12.0-279-g1faeab3";
 
   # Main source. Hosted as part of VisRTX.
   src = tsd-src;

@@ -5,7 +5,6 @@
   cudaSupport ? config.cudaSupport,
   c-blosc,
   cmake,
-  fetchFromGitHub,
   jemalloc,
   lib,
   openvdb,
@@ -13,23 +12,13 @@
   tbb,
   zlib,
 }:
-let
-  # Main source.
-  version = "v12.1.1";
-  src = fetchFromGitHub {
-    owner = "AcademySoftwareFoundation";
-    repo = "openvdb";
-    rev = version;
-    hash = "sha256-FYXySDWceby/oLdNDMqzrR1sR5OF0T5u+j2qJH5cBMQ=";
-  };
-in
 stdenv.mkDerivation {
-  inherit src version;
+  inherit (openvdb) src version;
 
   pname = "nanovdb-tools";
 
   patches = [
-    ./0001-Find-CCCL-from-nix-instead-getting-it-from-github.patch
+    #    ./0001-Find-CCCL-from-nix-instead-getting-it-from-github.patch
   ];
 
   nativeBuildInputs = [
