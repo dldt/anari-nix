@@ -8,7 +8,6 @@
   openimageio,
   openexr,
   targetPackages,
-  recurseIntoAttrs,
   windows,
   netbsd,
   pkgs,
@@ -29,7 +28,7 @@ let
     else
       null;
   pkgsLlvmOverlay = pkgs.appendOverlays [ (self: super: { inherit llvmPackages_12; }) ];
-  llvmPackagesSet = recurseIntoAttrs (
+  llvmPackagesSet = lib.recurseIntoAttrs (
     pkgsLlvmOverlay.callPackages ./llvm { inherit preLibcCrossHeaders; }
   );
   llvmPackages_12 = llvmPackagesSet."12";

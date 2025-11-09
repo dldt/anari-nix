@@ -2,7 +2,6 @@
   cmake,
   fetchFromGitHub,
   hdf5,
-  hostPlatform,
   lib,
   libGL,
   libGLU,
@@ -59,7 +58,7 @@ stdenv.mkDerivation {
     tcl
     tk
   ]
-  ++ lib.optionals hostPlatform.isLinux [
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
     libGL
     libGLU
     libSM
@@ -73,7 +72,7 @@ stdenv.mkDerivation {
       (cmakeFeature "CMAKE_C_FLAGS" "-I${src_tk_private}")
       (cmakeFeature "CMAKE_CXX_FLAGS" "-I${src_tk_private}")
     ]
-    ++ lib.optionals hostPlatform.isLinux (
+    ++ lib.optionals stdenv.hostPlatform.isLinux (
       with lib;
       [
         (cmakeBool "CGNS_BUILD_CGNSTOOLS" true)

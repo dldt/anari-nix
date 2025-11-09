@@ -49,6 +49,9 @@
           builtins.elem system packagePlatforms
         ) packages;
 
+      filterOutBroken =
+        packages: lib.attrsets.filterAttrs (packageName: packageDesc: !packageDesc.meta.broken) packages;
+
       filterOutNixGLEnv =
         packages: lib.attrsets.filterAttrs (packageName: packageDesc: packageName != "nixglenv") packages;
 
@@ -69,12 +72,14 @@
       packages =
         system:
         filterOutNixGLEnv (
-          filterSystem system (
-            filterDerivations (
-              lib.packagesFromDirectoryRecursive {
-                inherit (pkgs system) callPackage newScope;
-                directory = ./pkgs;
-              }
+          filterOutBroken (
+            filterSystem system (
+              filterDerivations (
+                lib.packagesFromDirectoryRecursive {
+                  inherit (pkgs system) callPackage newScope;
+                  directory = ./pkgs;
+                }
+              )
             )
           )
         );
@@ -97,11 +102,13 @@
       packagesCuda =
         system:
         filterOutNixGLEnv (
-          filterDerivations (
-            lib.packagesFromDirectoryRecursive {
-              inherit (pkgsCuda system) callPackage newScope;
-              directory = ./pkgs;
-            }
+          filterOutBroken (
+            filterDerivations (
+              lib.packagesFromDirectoryRecursive {
+                inherit (pkgsCuda system) callPackage newScope;
+                directory = ./pkgs;
+              }
+            )
           )
         );
 
@@ -113,6 +120,8 @@
     in
     {
       packages = forAllDefaultSystems packages;
+
+      packagesCuda = forAllDefaultSystems packagesCuda;
 
       overlays.default = import ./overlay.nix;
 

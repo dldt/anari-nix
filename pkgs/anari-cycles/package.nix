@@ -107,6 +107,9 @@ stdenv.mkDerivation {
         (cmakeBool "WITH_CYCLES_DEVICE_CUDA" true)
         (cmakeBool "WITH_CUDA_DYNLOAD" false)
         (cmakeBool "WITH_CYCLES_CUDA_BINARIES" true)
+
+        # New CUDA setup in Nixpkgs prevents FindCUDA from working correctly
+        (cmakeFeature "CMAKE_PREFIX_PATH" (cudaPackages.cuda_cudart + "/lib/stubs"))
       ]
     )
     ++ lib.optionals optixSupport (
