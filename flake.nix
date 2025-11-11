@@ -37,12 +37,14 @@
 
       filterDerivations =
         packages:
-        lib.attrsets.filterAttrs (packageName: packageDesc: lib.attrsets.isDerivation packageDesc) packages;
+        lib.attrsets.filterAttrs (
+          _packageName: packageDesc: lib.attrsets.isDerivation packageDesc
+        ) packages;
 
       filterSystem =
         system: packages:
         lib.attrsets.filterAttrs (
-          packageName: packageDesc:
+          _packageName: packageDesc:
           let
             packagePlatforms = packageDesc.meta.platforms or [ system ];
           in
@@ -50,10 +52,7 @@
         ) packages;
 
       filterOutBroken =
-        packages: lib.attrsets.filterAttrs (packageName: packageDesc: !packageDesc.meta.broken) packages;
-
-      filterOutNixGLEnv =
-        packages: lib.attrsets.filterAttrs (packageName: packageDesc: packageName != "nixglenv") packages;
+        packages: lib.attrsets.filterAttrs (_packageName: packageDesc: !packageDesc.meta.broken) packages;
 
       pkgs =
         system:
@@ -71,15 +70,13 @@
 
       packages =
         system:
-        filterOutNixGLEnv (
-          filterOutBroken (
-            filterSystem system (
-              filterDerivations (
-                lib.packagesFromDirectoryRecursive {
-                  inherit (pkgs system) callPackage newScope;
-                  directory = ./pkgs;
-                }
-              )
+        filterOutBroken (
+          filterSystem system (
+            filterDerivations (
+              lib.packagesFromDirectoryRecursive {
+                inherit (pkgs system) callPackage newScope;
+                directory = ./pkgs;
+              }
             )
           )
         );
@@ -101,14 +98,12 @@
 
       packagesCuda =
         system:
-        filterOutNixGLEnv (
-          filterOutBroken (
-            filterDerivations (
-              lib.packagesFromDirectoryRecursive {
-                inherit (pkgsCuda system) callPackage newScope;
-                directory = ./pkgs;
-              }
-            )
+        filterOutBroken (
+          filterDerivations (
+            lib.packagesFromDirectoryRecursive {
+              inherit (pkgsCuda system) callPackage newScope;
+              directory = ./pkgs;
+            }
           )
         );
 

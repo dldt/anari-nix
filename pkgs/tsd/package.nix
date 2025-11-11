@@ -17,33 +17,10 @@
   sdl3,
   openusd,
   xorg,
-  applyPatches,
   vtk,
+  nix-update-script,
 }:
 let
-  visrtx-src =
-    let
-      owner = "NVIDIA";
-      repo = "VisRTX";
-    in
-    applyPatches {
-      inherit owner repo; # Those are not used by applyPatches, but are used by our update script.
-      src = fetchFromGitHub {
-        inherit owner repo;
-        rev = "39da6c3f7574b0c5bb94c1fe006e9b4d678f3262";
-        hash = "sha256-ewYXIuXKz1tGHuvTPYwneCPCy/nm1DpDVKOhEorD94A=";
-      };
-      postPatch = ''
-        cp -rv ./devices/rtx/external/fmtlib ./tsd/external/fmtlib
-        cp -rv ./devices/rtx/external/stb_image ./tsd/external/stb_image
-        substituteInPlace ./tsd/external/CMakeLists.txt \
-          --replace-fail "../../devices/rtx/external/fmtlib" "fmtlib" \
-          --replace-fail "../../devices/rtx/external/stb_image" "stb_image"
-      '';
-    };
-  tsd-src = visrtx-src // {
-    outPath = visrtx-src + "/tsd";
-  };
   anari_viewer_imgui_sdl = fetchurl {
     url = "https://github.com/ocornut/imgui/archive/refs/tags/v1.91.7-docking.zip";
     hash = "sha256-glnDJORdpGuZ8PQ4uBYfeOh0kmCzJmNnI9zHOnSwePQ=";
@@ -55,14 +32,31 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "v0.12.0-278-g39da6c3";
+  version = "0.12.0-unstable-2025-11-14";
 
   # Main source. Hosted as part of VisRTX.
-  src = tsd-src;
+  src = fetchFromGitHub {
+    owner = "NVIDIA";
+    repo = "VisRTX";
+
+    rev = "68766e23b235fb612b15fe6794891e4f24ae6d8c";
+    hash = "sha256-er9jx1jahL0auDx45rmV+JKXfYJk7ZZl2W4X4s8qd3s=";
+  };
 
   patches = lib.optionals stdenv.isDarwin [
     ./fix-tsd-build-on-macos.patch
   ];
+  postPatch = ''
+    echo $PWD
+    ls
+    cp -rv ../devices/rtx/external/fmtlib ./external/fmtlib
+    cp -rv ../devices/rtx/external/stb_image ./external/stb_image
+    substituteInPlace ./external/CMakeLists.txt \
+      --replace-fail "../../devices/rtx/external/fmtlib" "fmtlib" \
+      --replace-fail "../../devices/rtx/external/stb_image" "stb_image"
+  '';
+
+  sourceRoot = "./source/tsd";
 
   postUnpack = ''
     mkdir -p "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/"
@@ -115,6 +109,13 @@ stdenv.mkDerivation {
     cudaPackages.cuda_cudart
     cudaPackages.cuda_cccl
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--version=branch"
+      "--flake"
+    ];
+  };
 
   meta = with lib; {
     description = "This project started as a medium to learn 3D scene graph library design in C++ as well as be an ongoing study on how a scene graph and ANARI can be paired.";

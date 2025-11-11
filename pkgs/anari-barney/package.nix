@@ -1,33 +1,31 @@
 {
-  autoPatchelfHook,
   anari-sdk,
+  autoPatchelfHook,
   barney,
-  lib,
-  stdenv,
-  fetchFromGitHub,
   cmake,
   cudaPackages,
+  fetchFromGitHub,
+  glfw,
+  lib,
+  libGL,
+  nix-update-script,
   nvidia-optix,
   openimagedenoise,
   python3,
-  libGL,
+  stdenv,
   tbb,
-  glfw,
 }:
-let
+stdenv.mkDerivation {
+  pname = "anari-barney";
+  version = "0-unstable-2025-11-13";
+
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "barney";
-    rev = "e61e3a51144dbd98a8278c1a92e104e78f9c7175";
-    hash = "sha256-EJfUnXzCPccye/6AuZekBdD3eyiVsbdOey8AGhAHMkE=";
+    rev = "983d99b65a5f02f6f22454ebfb11e332e6b90651";
+    hash = "sha256-2EzMruNyJf469kEwWlizDLM/+Yi4Ob6GDhT+SJaJTLE=";
     fetchSubmodules = true;
   };
-in
-stdenv.mkDerivation {
-  inherit src;
-
-  pname = "anari-barney";
-  version = "pynari-1.3.0-73-gc3b99c2";
 
   postPatch = ''
     echo Patching CMake files...
@@ -74,6 +72,12 @@ stdenv.mkDerivation {
     rm  -f "''${out}/lib/libbarney.so"
   '';
 
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
   meta = with lib; {
     description = "VisRTX is an experimental, scientific visualization-focused implementation of the Khronos ANARI standard.";
     homepage = "https://github.com/NVIDIA/VisRTX";

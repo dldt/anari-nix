@@ -5,24 +5,21 @@
   ispc,
   lib,
   openvdb,
-  rkcommon_0_14_2,
+  rkcommon,
   stdenv,
   tbb,
 }:
-let
-  version = "v2.0.1";
+stdenv.mkDerivation {
+  pname = "openvkl";
+  version = "2.0.1";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "RenderKit";
     repo = "openvkl";
-    tag = version;
+    tag = "2.0.1";
     hash = "sha256-kwthPHGy833KY+UUxkPbnXDKb+Li32NRNt2yCA+vL1A=";
   };
-in
-stdenv.mkDerivation {
-  inherit src version;
-  pname = "openvkl";
 
   nativeBuildInputs = [
     cmake
@@ -37,7 +34,7 @@ stdenv.mkDerivation {
   buildInputs = [
     embree
     openvdb
-    rkcommon_0_14_2
+    rkcommon
     tbb
   ];
 

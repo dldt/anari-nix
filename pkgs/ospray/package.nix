@@ -7,12 +7,12 @@
   libGL,
   openimagedenoise,
   openvkl,
-  rkcommon_0_14_2,
+  rkcommon,
   stdenv,
 }:
 stdenv.mkDerivation {
   pname = "ospray";
-  version = "v3.2.0-25-g675c216";
+  version = "3.2.0";
 
   # Main source.
   src = fetchFromGitHub {
@@ -32,7 +32,7 @@ stdenv.mkDerivation {
     libGL
     openimagedenoise
     openvkl
-    rkcommon_0_14_2
+    rkcommon
   ];
 
   cmakeFlags = with lib; [

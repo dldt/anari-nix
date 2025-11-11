@@ -2,25 +2,29 @@
   lib,
   stdenv,
   fetchFromGitHub,
+  nix-update-script,
 }:
-let
+stdenv.mkDerivation {
+  pname = "nvidia-optix8";
   version = "8.1.0";
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "optix-dev";
-    tag = "v${version}";
+    tag = "v8.1.0";
     hash = "sha256-qNhN1N0hIPoihrFVzolo2047FomLtqyHFUQh5qW3O5o=";
   };
-
-in
-stdenv.mkDerivation {
-  inherit src version;
-  pname = "nvidia-optix8";
 
   installPhase = ''
     mkdir -p "$out/include"
     cp -r include/* "$out/include"
   '';
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=skip"
+    ];
+  };
 
   meta = with lib; {
     description = "An application framework for achieving optimal ray tracing performance on the GPU.";

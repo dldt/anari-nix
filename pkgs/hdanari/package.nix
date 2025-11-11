@@ -1,6 +1,5 @@
 {
   anari-sdk,
-  applyPatches,
   cmake,
   apple-sdk_11,
   fetchFromGitHub,
@@ -14,31 +13,21 @@
   mdl-sdk,
   xorg,
   tbb,
+  nix-update-script,
 }:
-let
-  anari-sdk-src =
-    let
-      owner = "KhronosGroup";
-      repo = "ANARI-SDK";
-    in
-    applyPatches {
-      inherit owner repo;
-      src = fetchFromGitHub {
-        inherit owner repo;
-        rev = "323d6f48880fac9c9e70b35aca620dd5767862cc";
-        hash = "sha256-N+dRLbaRz2lbWKjsSzVdopV+wDMGy8Ku3sl5s3tHZ0k=";
-      };
-    };
-  hdanari-src = anari-sdk-src // {
-    outPath = anari-sdk-src.outPath + "/src/hdanari";
-  };
-in
 stdenv.mkDerivation {
   pname = "hdanari";
-  version = "v0.14.1-32-g323d6f4";
+  version = "0.15.0-unstable-2025-11-12";
 
   # Main source
-  src = hdanari-src;
+  src = fetchFromGitHub {
+    owner = "KhronosGroup";
+    repo = "ANARI-SDK";
+    rev = "18e77dccb15d5b1f8b45c740985f3f8259f99f49";
+    hash = "sha256-aBrn/SQj7v3JiEPuX5263tJPoQvt4vAOQUKwmtec8Dg=";
+  };
+
+  sourceRoot = "source/src/hdanari";
 
   patches = [
     ./0001-hdanari-Fix-CMakeLists-and-MacOS-build.patch
@@ -87,6 +76,13 @@ stdenv.mkDerivation {
     prependToVar cmakeFlags "-DOPENUSD_PLUGIN_INSTALL_PREFIX=$prefix/plugin/usd"
     cmakeConfigurePhase
   '';
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "HdAnari is USD Hydra Render delegate enabling the use of ANARI devices inside USD.";

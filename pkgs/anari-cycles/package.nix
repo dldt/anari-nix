@@ -25,12 +25,13 @@
   pugixml,
   zlib,
   zstd,
+  nix-update-script,
 }:
 assert lib.assertMsg (!optixSupport || cudaSupport) "OptiX support requires CUDA support";
 stdenv.mkDerivation {
 
   pname = "anari-cycles";
-  version = "v0.0.0-48-g1db3ffa";
+  version = "0-unstable-2025-10-10";
 
   src = fetchFromGitHub {
     owner = "jeffamstutz";
@@ -124,6 +125,13 @@ stdenv.mkDerivation {
     cmake --build device --target install
     cmake --build cycles --target install
   '';
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "Blender Cycles, exposed through ANARI.";

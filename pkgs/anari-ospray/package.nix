@@ -8,11 +8,12 @@
   embree-ispc,
   ospray,
   openvkl,
-  rkcommon_0_14_2,
+  rkcommon,
+  nix-update-script,
 }:
 stdenv.mkDerivation {
   pname = "anari-ospray";
-  version = "v0.0.0-52-gf385a67";
+  version = "0-unstable-2025-07-04";
 
   # Main source.
   src = fetchFromGitHub {
@@ -36,8 +37,15 @@ stdenv.mkDerivation {
     embree-ispc
     ospray
     openvkl
-    rkcommon_0_14_2
+    rkcommon
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "Translation layer from Khronos ANARI to Intel OSPRay: ANARILibrary and ANARIDevice 'ospray'.";

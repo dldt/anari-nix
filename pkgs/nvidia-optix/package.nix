@@ -3,19 +3,16 @@
   stdenv,
   fetchFromGitHub,
 }:
-let
+stdenv.mkDerivation {
+  pname = "nvidia-optix";
   version = "9.0.0";
+
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "optix-dev";
-    rev = "v${version}";
+    rev = "v9.0.0";
     hash = "sha256-WbMKgiM1b3IZ9eguRzsJSkdZJR/SMQTda2jEqkeOwok=";
   };
-
-in
-stdenv.mkDerivation {
-  inherit src version;
-  pname = "nvidia-optix";
 
   installPhase = ''
     mkdir -p "$out/include"

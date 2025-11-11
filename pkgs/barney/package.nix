@@ -5,25 +5,23 @@
   cmake,
   cudaPackages,
   nvidia-optix,
+  nix-update-script,
   openimagedenoise,
   libGL,
   tbb,
   glfw,
 }:
-let
+stdenv.mkDerivation {
+  pname = "barney";
+  version = "0-unstable-2025-11-13";
+
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "barney";
-    rev = "e61e3a51144dbd98a8278c1a92e104e78f9c7175";
-    hash = "sha256-EJfUnXzCPccye/6AuZekBdD3eyiVsbdOey8AGhAHMkE=";
+    rev = "983d99b65a5f02f6f22454ebfb11e332e6b90651";
+    hash = "sha256-2EzMruNyJf469kEwWlizDLM/+Yi4Ob6GDhT+SJaJTLE=";
     fetchSubmodules = true;
   };
-in
-stdenv.mkDerivation {
-  inherit src;
-
-  pname = "barney";
-  version = "pynari-1.3.0-73-gc3b99c2";
 
   patchPhase = ''
     echo Patching CMake files...
@@ -65,6 +63,13 @@ stdenv.mkDerivation {
 
     tbb
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "VisRTX is an experimental, scientific visualization-focused implementation of the Khronos ANARI standard.";

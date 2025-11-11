@@ -1,4 +1,4 @@
-final: prev: {
+_final: prev: {
   python3Packages =
     prev.python3Packages
     // prev.lib.packagesFromDirectoryRecursive {

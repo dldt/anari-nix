@@ -4,6 +4,7 @@
   stdenv,
   fetchurl,
   fetchFromGitHub,
+  nix-update-script,
   cmake,
   python3,
   libGL,
@@ -20,14 +21,14 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-sdk";
-  version = "v0.14.1-32-g323d6f4";
+  version = "0.15.0-unstable-2025-11-12";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "323d6f48880fac9c9e70b35aca620dd5767862cc";
-    hash = "sha256-N+dRLbaRz2lbWKjsSzVdopV+wDMGy8Ku3sl5s3tHZ0k=";
+    rev = "18e77dccb15d5b1f8b45c740985f3f8259f99f49";
+    hash = "sha256-aBrn/SQj7v3JiEPuX5263tJPoQvt4vAOQUKwmtec8Dg=";
   };
 
   postUnpack = ''
@@ -66,6 +67,13 @@ stdenv.mkDerivation {
 
     (cmakeBool "BUILD_HELIDE_DEVICE" false)
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "ANARI-SDK is an open-standard API for creating high-performance, power-efficient, multi-frame rendering systems.";

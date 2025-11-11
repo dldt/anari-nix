@@ -5,21 +5,16 @@
   stdenv,
   tbb,
 }:
-let
-  version = "v1.14.2";
+stdenv.mkDerivation {
+  pname = "rkcommon";
+  version = "1.15.2";
 
-  # Main source.
   src = fetchFromGitHub {
     owner = "RenderKit";
     repo = "rkcommon";
-    tag = version;
+    rev = "1.15.2";
     hash = "sha256-ezUvl/zr/mLEN4lJnvZRvFbf619JpaqfvqXbEa62Ovc=";
   };
-in
-stdenv.mkDerivation {
-  inherit src version;
-
-  pname = "rkcommon0_14_2";
 
   prePatch = ''
     substituteInPlace cmake/FindTBB.cmake --replace-fail \

@@ -9,17 +9,18 @@
   mdl-sdk,
   nvidia-optix,
   python3,
+  nix-update-script,
 }:
 stdenv.mkDerivation {
   pname = "visrtx";
-  version = "v0.12.0-278-g39da6c3";
+  version = "0.12.0-unstable-2025-11-14";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "39da6c3f7574b0c5bb94c1fe006e9b4d678f3262";
-    hash = "sha256-ewYXIuXKz1tGHuvTPYwneCPCy/nm1DpDVKOhEorD94A=";
+    rev = "68766e23b235fb612b15fe6794891e4f24ae6d8c";
+    hash = "sha256-er9jx1jahL0auDx45rmV+JKXfYJk7ZZl2W4X4s8qd3s=";
   };
 
   cmakeFlags = with lib; [
@@ -64,6 +65,13 @@ stdenv.mkDerivation {
     # MDL
     mdl-sdk
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--version=branch"
+      "--flake"
+    ];
+  };
 
   meta = with lib; {
     description = "VisRTX is an experimental, scientific visualization-focused implementation of the Khronos ANARI standard.";

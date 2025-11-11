@@ -14,10 +14,11 @@
   ptex,
   stdenv,
   tbb,
+  nix-update-script,
 }:
 stdenv.mkDerivation {
   pname = "visionaray";
-  version = "v0.6.1-3-gc067e71";
+  version = "0.6.1-unstable-2025-10-24";
 
   # Main source.
   src = fetchFromGitHub {
@@ -69,6 +70,13 @@ stdenv.mkDerivation {
     (cmakeBool "VSNRAY_ENABLE_COMMON" false)
     (cmakeBool "VSNRAY_ENABLE_CUDA" cudaSupport)
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--version=branch"
+      "--flake"
+    ];
+  };
 
   meta = with lib; {
     description = "A C++ based, cross platform ray tracing library.";

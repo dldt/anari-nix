@@ -7,14 +7,9 @@
   stdenv,
   embree,
   python3,
+  nix-update-script,
 }:
 let
-  anari-sdk-src = fetchFromGitHub {
-    owner = "KhronosGroup";
-    repo = "ANARI-SDK";
-    rev = "323d6f48880fac9c9e70b35aca620dd5767862cc";
-    hash = "sha256-N+dRLbaRz2lbWKjsSzVdopV+wDMGy8Ku3sl5s3tHZ0k=";
-  };
   embree_for_helide-src = fetchurl {
     url = "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip";
     hash = "sha256-Y9ZOWHlb3fbpxWT2aJVky4WHaU4CXn7HeQdyzIIYs7k=";
@@ -22,12 +17,16 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-helide";
-  version = "v0.14.1-32-g323d6f4";
+  version = "0.15.0-unstable-2025-11-12";
 
   # Main source
-  src = anari-sdk-src // {
-    outPath = anari-sdk-src.outPath + "/src/devices/helide";
+  src = fetchFromGitHub {
+    owner = "KhronosGroup";
+    repo = "ANARI-SDK";
+    rev = "18e77dccb15d5b1f8b45c740985f3f8259f99f49";
+    hash = "sha256-aBrn/SQj7v3JiEPuX5263tJPoQvt4vAOQUKwmtec8Dg=";
   };
+  sourceRoot = "source/src/devices/helide";
 
   postUnpack = ''
     mkdir -p "''${sourceRoot}/.anari_deps/anari_helide_embree/"
@@ -43,6 +42,13 @@ stdenv.mkDerivation {
     anari-sdk
     embree
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "Helide device, embree based, for ANARI.";

@@ -2,14 +2,15 @@
   lib,
   stdenv,
   fetchFromGitHub,
+  nix-update-script,
 }:
 let
-  version = "7.7.0";
+  version = "9.0.0";
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "optix-dev";
     tag = "v${version}";
-    hash = "sha256-1sX4qgtIv/tO9+LQhTXES7Pmspk6yoiolCL/D9jvsTE=";
+    hash = "sha256-WbMKgiM1b3IZ9eguRzsJSkdZJR/SMQTda2jEqkeOwok=";
   };
 
 in
@@ -21,6 +22,13 @@ stdenv.mkDerivation {
     mkdir -p "$out/include"
     cp -r include/* "$out/include"
   '';
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=skip"
+    ];
+  };
 
   meta = with lib; {
     description = "An application framework for achieving optimal ray tracing performance on the GPU.";

@@ -10,10 +10,11 @@
   python3,
   visionaray,
   tbb,
+  nix-update-script,
 }:
 stdenv.mkDerivation {
   pname = "anari-visionaray";
-  version = "v0.0.0-701-g3199fee";
+  version = "0-unstable-2025-10-27";
 
   # Main source.
   src = fetchFromGitHub {
@@ -47,6 +48,13 @@ stdenv.mkDerivation {
     (cmakeBool "ANARI_VISIONARAY_ENABLE_CUDA" cudaSupport)
     (cmakeBool "ANARI_VISIONARAY_ENABLE_NANOVDB" true)
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "A C++ based, cross platform ray tracing library, exposed through ANARI.";

@@ -5,18 +5,16 @@
   cmake,
   nlohmann_json,
   stb,
+  nix-update-script,
 }:
-let
-  version = "v2.9.7";
-in
 stdenv.mkDerivation {
   pname = "tinygltf";
-  inherit version;
+  version = "2.9.7";
 
   src = fetchFromGitHub {
     owner = "syoyo";
     repo = "tinygltf";
-    rev = version;
+    rev = "81bd50c1062fdb956e878efa2a9234b2b9ec91ec";
     hash = "sha256-tG9hrR2rsfgS8zCBNdcplig2vyiIcNspSVKop03Zx9A=";
   };
 
@@ -31,6 +29,8 @@ stdenv.mkDerivation {
     rm $out/include/stb_image.h
     rm $out/include/stb_image_write.h
   '';
+
+  passthru.updateScript = nix-update-script { extraArgs = [ "--flake" ]; };
 
   meta = with lib; {
     description = "TinyGLTF is a header only C++11 glTF 2.0 https://github.com/KhronosGroup/glTF library.";

@@ -13,10 +13,11 @@
   xorg,
   tbb,
   imath,
+  nix-update-script,
 }:
 stdenv.mkDerivation {
   pname = "anari-usd";
-  version = "v0.10.0-13-g13bb5ef";
+  version = "0.10.0-unstable-2025-01-07";
 
   src = fetchFromGitHub {
     owner = "NVIDIA-Omniverse";
@@ -56,6 +57,13 @@ stdenv.mkDerivation {
   ++ lib.optionals stdenv.isDarwin [
     apple-sdk_11
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch"
+    ];
+  };
 
   meta = with lib; {
     description = "HdAnari is USD Hydra Render delegate enabling the use of ANARI devices inside USD.";

@@ -22,7 +22,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       anari-nix,
       systems,

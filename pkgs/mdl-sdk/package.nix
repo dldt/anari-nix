@@ -16,8 +16,6 @@
   enablePythonBindings ? true,
 }:
 let
-  version = "2025";
-
   # Some LLVM 12 rip off from nixpkgs 25.05
   # These are used when buiding compiler-rt / libgcc, prior to building libc.
   preLibcCrossHeaders =
@@ -30,14 +28,14 @@ let
       targetPackages.netbsd.headers or netbsd.headers
     else
       null;
-  pkgsLlvmOverlay = pkgs.appendOverlays [ (self: super: { inherit llvmPackages_12; }) ];
+  pkgsLlvmOverlay = pkgs.appendOverlays [ (_self: _super: { inherit llvmPackages_12; }) ];
   llvmPackagesSet = lib.recurseIntoAttrs (
     pkgsLlvmOverlay.callPackages ./llvm { inherit preLibcCrossHeaders; }
   );
   llvmPackages_12 = llvmPackagesSet."12";
 in
-stdenv.mkDerivation {
-  inherit version;
+stdenv.mkDerivation rec {
+  version = "2025";
   pname = "mdl-sdk";
 
   outputs = [ "out" ] ++ lib.optionals enablePythonBindings [ "python" ];
@@ -45,7 +43,7 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "MDL-SDK";
-    rev = version;
+    rev = "2025";
     hash = "sha256-8w/iMtBVHnLdvlGmASQOHZYsNong+SjHvhuTmxjhsoM=";
   };
 
