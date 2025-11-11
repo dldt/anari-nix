@@ -9,10 +9,6 @@
   libGL,
   pkg-config,
   apple-sdk_11,
-  tinygltf,
-  libwebp,
-  webpconfig_cmake,
-  draco,
   sdl3,
 }:
 let
@@ -39,24 +35,6 @@ stdenv.mkDerivation {
     cp "${anari_viewer_imgui_sdl}" "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/v1.91.7-docking.zip"
   '';
 
-  postInstall =
-    (
-      if stdenv.hostPlatform.isLinux then
-        ''
-          patchelf --remove-rpath anariViewer
-        ''
-      else
-        ''
-          install_name_tool \
-             -change @rpath/libanari.0.dylib ''${out}/lib/libanari.0.dylib \
-             -change @rpath/libanari_test_scenes.dylib ''${out}/lib/libanari_test_scenes.dylib ./anariViewer
-        ''
-    )
-    + ''
-      mkdir -p "''${out}/bin"
-      cp "anariViewer" "''${out}/bin/anariViewer"
-    '';
-
   nativeBuildInputs = [
     cmake
     python3
@@ -67,8 +45,6 @@ stdenv.mkDerivation {
   ];
   buildInputs = [
     sdl3
-    tinygltf
-    libwebp
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
     libGL
@@ -77,21 +53,16 @@ stdenv.mkDerivation {
     apple-sdk_11
   ];
 
-  propagatedBuildInputs = [
-    draco
-    webpconfig_cmake
-  ];
-
   cmakeFlags = with lib; [
     (cmakeBool "BUILD_CTS" false)
-    (cmakeBool "BUILD_EXAMPLES" true)
+    (cmakeBool "BUILD_EXAMPLES" false)
     (cmakeBool "BUILD_TESTING" false)
-    (cmakeBool "BUILD_VIEWER" true)
+    (cmakeBool "BUILD_VIEWER" false)
     (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
-    (cmakeBool "USE_DRACO" true)
+    (cmakeBool "USE_DRACO" false)
     (cmakeBool "USE_KTX" false)
-    (cmakeBool "USE_WEBP" true)
-    (cmakeBool "VIEWER_ENABLE_GLTF" true)
+    (cmakeBool "USE_WEBP" false)
+    (cmakeBool "VIEWER_ENABLE_GLTF" false)
 
     (cmakeBool "BUILD_HELIDE_DEVICE" false)
   ];
