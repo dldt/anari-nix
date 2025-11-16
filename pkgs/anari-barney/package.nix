@@ -18,8 +18,8 @@ let
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "barney";
-    rev = "e61e3a51144dbd98a8278c1a92e104e78f9c7175";
-    hash = "sha256-EJfUnXzCPccye/6AuZekBdD3eyiVsbdOey8AGhAHMkE=";
+    rev = "983d99b65a5f02f6f22454ebfb11e332e6b90651";
+    hash = "sha256-2EzMruNyJf469kEwWlizDLM/+Yi4Ob6GDhT+SJaJTLE=";
     fetchSubmodules = true;
   };
 in
@@ -27,7 +27,7 @@ stdenv.mkDerivation {
   inherit src;
 
   pname = "anari-barney";
-  version = "pynari-1.3.0-130-gfdfafd5";
+  version = "v0.0.0-38-g983d99b";
 
   postPatch = ''
     echo Patching CMake files...
