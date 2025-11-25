@@ -53,9 +53,6 @@ nixworkdir = str(scriptdir.resolve().parent.resolve()) + "/"
 if (packagenames := getpackagenames(nixworkdir)) is None:
     sys.exit(1)
 
-import pprint
-
-pprint.pprint(packagenames)
 for package in packagenames:
     print(f"Updating package: {package}")
     result = subprocess.run(
