@@ -12,6 +12,7 @@
   libGL,
   libGLU,
   glfw,
+  nix-update-script,
 }:
 stdenv.mkDerivation {
   inherit (openvdb) src version;
@@ -44,6 +45,13 @@ stdenv.mkDerivation {
     (cmakeBool "OPENVDB_BUILD_VDB_TOOL" true)
     (cmakeBool "OPENVDB_BUILD_VDB_VIEW" true)
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=skip"
+    ];
+  };
 
   meta = with lib; {
     description = "Open framework for voxel (NanoVDB tools)";

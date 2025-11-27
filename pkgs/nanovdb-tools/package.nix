@@ -11,6 +11,7 @@
   stdenv,
   tbb,
   zlib,
+  nix-update-script,
 }:
 stdenv.mkDerivation {
   inherit (openvdb) src version;
@@ -58,6 +59,13 @@ stdenv.mkDerivation {
         (cmakeBool "NANOVDB_USE_CUDA" true)
       ]
     );
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=skip"
+    ];
+  };
 
   meta = with lib; {
     description = "Open framework for voxel (NanoVDB tools)";
