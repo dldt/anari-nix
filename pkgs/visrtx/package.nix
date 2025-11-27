@@ -77,6 +77,6 @@ stdenv.mkDerivation {
     description = "VisRTX is an experimental, scientific visualization-focused implementation of the Khronos ANARI standard.";
     homepage = "https://github.com/NVIDIA/VisRTX";
     license = licenses.bsd3;
-    platforms = platforms.linux;
+    platforms = [ "x86_64-linux" ];
   };
 }

@@ -3,13 +3,16 @@
   stdenv,
   fetchFromGitHub,
   cmake,
+  config,
+  cudaSupport ? config.cudaSupport,
+  optixSupport ? cudaSupport && stdenv.hostPlatform.isx86_64,
+  embreeSupport ? !cudaSupport,
   cudaPackages,
   nvidia-optix,
   nix-update-script,
   openimagedenoise,
-  libGL,
   tbb,
-  glfw,
+  embree,
 }:
 stdenv.mkDerivation {
   pname = "barney";
@@ -32,36 +35,39 @@ stdenv.mkDerivation {
     echo done
   '';
 
-  cmakeFlags = with lib; [
-    (cmakeBool "BARNEY_MPI" false)
-    (cmakeBool "BARNEY_BUILD_ANARI" false)
-    (cmakeBool "BARNEY_BACKEND_OPTIX" true)
-    (cmakeBool "BARNEY_BACKEND_EMBREE" false)
-    (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" "all-major")
-  ];
+  cmakeFlags =
+    with lib;
+    [
+      (cmakeBool "BARNEY_MPI" false)
+      (cmakeBool "BARNEY_BUILD_ANARI" false)
+      (cmakeBool "BARNEY_BACKEND_OPTIX" optixSupport)
+      (cmakeBool "BARNEY_BACKEND_EMBREE" embreeSupport)
+    ]
+    ++ (lib.optionals cudaSupport [
+      (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" "all-major")
+    ]);
 
   nativeBuildInputs = [
-    cudaPackages.cuda_nvcc
-
     cmake
-  ];
-
-  propagatedBuildInputs = [
-    cudaPackages.cuda_cudart
-    cudaPackages.cuda_cccl
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_nvcc
   ];
 
   buildInputs = [
+    openimagedenoise
+    tbb
+  ]
+  ++ lib.optionals cudaSupport [
     cudaPackages.cuda_cudart
     cudaPackages.cuda_cccl
     cudaPackages.libcurand
+  ]
+  ++ lib.optionals optixSupport [
     nvidia-optix
-
-    openimagedenoise
-    libGL
-    glfw
-
-    tbb
+  ]
+  ++ lib.optionals embreeSupport [
+    embree
   ];
 
   passthru.updateScript = nix-update-script {
@@ -72,9 +78,9 @@ stdenv.mkDerivation {
   };
 
   meta = with lib; {
-    description = "VisRTX is an experimental, scientific visualization-focused implementation of the Khronos ANARI standard.";
-    homepage = "https://github.com/NVIDIA/VisRTX";
+    description = "A Multi-GPU (and optionally, Multi-Node) Implementation of the ANARI Rendering API";
+    homepage = "https://github.com/NVIDIA/barney";
     license = licenses.bsd3;
-    platforms = platforms.linux;
+    platforms = platforms.unix;
   };
 }

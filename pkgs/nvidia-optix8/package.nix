@@ -30,6 +30,6 @@ stdenv.mkDerivation {
     description = "An application framework for achieving optimal ray tracing performance on the GPU.";
     homepage = "https://developer.nvidia.com/rtx/ray-tracing/optix";
     license = licenses.unfreeRedistributable;
-    platforms = platforms.linux;
+    platforms = [ "x86_64-linux" ];
   };
 }

@@ -6,7 +6,7 @@
   cmake,
   config,
   cudaSupport ? config.cudaSupport,
-  optixSupport ? config.cudaSupport,
+  optixSupport ? cudaSupport && stdenv.hostPlatform.isx86_64,
   cudaPackages,
   nvidia-optix8,
   anari-sdk,

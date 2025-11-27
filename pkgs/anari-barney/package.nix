@@ -1,19 +1,21 @@
 {
   anari-sdk,
-  autoPatchelfHook,
   barney,
   cmake,
+  config,
+  cudaSupport ? config.cudaSupport,
+  optixSupport ? cudaSupport && stdenv.hostPlatform.isx86_64,
+  embreeSupport ? !cudaSupport,
   cudaPackages,
   fetchFromGitHub,
-  glfw,
   lib,
-  libGL,
   nix-update-script,
   nvidia-optix,
-  openimagedenoise,
+  embree,
   python3,
   stdenv,
   tbb,
+  openimagedenoise,
 }:
 stdenv.mkDerivation {
   pname = "anari-barney";
@@ -38,33 +40,36 @@ stdenv.mkDerivation {
 
   cmakeFlags = with lib; [
     (cmakeBool "BARNEY_MPI" false)
-    (cmakeBool "BARNEY_BUILD_ANARI" false)
-    (cmakeBool "BARNEY_BACKEND_OPTIX" true)
-    (cmakeBool "BARNEY_BACKEND_EMBREE" false)
+    (cmakeBool "BARNEY_BUILD_ANARI" true)
+    (cmakeBool "BARNEY_BACKEND_OPTIX" optixSupport)
+    (cmakeBool "BARNEY_BACKEND_EMBREE" embreeSupport)
     (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" "all-major")
   ];
 
   nativeBuildInputs = [
-    autoPatchelfHook
     cmake
-    cudaPackages.cuda_nvcc
     python3
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_nvcc
   ];
 
   buildInputs = [
     anari-sdk
     barney
-
+    tbb
+    openimagedenoise
+  ]
+  ++ lib.optionals cudaSupport [
     cudaPackages.cuda_cudart
     cudaPackages.cuda_cccl
     cudaPackages.libcurand
+  ]
+  ++ lib.optionals optixSupport [
     nvidia-optix
-
-    openimagedenoise
-    libGL
-    glfw
-
-    tbb
+  ]
+  ++ lib.optionals embreeSupport [
+    embree
   ];
 
   postInstall = ''
@@ -79,9 +84,9 @@ stdenv.mkDerivation {
     ];
   };
   meta = with lib; {
-    description = "VisRTX is an experimental, scientific visualization-focused implementation of the Khronos ANARI standard.";
-    homepage = "https://github.com/NVIDIA/VisRTX";
-    license = licenses.bsd3;
-    platforms = platforms.linux;
+    description = "A Multi-GPU (and optionally, Multi-Node) Implementation of the ANARI Rendering API";
+    homepage = "https://github.com/NVIDIA/barney";
+    license = licenses.asl20;
+    platforms = lib.platforms.all;
   };
 }
