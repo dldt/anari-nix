@@ -1,7 +1,7 @@
 {
   anari-sdk,
   cmake,
-  apple-sdk_11,
+  apple-sdk_14,
   fetchFromGitHub,
   lib,
   python3,
@@ -55,7 +55,7 @@ stdenv.mkDerivation {
     libGL
   ]
   ++ lib.optionals stdenv.isDarwin [
-    apple-sdk_11
+    apple-sdk_14
   ];
 
   cmakeFlags = [

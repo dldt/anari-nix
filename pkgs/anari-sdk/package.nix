@@ -9,7 +9,7 @@
   python3,
   libGL,
   pkg-config,
-  apple-sdk_11,
+  apple-sdk_14,
   sdl3,
 }:
 let
@@ -51,7 +51,7 @@ stdenv.mkDerivation {
     libGL
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [
-    apple-sdk_11
+    apple-sdk_14
   ];
 
   cmakeFlags = with lib; [

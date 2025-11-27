@@ -2,7 +2,7 @@
   lib,
   stdenv,
   fetchFromGitHub,
-  apple-sdk_13,
+  apple-sdk_14,
   cmake,
   config,
   cudaSupport ? config.cudaSupport,
@@ -74,7 +74,7 @@ stdenv.mkDerivation {
     zstd
   ]
   ++ lib.optionals stdenv.isDarwin [
-    apple-sdk_13
+    apple-sdk_14
     sse2neon
   ]
   ++ lib.optionals cudaSupport [
