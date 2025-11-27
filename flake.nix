@@ -99,11 +99,13 @@
       packagesCuda =
         system:
         filterOutBroken (
-          filterDerivations (
-            lib.packagesFromDirectoryRecursive {
-              inherit (pkgsCuda system) callPackage newScope;
-              directory = ./pkgs;
-            }
+          filterSystem system (
+            filterDerivations (
+              lib.packagesFromDirectoryRecursive {
+                inherit (pkgsCuda system) callPackage newScope;
+                directory = ./pkgs;
+              }
+            )
           )
         );
 

@@ -5,7 +5,7 @@
   cmake,
   config,
   cudaSupport ? config.cudaSupport,
-  cudaPackages_12_6,
+  cudaPackages,
   anari-sdk,
   python3,
   visionaray,
@@ -30,7 +30,7 @@ stdenv.mkDerivation {
     python3
   ]
   ++ lib.optionals cudaSupport [
-    cudaPackages_12_6.cuda_nvcc
+    cudaPackages.cuda_nvcc
   ];
 
   buildInputs = [
@@ -40,8 +40,8 @@ stdenv.mkDerivation {
   ]
   ++ lib.optionals cudaSupport [
     # CUDA and OptiX
-    cudaPackages_12_6.cuda_cudart
-    cudaPackages_12_6.cuda_cccl
+    cudaPackages.cuda_cudart
+    cudaPackages.cuda_cccl
   ];
 
   cmakeFlags = with lib; [
@@ -61,5 +61,6 @@ stdenv.mkDerivation {
     homepage = "https://github.com/szellmann/anari-visionaray";
     license = licenses.bsd3;
     platforms = platforms.unix;
+    broken = stdenv.hostPlatform.system == "aarch64-linux" && cudaSupport;
   };
 }

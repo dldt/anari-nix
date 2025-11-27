@@ -5,12 +5,12 @@
   nix-update-script,
 }:
 let
-  version = "9.0.0";
+  version = "7.7.0";
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "optix-dev";
     tag = "v7.7.0";
-    hash = "sha256-WbMKgiM1b3IZ9eguRzsJSkdZJR/SMQTda2jEqkeOwok=";
+    hash = "sha256-1sX4qgtIv/tO9+LQhTXES7Pmspk6yoiolCL/D9jvsTE=";
   };
 
 in

@@ -29,18 +29,22 @@ let
     url = "https://github.com/Nelarius/imnodes/archive/refs/tags/v0.5.zip";
     hash = "sha256-hRWz07KXmeLX00bSWHZ9izaqpBTEeeViOCkPySivNNk=";
   };
+  imguizmo-src = fetchurl {
+    url = "https://github.com/CedricGuillemet/ImGuizmo/archive/71f14292205c3317122b39627ed98efce137086a.zip";
+    hash = "sha256-kOrhHDy5hMGAC95Q1CbfpPNh1D9LQBg48I5H/GGzjRw=";
+  };
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "0.12.0-unstable-2025-11-24";
+  version = "0.12.0-unstable-2025-11-27";
 
   # Main source. Hosted as part of VisRTX.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
 
-    rev = "4b350397703b1d0c4be443fa407dc9ca2926362f";
-    hash = "sha256-/cyFt+uKOIJpmfSdrmAAHpoe1sUEoK4d8kraayGcwUA=";
+    rev = "36575336d85fccec9c38eff584bb7e5a0e1864ee";
+    hash = "sha256-sHiWMkIxiIzj4kYkkbafQp8LjKRtS0xnD2YLkSmIvqk=";
   };
 
   patches = lib.optionals stdenv.isDarwin [
@@ -63,6 +67,8 @@ stdenv.mkDerivation {
     cp "${anari_viewer_imgui_sdl}" "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/v1.91.7-docking.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imnodes/"
     cp "${imnodes-src}" "''${sourceRoot}/.anari_deps/tsd_ext_imnodes/v0.5.zip"
+    mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imguizmo/"
+    cp "${imguizmo-src}" "''${sourceRoot}/.anari_deps/tsd_ext_imguizmo/71f14292205c3317122b39627ed98efce137086a.zip"
   '';
 
   cmakeFlags = [
