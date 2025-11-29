@@ -56,7 +56,7 @@ stdenv.mkDerivation {
 
   cmakeFlags = with lib; [
     (cmakeBool "BUILD_CTS" false)
-    (cmakeBool "BUILD_EXAMPLES" false)
+    (cmakeBool "BUILD_EXAMPLES" true)
     (cmakeBool "BUILD_TESTING" false)
     (cmakeBool "BUILD_VIEWER" false)
     (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
