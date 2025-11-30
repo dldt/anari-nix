@@ -52,5 +52,6 @@ stdenv.mkDerivation {
     homepage = "https://github.com/ospray/anari-ospray";
     license = licenses.apsl20;
     platforms = platforms.unix;
+    broken = stdenv.hostPlatform.system == "aarch64-darwin";
   };
 }

@@ -46,5 +46,6 @@ stdenv.mkDerivation {
     homepage = "https://ospray.org";
     license = licenses.mit;
     platforms = platforms.unix;
+    broken = stdenv.hostPlatform.system == "aarch64-darwin";
   };
 }
