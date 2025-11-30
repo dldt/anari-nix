@@ -95,6 +95,8 @@ def get_update_script(flake_path: str, package_name: str) -> Optional[List[str]]
         # 2. A derivation path (string starting with /nix/store)
         if isinstance(update_script_data, list):
             # It's already a command list, return it directly
+            if update_script_data[0].endswith("/nix-update"):
+                update_script_data[0] = "nix-update"
             return update_script_data
         elif isinstance(update_script_data, str) and update_script_data.startswith(
             "/nix/store"
