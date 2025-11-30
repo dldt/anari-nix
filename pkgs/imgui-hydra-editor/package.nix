@@ -16,14 +16,14 @@
   xorg,
 }:
 stdenv.mkDerivation {
-  version = "3.0.0";
+  version = "v3.0.0";
   pname = "imgui-hydra-editor";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "raph080";
     repo = "ImGuiHydraEditor";
-    rev = "3.0.0";
+    rev = "v3.0.0";
     hash = "sha256-8OxJ2gfPo0T/rOYMIik/Uk2dRFtQZav99/6e41SJUBk=";
     fetchSubmodules = true;
   };
