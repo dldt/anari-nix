@@ -146,5 +146,6 @@ stdenv.mkDerivation rec {
     maintainers = [
       # add your maintainer name here
     ];
+    broken = stdenv.hostPlatform.system == "aarch64-darwin";
   };
 }

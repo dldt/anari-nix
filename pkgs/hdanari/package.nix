@@ -43,7 +43,6 @@ stdenv.mkDerivation {
   buildInputs = [
     anari-sdk
     materialx
-    mdl-sdk
     openusd
     opensubdiv
     tbb
@@ -53,13 +52,17 @@ stdenv.mkDerivation {
     xorg.libX11
     xorg.libXt
     libGL
+
+    # MDL-SDK is broken on aarch64-darwin due to
+    # removed clang12.
+    mdl-sdk
   ]
   ++ lib.optionals stdenv.isDarwin [
     apple-sdk_14
   ];
 
   cmakeFlags = [
-    (lib.cmakeBool "HDANARI_ENABLE_MDL" true)
+    (lib.cmakeBool "HDANARI_ENABLE_MDL" (!stdenv.isDarwin))
   ];
 
   # Special case for OPENUSD_PLUGIN_INSTALL_PREFIX...
