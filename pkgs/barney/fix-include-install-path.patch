@@ -1,0 +1,12 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index de2fd1b..91d76f8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -307,6 +307,6 @@ configure_file(
+ 
+ install(
+   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/barney
+-  DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
++  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+   )
+ 

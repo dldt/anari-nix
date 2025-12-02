@@ -26,7 +26,13 @@ stdenv.mkDerivation {
     fetchSubmodules = true;
   };
 
-  patchPhase = ''
+  patches = [
+    ./fix-include-install-path.patch
+  ];
+
+  patchFlags = [ "-p1" ];
+
+  postPatch = ''
     echo Patching CMake files...
     for i in CMakeLists.txt barney/CMakeLists.txt anari/CMakeLists.txt
     do
