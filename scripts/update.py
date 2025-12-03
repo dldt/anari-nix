@@ -31,46 +31,42 @@ def run_nix_eval(args: List[str]) -> Optional[str]:
         return None
 
 
-def discover_package_sets(flake_path: str) -> List[str]:
-    """Return the standard 'packages' output."""
-    return ["packages"]
-
-
-def get_all_packages(
-    flake_path: str, package_sets: List[str]
-) -> Optional[List[Tuple[str, str, str]]]:
-    """
-    Get all packages from the flake across all package sets and systems.
-    Returns a list of tuples: (package_set, system, package_name)
-    """
-    all_packages = []
-
-    for package_set in package_sets:
-        output = run_nix_eval(
-            [
-                "--accept-flake-config",
-                f"{flake_path}#{package_set}",
-            ]
-        )
-
-        if output is None:
-            continue
-
+def get_current_system() -> Optional[str]:
+    """Get the current system platform (e.g., x86_64-linux, aarch64-darwin)."""
+    output = run_nix_eval(["--impure", "--expr", "builtins.currentSystem"])
+    if output:
         try:
-            packages_by_system = json.loads(output)
-            # Keep the structure: package_set.system.package_name
-            for system, system_packages in packages_by_system.items():
-                for package_name in system_packages.keys():
-                    all_packages.append((package_set, system, package_name))
-        except (json.JSONDecodeError, AttributeError) as e:
-            print(f"Error parsing {package_set}: {e}", file=sys.stderr)
-            continue
+            return json.loads(output)
+        except json.JSONDecodeError:
+            return None
+    return None
 
-    return all_packages if all_packages else None
+
+def get_all_packages(flake_path: str, system: str) -> Optional[List[str]]:
+    """
+    Get all packages from the flake for the current system.
+    Returns a list of package names.
+    """
+    output = run_nix_eval(
+        [
+            "--accept-flake-config",
+            f"{flake_path}#packages.{system}",
+        ]
+    )
+
+    if output is None:
+        return None
+
+    try:
+        packages = json.loads(output)
+        return list(packages.keys())
+    except (json.JSONDecodeError, AttributeError) as e:
+        print(f"Error parsing packages.{system}: {e}", file=sys.stderr)
+        return None
 
 
 def get_update_script(
-    flake_path: str, package_set: str, system: str, package_name: str
+    flake_path: str, system: str, package_name: str
 ) -> Optional[List[str]]:
     """
     Get the update script for a package.
@@ -83,7 +79,7 @@ def get_update_script(
                 "eval",
                 "--json",
                 "--accept-flake-config",
-                f"{flake_path}#{package_set}.{system}.{package_name}.passthru.updateScript",
+                f"{flake_path}#packages.{system}.{package_name}.passthru.updateScript",
             ],
             check=True,
             stdout=subprocess.PIPE,
@@ -117,17 +113,42 @@ def get_update_script(
         return None
 
 
-def get_fallback_command(package_set: str, system: str, package_name: str) -> List[str]:
+def get_all_package_names(flake_path: str) -> Set[str]:
+    """
+    Get all package names across all systems to detect packages not available on current platform.
+    Returns a set of all unique package names.
+    """
+    output = run_nix_eval(
+        [
+            "--accept-flake-config",
+            f"{flake_path}#packages",
+        ]
+    )
+
+    if output is None:
+        return set()
+
+    try:
+        packages_by_system = json.loads(output)
+        all_names = set()
+        for system, system_packages in packages_by_system.items():
+            all_names.update(system_packages.keys())
+        return all_names
+    except (json.JSONDecodeError, AttributeError):
+        return set()
+
+
+def get_fallback_command(package_name: str) -> List[str]:
     """Get the fallback update command for a package."""
-    return ["nix-update", "--flake", f"{package_set}.{system}.{package_name}"]
+    return ["nix-update", "--flake", package_name]
 
 
 def get_package_source_path(
-    flake_path: str, package_set: str, system: str, package_name: str
+    flake_path: str, system: str, package_name: str
 ) -> Optional[str]:
     """
     Get the source directory path for a package.
-    This is used to deduplicate packages that appear in multiple platforms/package-sets.
+    Returns the directory path or the package name as fallback.
     """
     try:
         result = subprocess.run(
@@ -136,7 +157,7 @@ def get_package_source_path(
                 "eval",
                 "--json",
                 "--accept-flake-config",
-                f"{flake_path}#{package_set}.{system}.{package_name}.meta.position",
+                f"{flake_path}#packages.{system}.{package_name}.meta.position",
             ],
             check=True,
             stdout=subprocess.PIPE,
@@ -187,61 +208,59 @@ def main():
     flake_dir = script_dir.parent
     flake_path = str(flake_dir)
 
-    print(f"Discovering package sets in flake at {flake_path}...")
-    package_sets = discover_package_sets(flake_path)
+    # Get current system platform
+    print("Detecting current system platform...")
+    current_system = get_current_system()
+    if not current_system:
+        print("Failed to detect current system platform", file=sys.stderr)
+        sys.exit(1)
+    print(f"Current system: {current_system}")
 
-    if not package_sets:
-        print("Failed to discover package sets", file=sys.stderr)
+    # Get all package names across all systems for comparison
+    print(f"\nFinding all packages in flake at {flake_path}...")
+    all_package_names = get_all_package_names(flake_path)
+
+    # Get packages for current system only
+    print(f"Finding packages for {current_system}...")
+    current_packages = get_all_packages(flake_path, current_system)
+
+    if current_packages is None:
+        print(f"Failed to get package list for {current_system}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Found package sets: {', '.join(package_sets)}")
+    print(f"Found {len(current_packages)} packages for {current_system}")
 
-    print(f"\nFinding packages in all package sets...")
-    all_packages = get_all_packages(flake_path, package_sets)
-
-    if all_packages is None:
-        print("Failed to get package list", file=sys.stderr)
-        sys.exit(1)
-
-    print(f"Found {len(all_packages)} package instances across all sets and systems")
-
-    # Deduplicate packages by their source path to avoid concurrent updates
-    # Group by source path: {source_path: [(package_set, system, package_name), ...]}
-    packages_by_source: Dict[str, List[Tuple[str, str, str]]] = defaultdict(list)
-
-    for package_set, system, package_name in all_packages:
-        source_path = get_package_source_path(
-            flake_path, package_set, system, package_name
+    # Warn about packages not available on current platform
+    current_package_set = set(current_packages)
+    unavailable_packages = all_package_names - current_package_set
+    if unavailable_packages:
+        print(
+            f"\n⚠️  WARNING: {len(unavailable_packages)} package(s) not available on {current_system}:"
         )
-        if source_path:
-            packages_by_source[source_path].append((package_set, system, package_name))
+        for pkg in sorted(unavailable_packages):
+            print(f"  - {pkg}")
+        print(f"These packages will NOT be updated.\n")
 
-    print(f"Deduplicated to {len(packages_by_source)} unique packages")
-
-    # Prepare update commands for unique packages
-    # Use the first occurrence of each package for the update
+    # Since we're only dealing with one system now, no need for complex deduplication
+    # Just prepare update commands for all packages
     update_tasks = []
-    for source_path, package_instances in packages_by_source.items():
-        # Pick the first instance to use for updating
-        package_set, system, package_name = package_instances[0]
 
-        # Build a display name showing all platforms this package appears in
-        platforms = [f"{ps}.{sys}" for ps, sys, _ in package_instances]
-        display_name = f"{package_name} ({', '.join(platforms)})"
-
+    for package_name in sorted(current_packages):
         # Try to get the update script from passthru
-        update_script = get_update_script(flake_path, package_set, system, package_name)
+        update_script = get_update_script(flake_path, current_system, package_name)
 
         if update_script is not None:
-            # Append the full attribute path to the update script
-            command = update_script + [f"{package_set}.{system}.{package_name}"]
+            # Append just the package name to the update script
+            command = update_script + [package_name]
         else:
-            # Fall back to nix-update with full attribute path
-            command = get_fallback_command(package_set, system, package_name)
+            # Fall back to nix-update with just the package name
+            command = get_fallback_command(package_name)
 
-        update_tasks.append((display_name, command))
+        update_tasks.append((package_name, command))
 
-    print(f"\nStarting updates (running up to 4 in parallel)...")
+    print(
+        f"Starting updates for {len(update_tasks)} packages (running up to 4 in parallel)...\n"
+    )
 
     # Run updates in parallel
     success_count = 0
@@ -268,9 +287,12 @@ def main():
 
     print(f"\n{'='*60}")
     print(f"Update Summary:")
+    print(f"  Platform: {current_system}")
     print(f"  Successful: {success_count}")
     print(f"  Failed: {failure_count}")
-    print(f"  Total: {len(packages_by_source)} unique packages")
+    print(f"  Total: {len(update_tasks)} packages")
+    if unavailable_packages:
+        print(f"  Skipped (unavailable): {len(unavailable_packages)}")
     if failed_packages:
         print(f"\nFailed packages:")
         for pkg_name, cmd in sorted(failed_packages):

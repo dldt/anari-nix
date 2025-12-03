@@ -1,4 +1,5 @@
 {
+  callPackage,
   cmake,
   embree-ispc,
   fetchFromGitHub,
@@ -6,10 +7,12 @@
   lib,
   libGL,
   openimagedenoise,
-  openvkl,
-  rkcommon,
   stdenv,
 }:
+let
+  openvkl = callPackage ./openvkl { inherit rkcommon; };
+  rkcommon = callPackage ./rkcommon { };
+in
 stdenv.mkDerivation {
   pname = "ospray";
   version = "3.2.0";
@@ -31,6 +34,9 @@ stdenv.mkDerivation {
     embree-ispc
     libGL
     openimagedenoise
+  ];
+
+  propagatedBuildInputs = [
     openvkl
     rkcommon
   ];

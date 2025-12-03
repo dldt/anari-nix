@@ -118,8 +118,6 @@
     {
       packages = forAllDefaultSystems packages;
 
-      packagesCuda = forAllDefaultSystems packagesCuda;
-
       overlays.default = import ./overlay.nix;
 
       checks = forAllDefaultSystems (

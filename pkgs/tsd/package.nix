@@ -42,7 +42,6 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-
     rev = "0fc504a2a28cc052e8cc20c6f040bd14f8d26869";
     hash = "sha256-ZzyNdM6s6ZmZLN0rWo6TSHniYl2Xoe7u5teuKzK8ZsY=";
   };

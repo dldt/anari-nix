@@ -37,7 +37,7 @@ stdenv.mkDerivation {
     owner = "jeffamstutz";
     repo = "anari-cycles";
     rev = "1db3ffac8c740921aff2636936fd9fa415d64dc6";
-    hash = "sha256-9cUa7++dDcxk9knrcPXJ+Esf4ANlJNBoatF3oRscwKM=";
+    hash = "sha256-aytrYzpIuBW+Gq3u7CXOI+ivxH465eKUJMWx2Z+fbPQ=";
     fetchSubmodules = true;
   };
 

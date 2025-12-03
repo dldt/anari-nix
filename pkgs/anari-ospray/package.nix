@@ -7,8 +7,8 @@
   python3,
   embree-ispc,
   ospray,
-  openvkl,
-  rkcommon,
+  # openvkl,
+  # rkcommon,
   nix-update-script,
 }:
 stdenv.mkDerivation {
@@ -36,8 +36,8 @@ stdenv.mkDerivation {
     anari-sdk
     embree-ispc
     ospray
-    openvkl
-    rkcommon
+    # openvkl
+    # rkcommon
   ];
 
   passthru.updateScript = nix-update-script {

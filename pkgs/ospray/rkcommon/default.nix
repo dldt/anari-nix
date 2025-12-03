@@ -7,12 +7,12 @@
 }:
 stdenv.mkDerivation {
   pname = "rkcommon";
-  version = "1.15.2";
+  version = "1.14.2";
 
   src = fetchFromGitHub {
     owner = "RenderKit";
     repo = "rkcommon";
-    rev = "1.15.2";
+    rev = "ecd1d474e91aaea74f04b62df371b151c2a504fa";
     hash = "sha256-ezUvl/zr/mLEN4lJnvZRvFbf619JpaqfvqXbEa62Ovc=";
   };
 
