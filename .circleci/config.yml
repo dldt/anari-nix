@@ -1,0 +1,278 @@
+version: 2.1
+# Orbs provide pre-packaged functionality
+orbs:
+  gh: circleci/github-cli@2.7.2
+# Executors define the execution environment
+executors:
+  nix-linux:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: medium
+  nix-macos:
+    macos:
+      xcode: "15.0.0"
+    resource_class: macos.m1.medium.gen1
+# Reusable commands
+commands:
+  install-nix:
+    description: "Install Nix package manager"
+    steps:
+      - run:
+          name: Install Nix
+          command: |
+            curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
+              sh -s -- install linux \
+              --extra-conf "substituters = https://cache.nixos.org/ https://dldt.cachix.org" \
+              --extra-conf "trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= dldt.cachix.org-1:d79LYi18kd5Tu5AxPJbVyLZL/vxSP7lB35ypI6Egxbs=" \
+              --extra-conf "trusted-users = root circleci" \
+              --no-confirm
+      - run:
+          name: Source Nix
+          command: |
+            echo '. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' >> "$BASH_ENV"
+      - run:
+          name: Configure Nix
+          command: |
+            mkdir -p ~/.config/nix
+            echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+      - run:
+          name: Install Cachix
+          command: |
+            nix-env -iA cachix -f https://cachix.org/api/v1/install
+      - run:
+          name: Configure Cachix
+          command: |
+            cachix use dldt
+            if [ -n "$CACHIX_AUTH_TOKEN" ]; then
+              cachix authtoken "$CACHIX_AUTH_TOKEN"
+            fi
+  install-nix-macos:
+    description: "Install Nix package manager on macOS"
+    steps:
+      - run:
+          name: Install Nix
+          command: |
+            curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
+              sh -s -- install \
+              --extra-conf "substituters = https://cache.nixos.org/ https://dldt.cachix.org" \
+              --extra-conf "trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= dldt.cachix.org-1:d79LYi18kd5Tu5AxPJbVyLZL/vxSP7lB35ypI6Egxbs=" \
+              --extra-conf "trusted-users = root $USER" \
+              --no-confirm
+      - run:
+          name: Source Nix
+          command: |
+            echo '. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' >> "$BASH_ENV"
+      - run:
+          name: Configure Nix
+          command: |
+            mkdir -p ~/.config/nix
+            echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+      - run:
+          name: Install Cachix
+          command: |
+            nix-env -iA cachix -f https://cachix.org/api/v1/install
+      - run:
+          name: Configure Cachix
+          command: |
+            cachix use dldt
+            if [ -n "$CACHIX_AUTH_TOKEN" ]; then
+              cachix authtoken "$CACHIX_AUTH_TOKEN"
+            fi
+  build:
+    description: "Build and check Nix flake for given platform and check"
+    parameters:
+      platform:
+        type: string
+      check:
+        type: string
+    steps:
+      - checkout
+      - install-nix
+      - run:
+          name: Nix flake check --no-build
+          command: |
+            cachix watch-exec dldt -- nix flake check --accept-flake-config --no-build
+      - run:
+          name: Nix flake check << parameters.check >> on << parameters.platform >>
+          command: |
+            cachix watch-exec dldt -- nix flake check --accept-flake-config --arg-from-file ./flake.nix checks.<< parameters.platform >>.<< parameters.check >>
+# Job definitions
+jobs:
+  format:
+    executor: nix-linux
+    steps:
+      - checkout
+      - install-nix
+      - run:
+          name: Check code formatting
+          command: nix fmt --accept-flake-config -- --ci
+  build-x86_64-linux:
+    executor: nix-linux
+    steps:
+      - build:
+          platform: x86_64-linux
+          check: packages
+  build-x86_64-linux-cuda:
+    executor: nix-linux
+    steps:
+      - build:
+          platform: x86_64-linux
+          check: packagesCuda
+  build-aarch64-linux:
+    executor: nix-linux
+    steps:
+      - build:
+          platform: aarch64-linux
+          check: packages
+  build-aarch64-linux-cuda:
+    executor: nix-linux
+    steps:
+      - build:
+          platform: aarch64-linux
+          check: packagesCuda
+  build-macos:
+    executor: nix-macos
+    steps:
+      - checkout
+      - install-nix-macos
+      - run:
+          name: Nix flake check --no-build
+          command: |
+            cachix watch-exec dldt -- nix flake check --accept-flake-config --no-build
+      - run:
+          name: Nix flake check packages on aarch64-darwin
+          command: |
+            cachix watch-exec dldt -- nix flake check --accept-flake-config --arg-from-file ./flake.nix checks.aarch64-darwin.packages
+  update-flake-lock:
+    executor: nix-linux
+    steps:
+      - checkout
+      - install-nix
+      - gh/install
+      - run:
+          name: Update flake.lock
+          command: nix flake update --accept-flake-config
+      - run:
+          name: Create Pull Request
+          command: |
+            # Configure git
+            git config user.name "CircleCI Bot"
+            git config user.email "circleci-bot@users.noreply.github.com"
+
+            # Check if there are changes
+            if git diff --quiet flake.lock; then
+              echo "No changes to flake.lock"
+              exit 0
+            fi
+
+            # Create branch and commit
+            BRANCH_NAME="update-flake-lock-${CIRCLE_BRANCH}"
+            git checkout -b "$BRANCH_NAME"
+            git add flake.lock
+            git commit -m "Update \`${CIRCLE_BRANCH}\` flake.lock"
+
+            # Push to remote (requires write access)
+            git push origin "$BRANCH_NAME" --force
+
+            # Create PR if it doesn't exist
+            gh pr create \
+              --title "Update \`${CIRCLE_BRANCH}\` flake.lock" \
+              --body "This PR updates \`${CIRCLE_BRANCH}\` flake.lock file." \
+              --base "${CIRCLE_BRANCH}" \
+              --head "$BRANCH_NAME" \
+              --label "dependencies" || echo "PR may already exist"
+          environment:
+            GH_TOKEN: ${GITHUB_TOKEN}
+  update-packages:
+    executor: nix-linux
+    steps:
+      - checkout
+      - install-nix
+      - gh/install
+      - run:
+          name: Update packages
+          command: nix develop -c ./scripts/update.py
+          environment:
+            GH_TOKEN: ${GITHUB_TOKEN}
+      - run:
+          name: Create Pull Request
+          command: |
+            # Configure git
+            git config user.name "CircleCI Bot"
+            git config user.email "circleci-bot@users.noreply.github.com"
+
+            # Check if there are changes
+            if git diff --quiet; then
+              echo "No changes to packages"
+              exit 0
+            fi
+
+            # Create branch and commit
+            BRANCH_NAME="update-packages-${CIRCLE_BRANCH}"
+            git checkout -b "$BRANCH_NAME"
+            git add -A
+            git commit -m "Update \`${CIRCLE_BRANCH}\` packages to latest version"
+
+            # Push to remote (requires write access)
+            git push origin "$BRANCH_NAME" --force
+
+            # Create PR if it doesn't exist
+            gh pr create \
+              --title "Update \`${CIRCLE_BRANCH}\` packages to latest version" \
+              --body "This PR updates \`${CIRCLE_BRANCH}\` packages to latest version." \
+              --base "${CIRCLE_BRANCH}" \
+              --head "$BRANCH_NAME" \
+              --label "packages-version" || echo "PR may already exist"
+          environment:
+            GH_TOKEN: ${GITHUB_TOKEN}
+# Workflow definitions
+workflows:
+  # Main test workflow (triggered on push and PR)
+  build-and-test:
+    jobs:
+      - format
+      - build-aarch64-linux:
+          requires:
+            - format
+      - build-aarch64-linux-cuda:
+          requires:
+            - format
+      - build-x86_64-linux:
+          requires:
+            - format
+      - build-x86_64-linux-cuda:
+          requires:
+            - format
+            #- build-macos:
+            #    requires:
+            #      - format
+  # Weekly flake.lock update (runs on Sunday at 00:00 UTC, also manually triggerable)
+  weekly-flake-update:
+    when:
+      or:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ webhook, << pipeline.trigger_source >> ]
+    triggers:
+      - schedule:
+          cron: "0 0 * * 0"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - update-flake-lock
+  # Weekly packages update (runs on Sunday at 03:00 UTC, also manually triggerable)
+  weekly-packages-update:
+    when:
+      or:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ webhook, << pipeline.trigger_source >> ]
+    triggers:
+      - schedule:
+          cron: "0 3 * * 0"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - update-packages
