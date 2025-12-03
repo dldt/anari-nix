@@ -4,7 +4,8 @@
   fetchFromGitHub,
   nix-update-script,
 }:
-let
+stdenv.mkDerivation {
+  pname = "nvidia-optix7";
   version = "7.7.0";
   src = fetchFromGitHub {
     owner = "NVIDIA";
@@ -12,11 +13,6 @@ let
     tag = "v7.7.0";
     hash = "sha256-1sX4qgtIv/tO9+LQhTXES7Pmspk6yoiolCL/D9jvsTE=";
   };
-
-in
-stdenv.mkDerivation {
-  inherit src version;
-  pname = "nvidia-optix7";
 
   installPhase = ''
     mkdir -p "$out/include"

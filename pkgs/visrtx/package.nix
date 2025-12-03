@@ -13,13 +13,13 @@
 }:
 stdenv.mkDerivation {
   pname = "visrtx";
-  version = "0.12.0-unstable-2025-11-28";
+  version = "0.12.0-unstable-2025-12-02";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "ddc73854c7dec64ec1e2feb486d339ca4f25dcec";
+    rev = "0fc504a2a28cc052e8cc20c6f040bd14f8d26869";
     hash = "sha256-nVLEkMRgDV0O46pGXNdbWQwlu/n1t9nvyf3afib7o5Y=";
   };
 

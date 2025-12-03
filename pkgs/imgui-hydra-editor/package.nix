@@ -16,7 +16,7 @@
   xorg,
 }:
 stdenv.mkDerivation {
-  version = "v3.0.0";
+  version = "3.0.0";
   pname = "imgui-hydra-editor";
 
   # Main source.
