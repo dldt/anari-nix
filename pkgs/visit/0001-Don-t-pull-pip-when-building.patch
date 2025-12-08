@@ -1,0 +1,39 @@
+From a2eb013574a180d4be8a9984582c9af6261bbbf7 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Mon, 22 Dec 2025 18:50:21 -0500
+Subject: [PATCH 1/2] Don't pull pip when building
+
+---
+ src/CMake/FindVisItPython.cmake | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
+
+diff --git a/src/CMake/FindVisItPython.cmake b/src/CMake/FindVisItPython.cmake
+index 849495ebee..06c0ec6515 100644
+--- a/src/CMake/FindVisItPython.cmake
++++ b/src/CMake/FindVisItPython.cmake
+@@ -266,21 +266,10 @@ FUNCTION(PYTHON_ADD_PIP_SETUP)
+     # there isn't a reliable way to only delete it when visit_flow_vpe
+     # calls this function. So, go ahead and add it to all the pip installs
+     # the 'rm -rf' will not error out if the dir doesn't exist
+-    add_custom_command(OUTPUT ${stamp}
+-            COMMAND ${PYTHON_EXECUTABLE} -m pip install . -V --upgrade
+-            --disable-pip-version-check --no-warn-script-location
+-            --target "${abs_dest_path}"
+-            COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/build
+-            COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/${args_PY_MODULE_DIR}.egg-info
+-            COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/flow.egg-info
+-            COMMAND ${CMAKE_COMMAND} -E touch ${stamp}
+-            DEPENDS  ${args_PY_SETUP_FILE} ${args_PY_SOURCES}
+-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+     # The pip command wipes the --target directory, so all dependent modules need
+     # to be linked afterwards. Propagate this dependency as a usage requirement.
+-    add_library(${args_NAME} INTERFACE ${stamp})
+-    set_property(TARGET ${args_NAME} APPEND PROPERTY INTERFACE_LINK_DEPENDS ${stamp})
++    add_library(${args_NAME} INTERFACE)
+ 
+     # set folder if passed
+     if(DEFINED args_FOLDER)
+-- 
+2.51.2
+

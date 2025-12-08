@@ -77,6 +77,12 @@
                 inherit (pkgs system) callPackage newScope;
                 directory = ./pkgs;
               }
+              // {
+                python3Packages = lib.packagesFromDirectoryRecursive {
+                  inherit ((pkgs system).python3Packages) callPackage newScope;
+                  directory = ./python-pkgs;
+                };
+              }
             )
           )
         );
@@ -104,6 +110,12 @@
               lib.packagesFromDirectoryRecursive {
                 inherit (pkgsCuda system) callPackage newScope;
                 directory = ./pkgs;
+              }
+              // {
+                python3Packages = lib.packagesFromDirectoryRecursive {
+                  inherit ((pkgs system).python3Packages) callPackage newScope;
+                  directory = ./python-pkgs;
+                };
               }
             )
           )
