@@ -20,8 +20,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "szellmann";
     repo = "anari-visionaray";
-    rev = "bfabd3aec8a0e7f88243f66bdcb15908e5b68893";
-    hash = "sha256-1k8R9PeranRkjK8NHSxnWe1v5/7/en54KtxEZwTdq64=";
+    rev = "a196b283fea221e049b5d882307b6f5e25b9f02d";
+    hash = "sha256-eKrG8ApOHS7x+bk8BLMRjXtlD0fKZRQ6OJ++F0ZGCMQ=";
     fetchSubmodules = true;
   };
 
