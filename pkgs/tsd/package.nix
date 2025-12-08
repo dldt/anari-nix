@@ -14,6 +14,7 @@
   glm,
   hdf5,
   tbb,
+  silo,
   sdl3,
   openusd,
   xorg,
@@ -78,6 +79,7 @@ stdenv.mkDerivation {
     (lib.cmakeBool "TSD_USE_SDL3" true)
     (lib.cmakeBool "TSD_USE_USD" true)
     (lib.cmakeBool "TSD_USE_VTK" true)
+    (lib.cmakeBool "TSD_USE_SILO" true)
   ];
 
   installPhase = ''
@@ -103,6 +105,7 @@ stdenv.mkDerivation {
     libGL
     hdf5
     openusd
+    silo
     tbb
     vtk
   ]
