@@ -5,13 +5,13 @@
 }:
 stdenv.mkDerivation {
   pname = "nvidia-optix";
-  version = "9.0.0";
+  version = "9.1.0";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "optix-dev";
-    rev = "v9.0.0";
-    hash = "sha256-WbMKgiM1b3IZ9eguRzsJSkdZJR/SMQTda2jEqkeOwok=";
+    rev = "v9.1.0";
+    hash = "sha256-DZqsXSbuvCsh1EXFS29H4zCm20zwBYxVKj/pvZRvSTE=";
   };
 
   installPhase = ''
