@@ -35,7 +35,7 @@ let
   llvmPackages_12 = llvmPackagesSet."12";
 in
 stdenv.mkDerivation rec {
-  version = "2025";
+  version = "2025.0.3";
   pname = "mdl-sdk";
 
   outputs = [ "out" ] ++ lib.optionals enablePythonBindings [ "python" ];
