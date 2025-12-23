@@ -35,6 +35,7 @@ stdenv.mkDerivation rec {
     (cmakeBool "SILO_ENABLE_FORTRAN" false)
     (cmakeBool "SILO_USE_HDF5" true)
     (cmakeBool "SILO_ENABLE_BROWSER" false)
+    (cmakeBool "SILO_ENABLE_INSTALL_LITE_HEADERS" true)
   ];
 
   meta = {

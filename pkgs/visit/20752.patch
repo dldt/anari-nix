@@ -1,0 +1,3008 @@
+From 020fc54d752eaa6b6d1eb47b753f5473e6fb4eff Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Fri, 5 Dec 2025 22:25:31 -0800
+Subject: [PATCH 01/13] upd to version 2.0
+
+---
+ src/tools/dev/scripts/bv_support/bv_hdf5.sh | 619 ++++----------------
+ 1 file changed, 103 insertions(+), 516 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_hdf5.sh b/src/tools/dev/scripts/bv_support/bv_hdf5.sh
+index 53e49729ba8..6443eeb7295 100644
+--- a/src/tools/dev/scripts/bv_support/bv_hdf5.sh
++++ b/src/tools/dev/scripts/bv_support/bv_hdf5.sh
+@@ -57,11 +57,11 @@ function bv_hdf5_initialize_vars
+ 
+ function bv_hdf5_info
+ {
+-    export HDF5_VERSION=${HDF5_VERSION:-"1.8.14"}
+-    export HDF5_FILE=${HDF5_FILE:-"hdf5-${HDF5_VERSION}.tar.gz"}
+-    export HDF5_COMPATIBILITY_VERSION=${HDF5_COMPATIBILITY_VERSION:-"1.8"}
++    export HDF5_VERSION=${HDF5_VERSION:-"2.0.0"}
++    export HDF5_FILE=${HDF5_FILE:-"hdf5-${HDF5_VERSION}.tar.xz"}
++    export HDF5_COMPATIBILITY_VERSION=${HDF5_COMPATIBILITY_VERSION:-"2.0"}
+     export HDF5_BUILD_DIR=${HDF5_BUILD_DIR:-"hdf5-${HDF5_VERSION}"}
+-    export HDF5_SHA256_CHECKSUM="1dbefeeef7f591897c632b2b090db96bb8d35ad035beaa36bc39cb2bc67e0639"
++    export HDF5_SHA256_CHECKSUM="7649f45b4b3cd3350e0b13b790204d377c89e4ce3b346d9ecffb29552737dc71"
+ }
+ 
+ function bv_hdf5_print
+@@ -134,376 +134,6 @@ function bv_hdf5_ensure
+     fi
+ }
+ 
+-function apply_hdf5_1814_static_patch
+-{
+-    info "Patching hdf5 1.8.14 for static build"
+-    patch -p0 << \EOF
+-*** src/H5PL.c.orig    2015-10-23 11:51:35.000000000 -0700
+---- src/H5PL.c  2015-10-23 11:56:48.000000000 -0700
+-***************
+-*** 159,165 ****
+-      char        *preload_path;
+-  
+-      FUNC_ENTER_STATIC_NOERR
+-! 
+-      /* Retrieve pathnames from HDF5_PLUGIN_PRELOAD if the user sets it
+-       * to tell the library to load plugin libraries without search.
+-       */
+---- 159,165 ----
+-      char        *preload_path;
+-  
+-      FUNC_ENTER_STATIC_NOERR
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      /* Retrieve pathnames from HDF5_PLUGIN_PRELOAD if the user sets it
+-       * to tell the library to load plugin libraries without search.
+-       */
+-***************
+-*** 168,174 ****
+-          if(!HDstrcmp(preload_path, H5PL_NO_PLUGIN))
+-              H5PL_no_plugin_g = TRUE;
+-      } /* end if */
+-! 
+-      FUNC_LEAVE_NOAPI(SUCCEED)
+-  } /* end H5PL__init_interface() */
+-  
+---- 168,174 ----
+-          if(!HDstrcmp(preload_path, H5PL_NO_PLUGIN))
+-              H5PL_no_plugin_g = TRUE;
+-      } /* end if */
+-! #endif
+-      FUNC_LEAVE_NOAPI(SUCCEED)
+-  } /* end H5PL__init_interface() */
+-  
+-***************
+-*** 193,201 ****
+-      htri_t ret_value;
+-  
+-      FUNC_ENTER_NOAPI(FAIL)
+-! 
+-      ret_value = (htri_t)H5PL_no_plugin_g;
+-! 
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL_no_plugin() */
+---- 193,201 ----
+-      htri_t ret_value;
+-  
+-      FUNC_ENTER_NOAPI(FAIL)
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      ret_value = (htri_t)H5PL_no_plugin_g;
+-! #endif
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL_no_plugin() */
+-***************
+-*** 224,230 ****
+-      int  i = 0;
+-      
+-      FUNC_ENTER_NOAPI_NOINIT_NOERR
+-! 
+-      if(H5_interface_initialize_g) {
+-          size_t u;       /* Local index variable */
+-  
+---- 224,230 ----
+-      int  i = 0;
+-      
+-      FUNC_ENTER_NOAPI_NOINIT_NOERR
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      if(H5_interface_initialize_g) {
+-          size_t u;       /* Local index variable */
+-  
+-***************
+-*** 246,252 ****
+-        H5_interface_initialize_g = 0;
+-          i = 1;
+-      } /* end if */
+-! 
+-      FUNC_LEAVE_NOAPI(i)
+-  } /* end H5PL_term_interface() */
+-  
+---- 246,252 ----
+-        H5_interface_initialize_g = 0;
+-          i = 1;
+-      } /* end if */
+-! #endif
+-      FUNC_LEAVE_NOAPI(i)
+-  } /* end H5PL_term_interface() */
+-  
+-***************
+-*** 273,279 ****
+-      const void  *ret_value = NULL;
+-  
+-      FUNC_ENTER_NOAPI(NULL)
+-! 
+-      /* Check for "no plugins" indicated" */
+-      if(H5PL_no_plugin_g)
+-          HGOTO_ERROR(H5E_PLUGIN, H5E_CANTLOAD, NULL, "required dynamically loaded plugin filter '%d' is not available", id)
+---- 273,279 ----
+-      const void  *ret_value = NULL;
+-  
+-      FUNC_ENTER_NOAPI(NULL)
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      /* Check for "no plugins" indicated" */
+-      if(H5PL_no_plugin_g)
+-          HGOTO_ERROR(H5E_PLUGIN, H5E_CANTLOAD, NULL, "required dynamically loaded plugin filter '%d' is not available", id)
+-***************
+-*** 308,314 ****
+-      /* Check if we found the plugin */
+-      if(found)
+-          ret_value = plugin_info;
+-! 
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL_load() */
+---- 308,314 ----
+-      /* Check if we found the plugin */
+-      if(found)
+-          ret_value = plugin_info;
+-! #endif
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL_load() */
+-***************
+-*** 335,341 ****
+-      herr_t      ret_value = SUCCEED;    /* Return value */
+-  
+-      FUNC_ENTER_STATIC
+-! 
+-      /* Retrieve paths from HDF5_PLUGIN_PATH if the user sets it
+-       * or from the default paths if it isn't set.
+-       */
+---- 335,341 ----
+-      herr_t      ret_value = SUCCEED;    /* Return value */
+-  
+-      FUNC_ENTER_STATIC
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      /* Retrieve paths from HDF5_PLUGIN_PATH if the user sets it
+-       * or from the default paths if it isn't set.
+-       */
+-***************
+-*** 360,366 ****
+-      } /* end while */
+-  
+-      H5PL_path_found_g = TRUE;
+-! 
+-  done:
+-      if(dl_path)
+-          dl_path = (char *)H5MM_xfree(dl_path);
+---- 360,366 ----
+-      } /* end while */
+-  
+-      H5PL_path_found_g = TRUE;
+-! #endif
+-  done:
+-      if(dl_path)
+-          dl_path = (char *)H5MM_xfree(dl_path);
+-***************
+-*** 396,402 ****
+-      htri_t         ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! 
+-      /* Open the directory */  
+-      if(!(dirp = HDopendir(dir)))
+-          HGOTO_ERROR(H5E_PLUGIN, H5E_OPENERROR, FAIL, "can't open directory")
+---- 396,402 ----
+-      htri_t         ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      /* Open the directory */  
+-      if(!(dirp = HDopendir(dir)))
+-          HGOTO_ERROR(H5E_PLUGIN, H5E_OPENERROR, FAIL, "can't open directory")
+-***************
+-*** 438,444 ****
+-                  pathname = (char *)H5MM_xfree(pathname);
+-          } /* end if */
+-      } /* end while */
+-! 
+-  done:
+-      if(dirp) 
+-          if(HDclosedir(dirp) < 0)
+---- 438,444 ----
+-                  pathname = (char *)H5MM_xfree(pathname);
+-          } /* end if */
+-      } /* end while */
+-! #endif
+-  done:
+-      if(dirp) 
+-          if(HDclosedir(dirp) < 0)
+-***************
+-*** 459,465 ****
+-      htri_t          ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! 
+-      /* Specify a file mask. *.* = We want everything! */
+-      sprintf(service, "%s\\*.dll", dir);
+-      if((hFind = FindFirstFile(service, &fdFile)) == INVALID_HANDLE_VALUE)
+---- 459,465 ----
+-      htri_t          ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      /* Specify a file mask. *.* = We want everything! */
+-      sprintf(service, "%s\\*.dll", dir);
+-      if((hFind = FindFirstFile(service, &fdFile)) == INVALID_HANDLE_VALUE)
+-***************
+-*** 494,500 ****
+-                  pathname = (char *)H5MM_xfree(pathname);
+-          } /* end if */
+-      } while(FindNextFile(hFind, &fdFile)); /* Find the next file. */
+-! 
+-  done:
+-      if(hFind) 
+-          FindClose(hFind);
+---- 494,500 ----
+-                  pathname = (char *)H5MM_xfree(pathname);
+-          } /* end if */
+-      } while(FindNextFile(hFind, &fdFile)); /* Find the next file. */
+-! #endif
+-  done:
+-      if(hFind) 
+-          FindClose(hFind);
+-***************
+-*** 529,535 ****
+-      htri_t         ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! 
+-      /* There are different reasons why a library can't be open, e.g. wrong architecture.
+-       * simply continue if we can't open it.
+-       */
+---- 529,535 ----
+-      htri_t         ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      /* There are different reasons why a library can't be open, e.g. wrong architecture.
+-       * simply continue if we can't open it.
+-       */
+-***************
+-*** 588,594 ****
+-                      HGOTO_ERROR(H5E_PLUGIN, H5E_CLOSEERROR, FAIL, "can't close dynamic library")
+-          } /* end if */
+-      } /* end else */
+-! 
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL__open() */
+---- 588,594 ----
+-                      HGOTO_ERROR(H5E_PLUGIN, H5E_CLOSEERROR, FAIL, "can't close dynamic library")
+-          } /* end if */
+-      } /* end else */
+-! #endif
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL__open() */
+-***************
+-*** 615,621 ****
+-      htri_t         ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! 
+-      /* Search in the table of already opened dynamic libraries */
+-      if(H5PL_table_used_g > 0) {
+-          size_t         i;
+---- 615,621 ----
+-      htri_t         ret_value = FALSE;
+-  
+-      FUNC_ENTER_STATIC
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      /* Search in the table of already opened dynamic libraries */
+-      if(H5PL_table_used_g > 0) {
+-          size_t         i;
+-***************
+-*** 636,642 ****
+-              } /* end if */
+-          } /* end for */
+-      } /* end if */
+-! 
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL__search_table() */
+---- 636,642 ----
+-              } /* end if */
+-          } /* end for */
+-      } /* end if */
+-! #endif
+-  done:
+-      FUNC_LEAVE_NOAPI(ret_value)
+-  } /* end H5PL__search_table() */
+-***************
+-*** 658,666 ****
+-  H5PL__close(H5PL_HANDLE handle)
+-  {
+-      FUNC_ENTER_STATIC_NOERR
+-! 
+-      H5PL_CLOSE_LIB(handle);
+-!    
+-      FUNC_LEAVE_NOAPI(SUCCEED)
+-  } /* end H5PL__close() */
+-  #endif /*H5_VMS*/
+---- 658,666 ----
+-  H5PL__close(H5PL_HANDLE handle)
+-  {
+-      FUNC_ENTER_STATIC_NOERR
+-! #ifdef H5_SUPPORT_DYNAMIC_LOADING
+-      H5PL_CLOSE_LIB(handle);
+-! #endif
+-      FUNC_LEAVE_NOAPI(SUCCEED)
+-  } /* end H5PL__close() */
+-  #endif /*H5_VMS*/
+-EOF
+-    if [[ $? != 0 ]] ; then
+-        warn "HDF5 1.8.14 static patch failed."
+-        return 1
+-    fi
+-
+-    return 0;
+-}
+-
+-
+-function apply_hdf5_1814_isatty_patch
+-{
+-    info "Patching hdf5 1.8.14 for isatty"
+-    patch -p0 << \EOF
+---- hl/src/H5LTanalyze.c.orig	2014-11-07 04:53:42.000000000 -0800
+-+++ hl/src/H5LTanalyze.c	2021-02-01 13:40:36.000000000 -0800
+-@@ -40,6 +40,7 @@
+- #include <string.h>
+- #include <errno.h>
+- #include <stdlib.h>
+-+#include <unistd.h>
+- 
+- /* end standard C headers. */
+-EOF
+-    if [[ $? != 0 ]] ; then
+-        warn "HDF5 1.8.14 isatty patch failed."
+-        return 1
+-    fi
+-
+-    return 0;
+-}
+-
+-function apply_hdf5_patch
+-{
+-    # Apply a patch for static if we build statically.
+-    if [[ "$DO_STATIC_BUILD" == "yes" ]] ; then
+-        apply_hdf5_1814_static_patch
+-        if [[ $? != 0 ]]; then
+-            return 1
+-        fi
+-    fi
+-
+-    apply_hdf5_1814_isatty_patch
+-    if [[ $? != 0 ]]; then
+-        return 1
+-    fi
+-
+-    return 0
+-}
+-
+ # *************************************************************************** #
+ #                          Function 8.1, build_hdf5                           #
+ # *************************************************************************** #
+@@ -522,170 +152,127 @@ function build_hdf5
+         return 1
+     fi
+ 
+-    #
+-    # Apply patches
+-    #
+-    cd $HDF5_BUILD_DIR || error "Can't cd to HDF5 build dir."
+-    apply_hdf5_patch
+-    if [[ $? != 0 ]] ; then
+-        if [[ $untarred_hdf5 == 1 ]] ; then
+-            warn "Giving up on HDF5 build because the patch failed."
+-            return 1
+-        else
+-            warn "Patch failed, but continuing.  I believe that this script\n" \
+-                 "tried to apply a patch to an existing directory that had\n" \
+-                 "already been patched ... that is, the patch is\n" \
+-                 "failing harmlessly on a second application."
+-        fi
+-    fi
++    # Turn most things off except tools
++    #-DCMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL=ON
++    cmk_opts=" \
++        -DBUILD_TESTING:BOOL=OFF \
++        -DHDF5_BUILD_CPP_LIB:BOOL=OFF \
++        -DHDF5_BUILD_JAVA:BOOL=OFF \
++        -DHDF5_BUILD_EXAMPLES:BOOL=OFF \
++        -DHDF5_BUILD_TOOLS:BOOL=ON \
++        -DHDF5_ENABLE_SUBFILING_VFD:BOOL=OFF \
++        -DCMAKE_C_COMPILER:STRING=${C_COMPILER} \
++        -DCMAKE_CXX_COMPILER:STRING=${CXX_COMPILER} \
++        -DCMAKE_C_FLAGS:STRING=\"-Wno-error=implicit-function-declaration ${C_OPT_FLAGS} ${PAR_LINKER_FLAGS}\" \
++        -DCMAKE_CXX_FLAGS:STRING=\"${CXX_OPT_FLAGS} ${PAR_LINKER_FLAGS}\" \
++        -DCMAKE_INSTALL_PREFIX:PATH=${VISITDIR}/hdf5/${HDF5_VERSION}/${VISITARCH}"
+ 
+-    #
+-    # Fix a test failing to compile
+-    #
+-    if [[ "$OPSYS" == "Darwin" && $(uname -r | cut -d'.' -f1) -ge 23 ]]; then
+-        sed -i '' 's/{NULL}};/{0}};/' test/tmisc.c
+-    fi
+-
+-    #
+-    # Configure HDF5
+-    #
+-    info "Configuring HDF5 . . ."
+-    if [[ "$OPSYS" == "Darwin" ]]; then
+-        export DYLD_LIBRARY_PATH="$VISITDIR/szip/$SZIP_VERSION/$VISITARCH/lib":$DYLD_LIBRARY_PATH
++    if [[ "$VISIT_BUILD_MODE" == "Debug" ]]; then
++        cmk_opts="${cmk_opts} -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo"
+     else
+-        export LD_LIBRARY_PATH="$VISITDIR/szip/$SZIP_VERSION/$VISITARCH/lib":$LD_LIBRARY_PATH
++        cmk_opts="${cmk_opts} -DCMAKE_BUILD_TYPE:STRING=Release"
+     fi
++
+     if [[ "$DO_STATIC_BUILD" == "yes" ]]; then
+-        cf_build_type="--disable-shared --enable-static"
++        cmk_opts="${cmk_opts} \
++           -DBUILD_STATIC_LIBS:BOOL=ON \
++           -DBUILD_SHARED_LIBS:BOOL=OFF \
++           -DONLY_SHARED_LIBS:BOOL=OFF"
+     else
+-        cf_build_type="--enable-shared --disable-static"
+-    fi
+-    cf_szip=""
+-    if test "x${DO_SZIP}" = "xyes"; then
+-        info "SZip requested.  Configuring HDF5 with SZip support."
+-        sz_dir="${VISITDIR}/szip/${SZIP_VERSION}/${VISITARCH}"
+-        cf_szip="--with-szlib=${sz_dir}"
++        cmk_opts="${cmk_opts} \
++           -DBUILD_STATIC_LIBS:BOOL=OFF \
++           -DBUILD_SHARED_LIBS:BOOL=ON \
++           -DONLY_SHARED_LIBS:BOOL=ON"
+     fi
+-    cf_zlib=""
++
++    if [[ "$DO_MOAB" == "yes" ]]; then
++        cmk_opts="${cmk_opts} -DHDF5_BUILD_HL_LIB:BOOL=ON"
++    else
++        cmk_opts="${cmk_opts} -DHDF5_BUILD_HL_LIB:BOOL=OFF"
++    fi   
++
+     if [[ "$DO_ZLIB" == "yes" ]]; then
+         info "Configuring HDF5 with ZLib support."
+-        cf_zlib="--with-zlib=\"${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}\""
++        cmk_opts="${cmk_opts} \
++            -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON \
++            -DZLIB_INCLUDE_DIR:PATH=\"${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}/include\" \
++            -DZLIB_LIBRARY_RELEASE:FILEPATH=\"${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}/lib/libz.${SO_EXT}\""
+     fi
+ 
+-    cf_extra_flags=""
+-    if [[ "$OPSYS" == "Darwin" ]]; then
+-        if [[ "$(uname -m)" == "arm64" ]]; then
+-            cf_extra_flags="-Wno-error=implicit-function-declaration"
+-        fi
+-    fi
+-
+-    # Disable Fortran on Darwin since it causes HDF5 builds to fail.
+-    if [[ "$OPSYS" == "Darwin" ]]; then
+-        cf_fortranargs=""
+-    elif [[ "$FC_COMPILER" == "no" ]] ; then
+-        cf_fortranargs=""
++    if [[ "$FC_COMPILER" == "no" ]] ; then
++        cmk_opts="${cmk_opts} -DHDF5_BUILD_FORTRAN:BOOL=OFF"
+     else
+-        cf_fortranargs="FC=\"$FC_COMPILER\" F77=\"$FC_COMPILER\" FCFLAGS=\"$FCFLAGS\" FFLAGS=\"$FCFLAGS\" --enable-fortran"
++        cmk_opts="${cmk_opts} \
++            -DHDF5_BUILD_FORTRAN:BOOL=ON \
++            -DCMAKE_Fortran_COMPILER:STRING=\"${FC_COMPILER}\""
+     fi
+ 
+-    cf_build_thread=""
+-    if [[ "$DO_THREAD_BUILD" == "yes" ]]; then
+-        cf_build_thread="--enable-threadsafe --with-pthread"
++    if [[ "$PAR_COMPILER" != "" ]] ; then
++        cmk_opts="${cmk_opts} \
++            -DHDF5_ENABLE_PARALLEL:BOOL=ON \
++            -DMPI_C_COMPILER:PATH=\"${PAR_COMPILER}\" \
++            -DMPI_CXX_COMPILER:PATH=\"${PAR_COMPILER_CXX}\""
+     fi
+ 
+-    build_mode=""
+-    if [[ "$VISIT_BUILD_MODE" == "Debug" ]]; then
+-        build_mode="--disable-production"
++    if [[ "$PAR_INCLUDE" != "" ]] ; then
++        cmk_opts="${cmk_opts} \
++            -DMPI_C_COMPILER_INCLUDE_DIRS:STRING=\"${PAR_INCLUDE_PATH}\" \
++            -DMPI_C_HEADER_DIR:PATH=\"${PAR_INCLUDE_PATH}\""
+     fi
+ 
+-    par_build_types="serial"
+-    if [[ -n "$PAR_COMPILER" && "$DO_MOAB" == "yes" ]]; then
+-        par_build_types="$par_build_types parallel"
++    if [[ "$PAR_LIBS" != "" ]] ; then
++        cmk_opts="${cmk_opts} -DMPI_C_LINK_FLAGS:STRING=\"${PAR_LINKER_FLAGS}\""
+     fi
+ 
+-    extra_ac_flags=""
+-    # detect coral and NVIDIA Grace CPU (ARM) systems, which older versions of 
+-    # autoconf don't detect
+-    if [[ "$(uname -m)" == "ppc64le" ]] ; then
+-         extra_ac_flags="ac_cv_build=powerpc64le-unknown-linux-gnu"
+-    elif [[ "$(uname -m)" == "aarch64" ]] ; then
+-         extra_ac_flags="ac_cv_build=aarch64-unknown-linux-gnu"
+-    fi 
+-    
+-    for bt in $par_build_types; do
+-
+-        rm -rf build_$bt
+-        mkdir build_$bt
+-        pushd build_$bt
+-
+-        cf_build_parallel=""
+-        cf_par_suffix=""
+-        if [[ "$bt" == "serial" ]]; then
+-            cf_build_parallel="--disable-parallel"
+-            cf_c_compiler="$C_COMPILER"
+-        elif [[ "$bt" == "parallel" ]]; then
+-            # these commands ruin the untar'd source code for 'normal' builds
+-            sed -e 's/libhdf5/libhdf5_mpi/g' -i.orig ../configure
+-            find .. -name Makefile.in -exec sed -e 's/libhdf5/libhdf5_mpi/g' -i.orig {} \;
+-            sed -e 's/libhdf5\.settings/libhdf5_mpi.settings/g' -i.orig ../src/H5make_libsettings.c
+-            pushd ../src; ln -s libhdf5.settings.in libhdf5_mpi.settings.in; popd
+-            cf_build_parallel="--enable-parallel"
+-            cf_par_suffix="_mpi"
+-            cf_c_compiler="$PAR_COMPILER"
+-        fi
++    # Make a build directory for an out-of-source build.. Change the
++    # VISIT_BUILD_DIR variable to represent the out-of-source build directory.
++    HDF5_SRC_DIR=${HDF5_BUILD_DIR}
++    HDF5_BUILD_DIR="${HDF5_SRC_DIR}-build"
++    if [[ ! -d $HDF5_BUILD_DIR ]] ; then
++        echo "Making build directory $HDF5_BUILD_DIR"
++        mkdir $HDF5_BUILD_DIR
++    fi
+ 
+-        # In order to ensure $cf_fortranargs is expanded to build the arguments to
+-        C_OPT_FLAGS="-Wno-error=implicit-function-declaration"
+-	# ignore conversion of NULL to int.
+-	C_OPT_FLAGS="$C_OPT_FLAGS -Wno-error=int-conversion"
+-        info "Invoking command to configure $bt HDF5"
+-        set -x
+-        # configure, we wrap the invokation in 'sh -c "..."' syntax
+-        sh -c "../configure CC=\"$cf_c_compiler\" \
+-            CFLAGS=\"$CFLAGS $C_OPT_FLAGS $cf_extra_flags\" $cf_fortranargs \
+-            --prefix=\"$VISITDIR/hdf5${cf_par_suffix}/$HDF5_VERSION/$VISITARCH\" \
+-            ${cf_szip} ${cf_zlib} ${cf_build_type} ${cf_build_thread} \
+-            ${cf_build_parallel} ${extra_ac_flags} $build_mode"
+-        set +x
+-        if [[ $? != 0 ]] ; then
+-            warn "$bt HDF5 configure failed.  Giving up"
+-            return 1
+-        fi
++    pushd $HDF5_BUILD_DIR > /dev/null || error "Can't cd to HDF5 build dir."
+ 
+-        #
+-        # Build HDF5
+-        #
+-        info "Making $bt HDF5 . . ."
+-        set -x
+-        $MAKE $MAKE_OPT_FLAGS lib
+-        set +x
+-        if [[ $? != 0 ]] ; then
+-            warn "$bt HDF5 build failed.  Giving up"
+-            return 1
+-        fi
+-        #
+-        # Install into the VisIt third party location.
+-        #
+-        # Install all targets until we can figure out
+-        # how to avoid installing just the tests.
+-        #
+-        info "Installing $bt HDF5 . . ."
+-        $MAKE install
+-
+-        if [[ $? != 0 ]] ; then
+-            warn "$bt HDF5 install failed.  Giving up"
+-            return 1
+-        fi
+-
+-        if [[ "$DO_GROUP" == "yes" ]] ; then
+-            chmod -R ug+w,a+rX "$VISITDIR/hdf5"
+-            chgrp -R ${GROUP} "$VISITDIR/hdf5"
+-        fi
++    info "CMaking HDF5. . . (~5 minutes)"
++    CMAKE_BIN="${CMAKE_INSTALL}/cmake"
++    if test -e bv_run_cmake.sh ; then
++        rm -f bv_run_cmake.sh
++    fi
++    echo "\"${CMAKE_BIN}\"" ${cmk_opts} ../${HDF5_SRC_DIR} > bv_run_cmake.sh
++    cat bv_run_cmake.sh
++    issue_command bash bv_run_cmake.sh
++    if [[ $? != 0 ]] ; then
++        warn "CMaking HDF5 failed. Giving up"
++        return 1
++    fi
+ 
+-        popd
+-    done
++    #
++    # Build HDF5
++    #
++    info "Building HDF5. . . (~5 minutes)"
++    $MAKE $MAKE_OPT_FLAGS
++    if [[ $? != 0 ]] ; then
++        warn "HDF5 build failed. Giving up"
++        return 1
++    fi
++   
++    #
++    # Install into the VisIt third party location.
++    #
++    info "Installing HDF5"
++    $MAKE install
++    if [[ $? != 0 ]] ; then
++        warn "HDF5 install failed.  Giving up"
++        return 1
++    fi
+ 
+-    cd "$START_DIR"
++    if [[ "$DO_GROUP" == "yes" ]] ; then
++        chmod -R ug+w,a+rX "$VISITDIR/hdf5"
++        chgrp -R ${GROUP} "$VISITDIR/hdf5"
++    fi
++    popd > /dev/null
+     info "Done with HDF5"
+     return 0
+ }
+@@ -721,7 +308,7 @@ function bv_hdf5_build
+         if [[ $? == 0 ]] ; then
+             info "Skipping HDF5 build.  HDF5 is already installed."
+         else
+-            info "Building HDF5 (~15 minutes)"
++            info "Building HDF5 (~5 minutes)"
+             build_hdf5
+             if [[ $? != 0 ]] ; then
+                 error "Unable to build or install HDF5.  Bailing out."
+
+From 3f3e41583ce4b59fe8c78138274eb144d957eedc Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Sat, 6 Dec 2025 17:27:53 -0800
+Subject: [PATCH 02/13] upd to 4.12.0; repl autotools w/cmake
+
+---
+ src/tools/dev/scripts/bv_support/bv_silo.sh | 452 ++++----------------
+ 1 file changed, 75 insertions(+), 377 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_silo.sh b/src/tools/dev/scripts/bv_support/bv_silo.sh
+index 6f18d32d421..173279c013a 100644
+--- a/src/tools/dev/scripts/bv_support/bv_silo.sh
++++ b/src/tools/dev/scripts/bv_support/bv_silo.sh
+@@ -44,11 +44,11 @@ function bv_silo_depends_on
+ 
+ function bv_silo_info
+ {
+-    export SILO_VERSION=${SILO_VERSION:-"4.10.2"}
+-    export SILO_FILE=${SILO_FILE:-"silo-${SILO_VERSION}-w-unix-line-endings.tar.gz"}
+-    export SILO_COMPATIBILITY_VERSION=${SILO_COMPATIBILITY_VERSION:-"4.10.2"}
+-    export SILO_BUILD_DIR=${SILO_BUILD_DIR:-"silo-${SILO_VERSION}"}
+-    export SILO_SHA256_CHECKSUM="db5e4fb6a4c313b9c596f09df307659079d51c36f013933dd957fe9412d37761"
++    export SILO_VERSION=${SILO_VERSION:-"4.12.0"}
++    export SILO_FILE=${SILO_FILE:-"Silo-${SILO_VERSION}.tar.xz"}
++    export SILO_COMPATIBILITY_VERSION=${SILO_COMPATIBILITY_VERSION:-"4.12.0"}
++    export SILO_BUILD_DIR=${SILO_BUILD_DIR:-"Silo-${SILO_VERSION}-build"}
++    export SILO_SHA256_CHECKSUM="bde1685e4547d5dd7416bd6215b41f837efef0e4934d938ba776957afbebdff0"
+ }
+ 
+ function bv_silo_print
+@@ -101,322 +101,6 @@ function bv_silo_ensure
+     fi
+ }
+ 
+-function apply_silo_4102_fpzip_patch
+-{
+-    info "Patching silo for fpzip DOMAIN and RANGE symbols"
+-    patch --verbose -p0 << \EOF
+-Index: src/fpzip/codec.h
+-===================================================================
+---- src/fpzip/codec.h   (revision 809)
+-+++ src/fpzip/codec.h   (working copy)
+-@@ -16,13 +16,13 @@
+- // identity map for integer arithmetic
+- template <typename T, unsigned width>
+- struct PCmap<T, width, T> {
+--  typedef T DOMAIN;
+--  typedef T RANGE;
+-+  typedef T FPZIP_Domain_t;
+-+  typedef T FPZIP_Range_t;
+-   static const unsigned bits = width;
+-   static const T        mask = ~T(0) >> (bitsizeof(T) - bits);
+--  RANGE forward(DOMAIN d) const { return d & mask; }
+--  DOMAIN inverse(RANGE r) const { return r & mask; }
+--  DOMAIN identity(DOMAIN d) const { return d & mask; }
+-+  FPZIP_Range_t forward(FPZIP_Domain_t d) const { return d & mask; }
+-+  FPZIP_Domain_t inverse(FPZIP_Range_t r) const { return r & mask; }
+-+  FPZIP_Domain_t identity(FPZIP_Domain_t d) const { return d & mask; }
+- };
+- #endif
+- 
+-Index: src/fpzip/pcdecoder.inl
+-===================================================================
+---- src/fpzip/pcdecoder.inl (revision 809)
+-+++ src/fpzip/pcdecoder.inl (working copy)
+-@@ -19,7 +19,7 @@
+- T PCdecoder<T, M, false>::decode(T pred, unsigned context)
+- {
+-   // map type T to unsigned integer type
+--  typedef typename M::RANGE U;
+-+  typedef typename M::FPZIP_Range_t U;
+-   U p = map.forward(pred);
+-   // entropy decode d = r - p
+-   U r = p + rd->decode(rm[context]) - bias;
+-@@ -46,7 +46,7 @@
+- template <typename T, class M>
+- T PCdecoder<T, M, true>::decode(T pred, unsigned context)
+- {
+--  typedef typename M::RANGE U;
+-+  typedef typename M::FPZIP_Range_t U;
+-   unsigned s = rd->decode(rm[context]);
+-   if (s > bias) {      // underprediction
+-     unsigned k = s - bias - 1;
+-Index: src/fpzip/pcencoder.inl
+-===================================================================
+---- src/fpzip/pcencoder.inl (revision 809)
+-+++ src/fpzip/pcencoder.inl (working copy)
+-@@ -18,7 +18,7 @@
+- T PCencoder<T, M, false>::encode(T real, T pred, unsigned context)
+- {
+-   // map type T to unsigned integer type
+--  typedef typename M::RANGE U;
+-+  typedef typename M::FPZIP_Range_t U;
+-   U r = map.forward(real);
+-   U p = map.forward(pred);
+-   // entropy encode d = r - p
+-@@ -47,7 +47,7 @@
+- T PCencoder<T, M, true>::encode(T real, T pred, unsigned context)
+- {
+-   // map type T to unsigned integer type
+--  typedef typename M::RANGE U;
+-+  typedef typename M::FPZIP_Range_t U;
+-   U r = map.forward(real);
+-   U p = map.forward(pred);
+-   // compute (-1)^s (2^k + m) = r - p, entropy code (s, k),
+-Index: src/fpzip/pcmap.h
+-===================================================================
+---- src/fpzip/pcmap.h   (revision 809)
+-+++ src/fpzip/pcmap.h   (working copy)
+-@@ -14,53 +14,53 @@
+- // specialized for integer-to-integer map
+- template <typename T, unsigned width>
+- struct PCmap<T, width, void> {
+--  typedef T DOMAIN;
+--  typedef T RANGE;
+--  static const unsigned bits = width;                    // RANGE bits
+--  static const unsigned shift = bitsizeof(RANGE) - bits; // DOMAIN\RANGE bits
+--  RANGE forward(DOMAIN d) const { return d >> shift; }
+--  DOMAIN inverse(RANGE r) const { return r << shift; }
+--  DOMAIN identity(DOMAIN d) const { return inverse(forward(d)); }
+-+  typedef T FPZIP_Domain_t;
+-+  typedef T FPZIP_Range_t;
+-+  static const unsigned bits = width;                    // FPZIP_Range_t bits
+-+  static const unsigned shift = bitsizeof(FPZIP_Range_t) - bits; // FPZIP_Domain_t\FPZIP_Range_t bits
+-+  FPZIP_Range_t forward(FPZIP_Domain_t d) const { return d >> shift; }
+-+  FPZIP_Domain_t inverse(FPZIP_Range_t r) const { return r << shift; }
+-+  FPZIP_Domain_t identity(FPZIP_Domain_t d) const { return inverse(forward(d)); }
+- };
+- 
+- // specialized for float type
+- template <unsigned width>
+- struct PCmap<float, width, void> {
+--  typedef float    DOMAIN;
+--  typedef unsigned RANGE;
+-+  typedef float    FPZIP_Domain_t;
+-+  typedef unsigned FPZIP_Range_t;
+-   union UNION {
+--    UNION(DOMAIN d) : d(d) {}
+--    UNION(RANGE r) : r(r) {}
+--    DOMAIN d;
+--    RANGE r;
+-+    UNION(FPZIP_Domain_t d) : d(d) {}
+-+    UNION(FPZIP_Range_t r) : r(r) {}
+-+    FPZIP_Domain_t d;
+-+    FPZIP_Range_t r;
+-   };
+--  static const unsigned bits = width;                    // RANGE bits
+--  static const unsigned shift = bitsizeof(RANGE) - bits; // DOMAIN\RANGE bits
+--  RANGE fcast(DOMAIN d) const;
+--  DOMAIN icast(RANGE r) const;
+--  RANGE forward(DOMAIN d) const;
+--  DOMAIN inverse(RANGE r) const;
+--  DOMAIN identity(DOMAIN d) const;
+-+  static const unsigned bits = width;                    // FPZIP_Range_t bits
+-+  static const unsigned shift = bitsizeof(FPZIP_Range_t) - bits; // FPZIP_Domain_t\FPZIP_Range_t bits
+-+  FPZIP_Range_t fcast(FPZIP_Domain_t d) const;
+-+  FPZIP_Domain_t icast(FPZIP_Range_t r) const;
+-+  FPZIP_Range_t forward(FPZIP_Domain_t d) const;
+-+  FPZIP_Domain_t inverse(FPZIP_Range_t r) const;
+-+  FPZIP_Domain_t identity(FPZIP_Domain_t d) const;
+- };
+- 
+- // specialized for double type
+- template <unsigned width>
+- struct PCmap<double, width, void> {
+--  typedef double             DOMAIN;
+--  typedef unsigned long long RANGE;
+-+  typedef double             FPZIP_Domain_t;
+-+  typedef unsigned long long FPZIP_Range_t;
+-   union UNION {
+--    UNION(DOMAIN d) : d(d) {}
+--    UNION(RANGE r) : r(r) {}
+--    DOMAIN d;
+--    RANGE r;
+-+    UNION(FPZIP_Domain_t d) : d(d) {}
+-+    UNION(FPZIP_Range_t r) : r(r) {}
+-+    FPZIP_Domain_t d;
+-+    FPZIP_Range_t r;
+-   };
+--  static const unsigned bits = width;                    // RANGE bits
+--  static const unsigned shift = bitsizeof(RANGE) - bits; // DOMAIN\RANGE bits
+--  RANGE fcast(DOMAIN d) const;
+--  DOMAIN icast(RANGE r) const;
+--  RANGE forward(DOMAIN d) const;
+--  DOMAIN inverse(RANGE r) const;
+--  DOMAIN identity(DOMAIN d) const;
+-+  static const unsigned bits = width;                    // FPZIP_Range_t bits
+-+  static const unsigned shift = bitsizeof(FPZIP_Range_t) - bits; // FPZIP_Domain_t\FPZIP_Range_t bits
+-+  FPZIP_Range_t fcast(FPZIP_Domain_t d) const;
+-+  FPZIP_Domain_t icast(FPZIP_Range_t r) const;
+-+  FPZIP_Range_t forward(FPZIP_Domain_t d) const;
+-+  FPZIP_Domain_t inverse(FPZIP_Range_t r) const;
+-+  FPZIP_Domain_t identity(FPZIP_Domain_t d) const;
+- };
+- 
+- #include "pcmap.inl"
+-Index: src/fpzip/pcmap.inl
+-===================================================================
+---- src/fpzip/pcmap.inl (revision 809)
+-+++ src/fpzip/pcmap.inl (working copy)
+-@@ -3,12 +3,12 @@
+- PCmap<float, width, void>::fcast(float d) const
+- {
+- #ifdef WITH_REINTERPRET_CAST
+--  return reinterpret_cast<const RANGE&>(d);
+-+  return reinterpret_cast<const FPZIP_Range_t&>(d);
+- #elif defined WITH_UNION
+-   UNION shared(d);
+-   return shared.r;
+- #else
+--  RANGE r;
+-+  FPZIP_Range_t r;
+-   memcpy(&r, &d, sizeof(r));
+-   return r;
+- #endif
+-@@ -19,12 +19,12 @@
+- PCmap<float, width, void>::icast(unsigned r) const
+- {
+- #ifdef WITH_REINTERPRET_CAST
+--  return reinterpret_cast<const DOMAIN&>(r);
+-+  return reinterpret_cast<const FPZIP_Domain_t&>(r);
+- #elif defined WITH_UNION
+-   UNION shared(r);
+-   return shared.d;
+- #else
+--  DOMAIN d;
+-+  FPZIP_Domain_t d;
+-   memcpy(&d, &r, sizeof(d));
+-   return d;
+- #endif
+-@@ -37,7 +37,7 @@
+- unsigned
+- PCmap<float, width, void>::forward(float d) const
+- {
+--  RANGE r = fcast(d);
+-+  FPZIP_Range_t r = fcast(d);
+-   r = ~r;
+-   r >>= shift;
+-   r ^= -(r >> (bits - 1)) >> (shift + 1);
+-@@ -61,7 +61,7 @@
+- float
+- PCmap<float, width, void>::identity(float d) const
+- {
+--  RANGE r = fcast(d);
+-+  FPZIP_Range_t r = fcast(d);
+-   r >>= shift;
+-   r <<= shift;
+-   return icast(r);
+-@@ -72,12 +72,12 @@
+- PCmap<double, width, void>::fcast(double d) const
+- {
+- #ifdef WITH_REINTERPRET_CAST
+--  return reinterpret_cast<const RANGE&>(d);
+-+  return reinterpret_cast<const FPZIP_Range_t&>(d);
+- #elif defined WITH_UNION
+-   UNION shared(d);
+-   return shared.r;
+- #else
+--  RANGE r;
+-+  FPZIP_Range_t r;
+-   memcpy(&r, &d, sizeof(r));
+-   return r;
+- #endif
+-@@ -88,12 +88,12 @@
+- PCmap<double, width, void>::icast(unsigned long long r) const
+- {
+- #ifdef WITH_REINTERPRET_CAST
+--  return reinterpret_cast<const DOMAIN&>(r);
+-+  return reinterpret_cast<const FPZIP_Domain_t&>(r);
+- #elif defined WITH_UNION
+-   UNION shared(r);
+-   return shared.d;
+- #else
+--  DOMAIN d;
+-+  FPZIP_Domain_t d;
+-   memcpy(&d, &r, sizeof(d));
+-   return d;
+- #endif
+-@@ -106,7 +106,7 @@
+- unsigned long long
+- PCmap<double, width, void>::forward(double d) const
+- {
+--  RANGE r = fcast(d);
+-+  FPZIP_Range_t r = fcast(d);
+-   r = ~r;
+-   r >>= shift;
+-   r ^= -(r >> (bits - 1)) >> (shift + 1);
+-@@ -130,7 +130,7 @@
+- double
+- PCmap<double, width, void>::identity(double d) const
+- {
+--  RANGE r = fcast(d);
+-+  FPZIP_Range_t r = fcast(d);
+-   r >>= shift;
+-   r <<= shift;
+-   return icast(r);
+-Index: src/fpzip/read.cpp
+-===================================================================
+---- src/fpzip/read.cpp  (revision 809)
+-+++ src/fpzip/read.cpp  (working copy)
+-@@ -103,7 +103,7 @@
+- {
+-   // initialize decompressor
+-   typedef PCmap<T, bits> TMAP;
+--  typedef typename TMAP::RANGE U;
+-+  typedef typename TMAP::FPZIP_Range_t U;
+-   typedef PCmap<U, bits, U> UMAP;
+-   RCmodel* rm = new RCqsmodel(false, PCdecoder<U, UMAP>::symbols);
+-   PCdecoder<U, UMAP>* fd = new PCdecoder<U, UMAP>(rd, &rm);
+-Index: src/fpzip/write.cpp
+-===================================================================
+---- src/fpzip/write.cpp (revision 809)
+-+++ src/fpzip/write.cpp (working copy)
+-@@ -103,7 +103,7 @@
+- {
+-   // initialize compressor
+-   typedef PCmap<T, bits> TMAP;
+--  typedef typename TMAP::RANGE U;
+-+  typedef typename TMAP::FPZIP_Range_t U;
+-   typedef PCmap<U, bits, U> UMAP;
+-   RCmodel* rm = new RCqsmodel(true, PCencoder<U, UMAP>::symbols);
+-   PCencoder<U, UMAP>* fe = new PCencoder<U, UMAP>(re, &rm);
+-EOF
+-    if [[ $? != 0 ]] ; then
+-        return 1
+-    fi
+-}
+-
+-function apply_silo_patch
+-{
+-    info "Patching silo . . ."
+-
+-    compare_version_strings $SILO_VERSION 4.10.3 -le
+-    if [[ $? -eq 0 ]]; then
+-        apply_silo_4102_fpzip_patch
+-        if [[ $? != 0 ]] ; then
+-            if [[ $untarred_silo == 1 ]] ; then
+-                warn "Giving up on Silo build because the patch failed."
+-                return 1
+-            else
+-                warn "Patch failed, but continuing.  I believe that this script\n" \
+-                     "tried to apply a patch to an existing directory that had\n" \
+-                     "already been patched ... that is, the patch is\n" \
+-                     "failing harmlessly on a second application."
+-            fi
+-        fi
+-    fi
+-    return 0
+-}
+-
+ # *************************************************************************** #
+ #                            Function 8, build_silo
+ #
+@@ -450,90 +134,104 @@ function build_silo
+     fi
+     
+     #
+-    # Call configure
++    # CMake Silo
+     #
+-    info "Configuring Silo . . ."
+-    cd $SILO_BUILD_DIR || error "Can't cd to Silo build dir."
++    cmake_opts="\
++        -DCMAKE_INSTALL_PREFIX:PATH=\"${VISITDIR}/silo/${SILO_VERSION}/${VISITARCH}\" \
++        -DBUILD_TESTING:BOOL=OFF \
++        -DSILO_ENABLE_INSTALL_LITE_HEADERS:BOOL=ON"
+ 
+-    apply_silo_patch || return 1
+-    info "Invoking command to configure Silo"
+-    if [[ "$DO_HDF5" == "yes" ]] ; then
+-        HDF5INCLUDE="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/include"
+-        HDF5LIB="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/lib"
+-        WITHHDF5ARG="--with-hdf5=$HDF5INCLUDE,$HDF5LIB"
++    if [[ "$VISIT_BUILD_MODE" == "Debug" ]]; then
++        cmake_opts="${cmake_opts} -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo"
+     else
+-        WITHHDF5ARG="--without-hdf5"
++        cmake_opts="${cmake_opts} -DCMAKE_BUILD_TYPE:STRING=Release"
+     fi
+-    if [[ "$DO_SZIP" == "yes" ]] ; then
+-        SZIPDIR="$VISITDIR/szip/$SZIP_VERSION/$VISITARCH"
+-        WITHSZIPARG="--with-szlib=$SZIPDIR"
++
++    if [[ "$FC_COMPILER" == "yes" ]] ; then
++        cmake_opts="${cmake_opts} -DSILO_ENABLE_FORTRAN:BOOL=ON"
+     else
+-        WITHSZIPARG="--without-szlib"
++        cmake_opts="${cmake_opts} -DSILO_ENABLE_FORTRAN:BOOL=OFF"
+     fi
+-    if [[ "$DO_ZLIB" == "no" ]]; then
+-        WITH_HZIP_AND_FPZIP="--disable-hzip --disable-fpzip"
+-    else
+-        ZLIBARGS="--with-zlib=${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}/include,${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}/lib"
++       
++    if [[ "$DO_PYTHON" == "yes" ]] ; then
++        cmake_opts="${cmake_opts} \
++            -DSILO_ENABLE_PYTHON_MODULE:BOOL=ON \
++            -DSILO_PYTHON_DIR:PATH=\"${VISITDIR}/python/${PYTHON_VERSION}/${VISITARCH}\""
+     fi
+-    WITHSHAREDARG="--enable-shared"
+-    if [[ "$DO_STATIC_BUILD" == "yes" ]] ; then
+-        WITHSHAREDARG="--disable-shared"
++
++    if [[ "$DO_STATIC_BUILD" == "yes" ]]; then
++        cmake_opts="${cmake_opts} -DSILO_ENABLE_SHARED:BOOL=OFF"
++    else
++        cmake_opts="${cmake_opts} -DSILO_ENABLE_SHARED:BOOL=ON"
+     fi
+-    WITHSILOQTARG='--disable-silex'
+ 
+-    if [[ "$FC_COMPILER" == "no" ]] ; then
+-        FORTRANARGS="--disable-fortran"
++    if [[ "$DO_HDF5" == "yes" ]] ; then
++        cmake_opts="${cmake_opts} \
++            -DSILO_ENABLE_HDF5:BOOL=ON \
++            -DSILO_HDF5_DIR:PATH=\"${VISITDIR}/hdf5/${HDF5_VERSION}/${VISITARCH}\""
+     else
+-        FORTRANARGS="FC=\"$FC_COMPILER\" F77=\"$FC_COMPILER\" FCFLAGS=\"$FCFLAGS\" FFLAGS=\"$FCFLAGS\""
++        cmake_opts="${cmake_opts} -DSILO_ENABLE_HDF5:BOOL=OFF"
++    fi
++
++    if [[ "$DO_SZIP" == "yes" ]] ; then
++        cmake_opts="${cmake_opts} -DSILO_HDF5_SZIP_DIR:PATH=\"${VISITDIR}/szip/${SZIP_VERSION}/${VISITARCH}\""
++    fi
++
++    if [[ "$DO_ZLIB" == "yes" ]]; then
++        cmake_opts="${cmake_opts} \
++            -DSILO_BUILD_FOR_BSD_LICENSE:BOOL=OFF \
++            -DSILO_ENABLE_HZIP:BOOL=ON \
++            -DSILO_ENABLE_FPZIP:BOOL=ON \
++            -DSILO_ZLIB_DIR:PATH=\"${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}\""
++    fi
++
++    if [[ "$DO_SILEX" == "yes" ]]; then
++        cmake_opts="${cmake_opts} \
++            -DSILO_ENABLE_SILEX:BOOL=ON \
++            -DSILO_QT6_DIR:PATH=\"${VISITDIR}/qt/${QT_VERSION}/${VISITARCH}\""
+     fi
+ 
+-    extra_ac_flags=""
+-    # detect coral and NVIDIA Grace CPU (ARM) systems, which older versions of 
+-    # autoconf don't detect
+-    if [[ "$(uname -m)" == "ppc64le" ]] ; then
+-         extra_ac_flags="ac_cv_build=powerpc64le-unknown-linux-gnu"
+-    elif [[ "$(uname -m)" == "aarch64" ]] ; then
+-         extra_ac_flags="ac_cv_build=aarch64-unknown-linux-gnu"
+-    fi 
+-
+-    set -x
+-    # In order to ensure $FORTRANARGS is expanded to build the arguments to
+-    # configure, we wrap the invokation in 'sh -c "..."' syntax
+-    sh -c "./configure CXX=\"$CXX_COMPILER\" CC=\"$C_COMPILER\" \
+-        CFLAGS=\"$CFLAGS $C_OPT_FLAGS\" CXXFLAGS=\"$CXXFLAGS $CXX_OPT_FLAGS\" \
+-        $FORTRANARGS \
+-        --prefix=\"$VISITDIR/silo/$SILO_VERSION/$VISITARCH\" \
+-        $WITHHDF5ARG $WITHSZIPARG $WITHSILOQTARG $WITHSHAREDARG $WITH_HZIP_AND_FPZIP\
+-        --enable-install-lite-headers --without-readline \
+-        $ZLIBARGS $SILO_EXTRA_OPTIONS ${extra_ac_flags}"
+-    set +x
++    info "CMake'ing Silo"
++    CMAKE_BIN="${CMAKE_INSTALL}/cmake"
++    mkdir -p ${SILO_BUILD_DIR}
++    cd ${SILO_BUILD_DIR} || error "Can't cd to Silo build dir."
++
++    #
++    # Several platforms have had problems with the VTK cmake configure command
++    # issued simply via "issue_command".  This was first discovered on 
++    # BGQ and then showed up in random cases for both OSX and Linux machines. 
++    # Brad resolved this on BGQ  with a simple work around - we write a simple 
++    # script that we invoke with bash which calls cmake with all of the proper
++    # arguments. We are now using this strategy for all platforms.
++    #
++
++    rm -f bv_run_cmake.sh
++    echo "\"${CMAKE_BIN}\"" ${cmake_opts} ../Silo-${SILO_VERSION} > bv_run_cmake.sh
++    cat bv_run_cmake.sh
++    issue_command bash bv_run_cmake.sh
+ 
+     if [[ $? != 0 ]] ; then
+-        warn "Silo configure failed.  Giving up"
++        warn "Silo cmake failed. Giving up"
+         return 1
+     fi
+ 
+     #
+     # Build Silo
+     #
+-    info "Building Silo . . . (~2 minutes)"
+-    $MAKE $MAKE_OPT_FLAGS
++    info "Building Silo. . . (~5 minutes)"
++    ${CMAKE_COMMAND} --build . $MAKE_OPT_FLAGS
+     if [[ $? != 0 ]] ; then
+-        $MAKE $MAKE_OPT_FLAGS LIBS=-lstdc++
+-        if [[ $? != 0 ]] ; then
+-            warn "Silo build failed.  Giving up"
+-            return 1
+-        fi
++        warn "Silo build failed. Giving up"
++        return 1
+     fi
+ 
+     #
+     # Install into the VisIt third party location.
+     #
+     info "Installing Silo"
+-
+-    $MAKE install
++    ${CMAKE_COMMAND} --install .
+     if [[ $? != 0 ]] ; then
+-        warn "Silo install failed.  Giving up"
++        warn "Silo install failed. Giving up"
+         return 1
+     fi
+ 
+
+From c4dce634146fa5724e548d3ff721e06a3ef5efd6 Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Mon, 8 Dec 2025 04:22:44 -0800
+Subject: [PATCH 03/13] fix for HDF5-2.0
+
+---
+ src/databases/M3DC1/avtM3DC1FileFormat.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/databases/M3DC1/avtM3DC1FileFormat.h b/src/databases/M3DC1/avtM3DC1FileFormat.h
+index 0eeeb98b693..52768a9f8c9 100644
+--- a/src/databases/M3DC1/avtM3DC1FileFormat.h
++++ b/src/databases/M3DC1/avtM3DC1FileFormat.h
+@@ -11,6 +11,7 @@
+ 
+ #include <avtMTSDFileFormat.h>
+ 
++#define H5_USE_18_API
+ #include <hdf5.h>
+ 
+ #include <vector>
+
+From 8509801af536f14d02102a3032145bfbb032ddda Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Mon, 8 Dec 2025 04:23:55 -0800
+Subject: [PATCH 04/13] fix for HDF5-2.0
+
+---
+ src/databases/OpenPMD/OpenPMDClasses/PMDFile.h      | 1 +
+ src/databases/OpenPMD/OpenPMDClasses/PMDIteration.C | 3 ++-
+ src/databases/OpenPMD/OpenPMDClasses/PMDIteration.h | 1 +
+ src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h  | 1 +
+ 4 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/databases/OpenPMD/OpenPMDClasses/PMDFile.h b/src/databases/OpenPMD/OpenPMDClasses/PMDFile.h
+index 22b9d633ecf..1d35ecec8f6 100644
+--- a/src/databases/OpenPMD/OpenPMDClasses/PMDFile.h
++++ b/src/databases/OpenPMD/OpenPMDClasses/PMDFile.h
+@@ -25,6 +25,7 @@
+ #include <stdio.h>
+ #include <iostream>
+ 
++#define H5_USE_18_API
+ #include <hdf5.h>
+ //#include <visit-hdf5.h>
+ //#include "H5Cpp.h"
+diff --git a/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.C b/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.C
+index c8a26b461e2..e8cd8108861 100644
+--- a/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.C
++++ b/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.C
+@@ -140,7 +140,7 @@ void PMDIteration::ScanFields(hid_t fileId)
+ 
+ 			// Get the type: group, dataset...
+ 			// int object_type =  H5Gget_objtype_by_idx(groupId, (size_t)i );
+-			err = H5Oget_info_by_name(groupId, object_name , &object_info,
++			err = H5Oget_info_by_name(groupId, object_name , &object_info, H5O_INFO_ALL,
+ 										H5P_DEFAULT);
+ 
+ 			// Checking of the type
+@@ -363,6 +363,7 @@ void PMDIteration::ScanParticles(hid_t fileId)
+ 				err = H5Oget_info_by_name(groupId,
+ 										objectName,
+ 										&objectInfo,
++                                                                                H5O_INFO_ALL,
+ 										H5P_DEFAULT);
+ 
+ 				// Check that the object is well a group
+diff --git a/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.h b/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.h
+index e757022bf78..eed1a5a69bd 100644
+--- a/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.h
++++ b/src/databases/OpenPMD/OpenPMDClasses/PMDIteration.h
+@@ -14,6 +14,7 @@
+ #include <stdio.h>
+ #include <iostream>
+ 
++#define H5_USE_18_API
+ #include <hdf5.h>
+ //#include <visit-hdf5.h>
+ 
+diff --git a/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h b/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h
+index a6fef1379c7..d4cd7ce4204 100644
+--- a/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h
++++ b/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h
+@@ -23,6 +23,7 @@
+ #include <stdio.h>
+ #include <iostream>
+ 
++#define H5_USE_110_API
+ #include <hdf5.h>
+ //#include <visit-hdf5.h>
+ 
+
+From a68bedd7b0ea9f26b814bedbbcdabdc0ef590bc6 Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Wed, 10 Dec 2025 01:16:00 -0800
+Subject: [PATCH 05/13] make work with hdf5-2.0
+
+---
+ src/tools/dev/scripts/bv_support/bv_xdmf.sh | 209 +++++++++++++++++++-
+ 1 file changed, 207 insertions(+), 2 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_xdmf.sh b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+index 85a8f06b4d3..6d5d12a0632 100644
+--- a/src/tools/dev/scripts/bv_support/bv_xdmf.sh
++++ b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+@@ -168,6 +168,177 @@ EOF
+     return 0;
+ }
+ 
++function apply_xdmf_hdf520
++{
++    info "Patching Xdmf 2.1.1 for HDF5-2.0. . ."
++    patch -p0 << \EOF
++diff -c Xdmf/libsrc/XdmfH5Driver.cxx Xdmf.patched/libsrc/XdmfH5Driver.cxx 
++*** Xdmf/libsrc/XdmfH5Driver.cxx	2011-03-10 17:45:29.000000000 -0800
++--- Xdmf.patched/libsrc/XdmfH5Driver.cxx	2025-12-08 04:39:51.371778000 -0800
++***************
++*** 33,38 ****
++--- 33,39 ----
++  #include "XdmfDsmBuffer.h"
++  #include "XdmfDsmComm.h"
++  #include "assert.h"
+++ #define H5_USE_18_API
++  #include "hdf5.h"
++  
++  #include <cstring>
++***************
++*** 110,116 ****
++  #   define file_seek            lseek
++  #   define file_truncate        HDftruncate
++  #endif
++! #define MAXADDR (((haddr_t)1<<(8*sizeof(file_offset_t)-1))-1)
++  #define DSM_HSIZE_T size_t
++  #else
++  #define MAXADDR     ((haddr_t)~(size_t)0 - 1)
++--- 111,117 ----
++  #   define file_seek            lseek
++  #   define file_truncate        HDftruncate
++  #endif
++! #define MAXADDR HADDR_MAX
++  #define DSM_HSIZE_T size_t
++  #else
++  #define MAXADDR     ((haddr_t)~(size_t)0 - 1)
++***************
++*** 136,142 ****
++  #if (H5_VERS_MAJOR>1)||((H5_VERS_MAJOR==1)&&(H5_VERS_MINOR>=8))
++  static haddr_t H5FD_dsm_get_eoa(const H5FD_t *_file, H5FD_mem_t type);
++  static herr_t H5FD_dsm_set_eoa(H5FD_t *_file, H5FD_mem_t type, haddr_t addr);
++! static haddr_t H5FD_dsm_get_eof(const H5FD_t *_file);
++  #else
++  static haddr_t H5FD_dsm_get_eoa(H5FD_t *_file);
++  static herr_t H5FD_dsm_set_eoa(H5FD_t *_file, haddr_t addr);
++--- 137,143 ----
++  #if (H5_VERS_MAJOR>1)||((H5_VERS_MAJOR==1)&&(H5_VERS_MINOR>=8))
++  static haddr_t H5FD_dsm_get_eoa(const H5FD_t *_file, H5FD_mem_t type);
++  static herr_t H5FD_dsm_set_eoa(H5FD_t *_file, H5FD_mem_t type, haddr_t addr);
++! static haddr_t H5FD_dsm_get_eof(const H5FD_t *_file, H5FD_mem_t type);
++  #else
++  static haddr_t H5FD_dsm_get_eoa(H5FD_t *_file);
++  static herr_t H5FD_dsm_set_eoa(H5FD_t *_file, haddr_t addr);
++***************
++*** 149,189 ****
++  }
++  
++  static const H5FD_class_t H5FD_dsm_g = {
++!     "dsm",                      /*name          */
++!     MAXADDR,                    /*maxaddr       */
++!     H5F_CLOSE_WEAK,             /*fc_degree     */
++!     NULL,                       /*sb_size       */
++!     NULL,                       /*sb_encode     */
++!     NULL,                       /*sb_decode     */
++!     sizeof(H5FD_dsm_fapl_t),    /*fapl_size     */
++!     H5FD_dsm_fapl_get,          /*fapl_get      */
++!     NULL,                       /*fapl_copy     */
++!     NULL,                       /*fapl_free     */
++!     0,                          /*dxpl_size     */
++!     NULL,                       /*dxpl_copy     */
++!     NULL,                       /*dxpl_free     */
++!     H5FD_dsm_open,              /*open          */
++!     H5FD_dsm_close,             /*close         */
++!     H5FD_dsm_cmp,               /*cmp           */
++!     NULL,                       /*query         */
++! #if (H5_VERS_MAJOR>1)||((H5_VERS_MAJOR==1)&&(H5_VERS_MINOR>=8))
++!     NULL,                       /* get_type_map */
++! #endif
++!     NULL,                       /*alloc         */
++!     NULL,                       /*free          */
++!     H5FD_dsm_get_eoa,           /*get_eoa       */
++!     H5FD_dsm_set_eoa,           /*set_eoa       */
++!     H5FD_dsm_get_eof,           /*get_eof       */
++!     NULL,                       /*get_handle    */
++!     H5FD_dsm_read,              /*read          */
++!     H5FD_dsm_write,             /*write         */
++!     NULL,                       /*flush         */
++! #if (H5_VERS_MAJOR>1)||((H5_VERS_MAJOR==1)&&(H5_VERS_MINOR>=8))
++!     NULL,                       /* truncate     */
++! #endif
++!     NULL,                       /*lock          */
++!     NULL,                       /*unlock        */
++!     H5FD_FLMAP_SINGLE           /*fl_map        */
++  };
++  
++  
++--- 150,169 ----
++  }
++  
++  static const H5FD_class_t H5FD_dsm_g = {
++!     .name = "dsm",                           /*name          */
++!     .maxaddr = MAXADDR,                      /*maxaddr       */
++!     .fc_degree = H5F_CLOSE_WEAK,             /*fc_degree     */
++!     .fapl_size = sizeof(H5FD_dsm_fapl_t),    /*fapl_size     */
++!     .fapl_get = H5FD_dsm_fapl_get,           /*fapl_get      */
++!     .open = H5FD_dsm_open,                   /*open          */
++!     .close = H5FD_dsm_close,                 /*close         */
++!     .cmp = H5FD_dsm_cmp,                     /*cmp           */
++!     .get_eoa = H5FD_dsm_get_eoa,             /*get_eoa       */
++!     .set_eoa = H5FD_dsm_set_eoa,             /*set_eoa       */
++!     .get_eof = H5FD_dsm_get_eof,             /*get_eof       */
++!     .read = H5FD_dsm_read,                   /*read          */
++!     .write = H5FD_dsm_write,                 /*write         */
++!     .fl_map = H5FD_FLMAP_SINGLE              /*fl_map        */
++  };
++  
++  
++***************
++*** 685,691 ****
++   */
++  static haddr_t
++  #if (H5_VERS_MAJOR>1)||((H5_VERS_MAJOR==1)&&(H5_VERS_MINOR>=8))
++! H5FD_dsm_get_eof(const H5FD_t *_file)
++  #else
++  H5FD_dsm_get_eof(H5FD_t *_file)
++  #endif
++--- 665,671 ----
++   */
++  static haddr_t
++  #if (H5_VERS_MAJOR>1)||((H5_VERS_MAJOR==1)&&(H5_VERS_MINOR>=8))
++! H5FD_dsm_get_eof(const H5FD_t *_file, H5FD_mem_t type)
++  #else
++  H5FD_dsm_get_eof(H5FD_t *_file)
++  #endif
++EOF
++    if [[ $? != 0 ]] ; then
++        warn "Xdmf 2.1.1 for HDF5-2.0 patch #1 failed."
++        return 1
++    fi
++
++    patch -p0 << \EOF
++diff -c Xdmf/CMakeLists.txt Xdmf.patched/CMakeLists.txt
++*** Xdmf/CMakeLists.txt	2011-03-10 17:45:29.000000000 -0800
++--- Xdmf.patched/CMakeLists.txt	2025-12-09 18:27:31.823565000 -0800
++***************
++*** 308,313 ****
++--- 308,315 ----
++    OPTION(XDMF_SYSTEM_HDF5_IS_PARALLEL "HDF5 Built for MPI" OFF)
++    IF (XDMF_SYSTEM_HDF5_IS_PARALLEL)
++    ENDIF (XDMF_SYSTEM_HDF5_IS_PARALLEL)
+++   find_package(HDF5)
+++   if(NOT HDF5_FOUND)
++    FIND_LIBRARY(HDF5_LIBRARY
++      hdf5
++      /usr/lib
++***************
++*** 318,323 ****
++--- 320,326 ----
++      /usr/include
++      /opt/include
++      /usr/local/include)
+++   endif()
++    MESSAGE(STATUS "Using system HDF5")
++    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_PATH})
++EOF
++    if [[ $? != 0 ]] ; then
++        warn "Xdmf 2.1.1 for HDF5-2.0 patch #2 failed."
++        return 1
++    fi
++
++    return 0;
++}
++
+ function apply_xdmf_patch
+ {
+     if [[ ${XDMF_VERSION} == 2.1.1 ]] ; then
+@@ -180,11 +351,40 @@ function apply_xdmf_patch
+         if [[ $? != 0 ]] ; then
+             return 1
+         fi
++
++        apply_xdmf_hdf520
++        if [[ $? != 0 ]] ; then
++            return 1
++        fi
+     fi
+ 
+     return 0;
+ }
+ 
++function probe_hdf5_mpi_dependence
++{
++    set +x
++    rm -rf build-visit-probe-hdf5
++    mkdir -p build-visit-probe-hdf5
++    cat > build-visit-probe-hdf5/CMakeLists.txt << \EOF
++cmake_minimum_required(VERSION 3.24)
++project(hdf5_probe LANGUAGES C)
++find_package(HDF5 CONFIG REQUIRED)
++if(HDF5_MPI_C_INCLUDE_PATH)
++  message(STATUS "HDF5_MPI_C_INCLUDE_PATH=${HDF5_MPI_C_INCLUDE_PATH}")
++endif()
++EOF
++    pushd build-visit-probe-hdf5 >/dev/null 2>&1
++    mpi_inc=$(${CMAKE_COMMAND} -DHDF5_DIR:PATH="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/cmake" . | grep HDF5_MPI_C_INCLUDE_PATH | cut -d'=' -f2)
++    popd >/dev/null 2>&1
++    if [[ -n "$mpi_inc" ]]; then
++        echo -I$mpi_inc
++    else
++        echo ""
++    fi
++    set -x
++}
++
+ function build_xdmf
+ {
+     CMAKE_BIN="${CMAKE_COMMAND}"
+@@ -242,20 +442,24 @@ function build_xdmf
+     fi
+     xmllib=$VISITDIR/${VTK_INSTALL_DIR}/$VTK_VERSION/$VISITARCH/lib${xml64}/libvtklibxml2${xmlsep}${VTK_SHORT_VERSION}.${SO_EXT}
+ 
++    mpi_inc=$(probe_hdf5_mpi_dependence)
++    info "HDF5 MPI include path detected as \"$mpi_inc\""
++
+     set -x
+     ${CMAKE_BIN} -DCMAKE_INSTALL_PREFIX:PATH="$VISITDIR/Xdmf/${XDMF_VERSION}/${VISITARCH}"\
+                  -DCMAKE_BUILD_TYPE:STRING="${VISIT_BUILD_MODE}" \
+                  -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON \
+                  -DBUILD_SHARED_LIBS:BOOL=${XDMF_SHARED_LIBS}\
+-                 -DCMAKE_CXX_FLAGS:STRING="${CXXFLAGS} ${CXX_OPT_FLAGS}"\
++                 -DCMAKE_CXX_FLAGS:STRING="${CXXFLAGS} ${CXX_OPT_FLAGS} ${mpi_inc}"\
+                  -DCMAKE_CXX_COMPILER:STRING=${CXX_COMPILER}\
+-                 -DCMAKE_C_FLAGS:STRING="${CFLAGS} ${C_OPT_FLAGS}"\
++                 -DCMAKE_C_FLAGS:STRING="${CFLAGS} ${C_OPT_FLAGS} ${mpi_inc}"\
+                  -DCMAKE_C_COMPILER:STRING=${C_COMPILER}\
+                  -DBUILD_TESTING:BOOL=OFF \
+                  -DXDMF_BUILD_MPI:BOOL=OFF \
+                  -DXDMF_BUILD_VTK:BOOL=OFF \
+                  -DXDMF_BUILD_UTILS:BOOL=OFF \
+                  -DXDMF_SYSTEM_HDF5:BOOL=ON \
++                 -DHDF5_DIR:PATH="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/cmake" \
+                  -DHDF5_INCLUDE_PATH:PATH="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/include" \
+                  -DHDF5_LIBRARY:FILEPATH="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/lib/libhdf5.${SO_EXT}" \
+                  -DXDMF_SYSTEM_ZLIB:BOOL=ON \
+@@ -264,6 +468,7 @@ function build_xdmf
+                  -DXDMF_SYSTEM_LIBXML2:BOOL=ON \
+                  -DLIBXML2_INCLUDE_PATH:PATH="${xmlinc}" \
+                  -DLIBXML2_LIBRARY:FILEPATH="${xmllib}" \
++                 -Wno-dev \
+                  .
+     set +x
+ 
+
+From 3eaf8c204717654b17cd1af606893bfcc82974df Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Wed, 10 Dec 2025 11:09:02 -0800
+Subject: [PATCH 06/13] add comments
+
+---
+ src/tools/dev/scripts/bv_support/bv_xdmf.sh | 30 ++++++++++++++-------
+ 1 file changed, 21 insertions(+), 9 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_xdmf.sh b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+index 6d5d12a0632..ec70bf33eca 100644
+--- a/src/tools/dev/scripts/bv_support/bv_xdmf.sh
++++ b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+@@ -168,7 +168,7 @@ EOF
+     return 0;
+ }
+ 
+-function apply_xdmf_hdf520
++function apply_xdmf_hdf520_patch
+ {
+     info "Patching Xdmf 2.1.1 for HDF5-2.0. . ."
+     patch -p0 << \EOF
+@@ -352,7 +352,7 @@ function apply_xdmf_patch
+             return 1
+         fi
+ 
+-        apply_xdmf_hdf520
++        apply_xdmf_hdf520_patch
+         if [[ $? != 0 ]] ; then
+             return 1
+         fi
+@@ -361,15 +361,25 @@ function apply_xdmf_patch
+     return 0;
+ }
+ 
++#
++# We're using an ancient version of Xdmf lib (2.1.1 ~2012)
++# Its CMake logic doesn't use find_package() on HDF5. Patching
++# it to use find_package() still doesn't work due to differences
++# in assumptions about CMake variable names. When HDF5 is installed
++# with parallel enabled, any library including hdf5.h then also
++# hits a #include for mpi.h. So, we need to tell Xdmf's CMake where
++# to find mpi header files. This little bit of logic creates a tiny
++# CMake project to call find_package() on HDF5 and then tease from
++# it the relevant CMake variable.
++#
+ function probe_hdf5_mpi_dependence
+ {
+-    set +x
+     rm -rf build-visit-probe-hdf5
+     mkdir -p build-visit-probe-hdf5
+     cat > build-visit-probe-hdf5/CMakeLists.txt << \EOF
+ cmake_minimum_required(VERSION 3.24)
+ project(hdf5_probe LANGUAGES C)
+-find_package(HDF5 CONFIG REQUIRED)
++find_package(HDF5)
+ if(HDF5_MPI_C_INCLUDE_PATH)
+   message(STATUS "HDF5_MPI_C_INCLUDE_PATH=${HDF5_MPI_C_INCLUDE_PATH}")
+ endif()
+@@ -382,7 +392,6 @@ EOF
+     else
+         echo ""
+     fi
+-    set -x
+ }
+ 
+ function build_xdmf
+@@ -442,18 +451,21 @@ function build_xdmf
+     fi
+     xmllib=$VISITDIR/${VTK_INSTALL_DIR}/$VTK_VERSION/$VISITARCH/lib${xml64}/libvtklibxml2${xmlsep}${VTK_SHORT_VERSION}.${SO_EXT}
+ 
++    # Probe HDF5 installation for MPI header file path, if any
+     mpi_inc=$(probe_hdf5_mpi_dependence)
+     info "HDF5 MPI include path detected as \"$mpi_inc\""
+ 
++    # The -Wno-dev arg to CMake here makes pawing through any
++    # failed output a lot easier.
+     set -x
+-    ${CMAKE_BIN} -DCMAKE_INSTALL_PREFIX:PATH="$VISITDIR/Xdmf/${XDMF_VERSION}/${VISITARCH}"\
++    ${CMAKE_BIN} -DCMAKE_INSTALL_PREFIX:PATH="$VISITDIR/Xdmf/${XDMF_VERSION}/${VISITARCH}" \
+                  -DCMAKE_BUILD_TYPE:STRING="${VISIT_BUILD_MODE}" \
+                  -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON \
+                  -DBUILD_SHARED_LIBS:BOOL=${XDMF_SHARED_LIBS}\
+-                 -DCMAKE_CXX_FLAGS:STRING="${CXXFLAGS} ${CXX_OPT_FLAGS} ${mpi_inc}"\
++                 -DCMAKE_CXX_FLAGS:STRING="${CXXFLAGS} ${CXX_OPT_FLAGS} ${mpi_inc}" \
+                  -DCMAKE_CXX_COMPILER:STRING=${CXX_COMPILER}\
+-                 -DCMAKE_C_FLAGS:STRING="${CFLAGS} ${C_OPT_FLAGS} ${mpi_inc}"\
+-                 -DCMAKE_C_COMPILER:STRING=${C_COMPILER}\
++                 -DCMAKE_C_FLAGS:STRING="${CFLAGS} ${C_OPT_FLAGS} ${mpi_inc}" \
++                 -DCMAKE_C_COMPILER:STRING=${C_COMPILER} \
+                  -DBUILD_TESTING:BOOL=OFF \
+                  -DXDMF_BUILD_MPI:BOOL=OFF \
+                  -DXDMF_BUILD_VTK:BOOL=OFF \
+
+From 47e867ec28fd2a582f6cb6e35948b6786831334e Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Wed, 10 Dec 2025 11:56:27 -0800
+Subject: [PATCH 07/13] rm unnecessary CMakeLists.txt patch
+
+---
+ src/tools/dev/scripts/bv_support/bv_xdmf.sh | 32 +--------------------
+ 1 file changed, 1 insertion(+), 31 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_xdmf.sh b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+index ec70bf33eca..bb3b5be2eb7 100644
+--- a/src/tools/dev/scripts/bv_support/bv_xdmf.sh
++++ b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+@@ -306,36 +306,6 @@ EOF
+         return 1
+     fi
+ 
+-    patch -p0 << \EOF
+-diff -c Xdmf/CMakeLists.txt Xdmf.patched/CMakeLists.txt
+-*** Xdmf/CMakeLists.txt	2011-03-10 17:45:29.000000000 -0800
+---- Xdmf.patched/CMakeLists.txt	2025-12-09 18:27:31.823565000 -0800
+-***************
+-*** 308,313 ****
+---- 308,315 ----
+-    OPTION(XDMF_SYSTEM_HDF5_IS_PARALLEL "HDF5 Built for MPI" OFF)
+-    IF (XDMF_SYSTEM_HDF5_IS_PARALLEL)
+-    ENDIF (XDMF_SYSTEM_HDF5_IS_PARALLEL)
+-+   find_package(HDF5)
+-+   if(NOT HDF5_FOUND)
+-    FIND_LIBRARY(HDF5_LIBRARY
+-      hdf5
+-      /usr/lib
+-***************
+-*** 318,323 ****
+---- 320,326 ----
+-      /usr/include
+-      /opt/include
+-      /usr/local/include)
+-+   endif()
+-    MESSAGE(STATUS "Using system HDF5")
+-    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_PATH})
+-EOF
+-    if [[ $? != 0 ]] ; then
+-        warn "Xdmf 2.1.1 for HDF5-2.0 patch #2 failed."
+-        return 1
+-    fi
+-
+     return 0;
+ }
+ 
+@@ -453,7 +423,7 @@ function build_xdmf
+ 
+     # Probe HDF5 installation for MPI header file path, if any
+     mpi_inc=$(probe_hdf5_mpi_dependence)
+-    info "HDF5 MPI include path detected as \"$mpi_inc\""
++    info "Xdmf: HDF5 MPI include path detected as \"$mpi_inc\""
+ 
+     # The -Wno-dev arg to CMake here makes pawing through any
+     # failed output a lot easier.
+
+From ee2312f2e26208de73794da98e8baa0595c955e3 Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Wed, 10 Dec 2025 17:01:25 -0800
+Subject: [PATCH 08/13] fix for HDF5-2.0
+
+---
+ src/databases/OpenPMD/OpenPMDClasses/PMDFile.C     | 2 +-
+ src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h | 2 +-
+ src/databases/PVLD/pvldReader.C                    | 4 ++--
+ src/databases/Pixie/avtPixieFileFormat.C           | 4 ++--
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/databases/OpenPMD/OpenPMDClasses/PMDFile.C b/src/databases/OpenPMD/OpenPMDClasses/PMDFile.C
+index e2e897b7b8d..c8c04c0c7b5 100644
+--- a/src/databases/OpenPMD/OpenPMDClasses/PMDFile.C
++++ b/src/databases/OpenPMD/OpenPMDClasses/PMDFile.C
+@@ -301,7 +301,7 @@ void PMDFile::ScanIterations()
+ 
+         // Get the type: group, dataset...
+         err = H5Oget_info_by_name(groupId, iterationName , &objectInfo,
+-                                  H5P_DEFAULT);
++                                  H5O_INFO_ALL, H5P_DEFAULT);
+ 
+         // Check that it is a group, we ignore dataset in the data group...
+         if (objectInfo.type == H5O_TYPE_GROUP)
+diff --git a/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h b/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h
+index d4cd7ce4204..35c6aa1a6e6 100644
+--- a/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h
++++ b/src/databases/OpenPMD/OpenPMDClasses/PMDParticle.h
+@@ -23,7 +23,7 @@
+ #include <stdio.h>
+ #include <iostream>
+ 
+-#define H5_USE_110_API
++#define H5_USE_18_API
+ #include <hdf5.h>
+ //#include <visit-hdf5.h>
+ 
+diff --git a/src/databases/PVLD/pvldReader.C b/src/databases/PVLD/pvldReader.C
+index c6b9b203bfc..3c6bf1d5056 100644
+--- a/src/databases/PVLD/pvldReader.C
++++ b/src/databases/PVLD/pvldReader.C
+@@ -143,7 +143,7 @@ extern "C"
+ herr_t GetDataSetName( hid_t gid, const char* name, const H5L_info_t *info, void *op_data )
+ {
+     H5O_info_t io;
+-    herr_t herr = H5Oget_info_by_name( gid, name, &io, H5P_DEFAULT );
++    herr_t herr = H5Oget_info_by_name( gid, name, &io, H5O_INFO_ALL, H5P_DEFAULT );
+     if( herr<0 )  return herr;
+ 
+     if( io.type == H5O_TYPE_DATASET )
+@@ -159,7 +159,7 @@ extern "C"
+ herr_t GetSubgroupName( hid_t gid, const char* name, const H5L_info_t *info, void *op_data )
+ {
+     H5O_info_t io;
+-    herr_t herr = H5Oget_info_by_name( gid, name, &io, H5P_DEFAULT );
++    herr_t herr = H5Oget_info_by_name( gid, name, &io, H5O_INFO_ALL, H5P_DEFAULT );
+     if( herr<0 )  return herr;
+ 
+     if( io.type == H5O_TYPE_GROUP )
+diff --git a/src/databases/Pixie/avtPixieFileFormat.C b/src/databases/Pixie/avtPixieFileFormat.C
+index 78a6f4f777f..3871f98643e 100644
+--- a/src/databases/Pixie/avtPixieFileFormat.C
++++ b/src/databases/Pixie/avtPixieFileFormat.C
+@@ -1973,7 +1973,7 @@ avtPixieFileFormat::VisitLinks(hid_t locId, const char* name,
+       H5O_info_t objinfo;
+ 
+       /* Stat the object */
+-      if(H5Oget_info_by_name(locId, name, &objinfo, H5P_DEFAULT) < 0) {
++      if(H5Oget_info_by_name(locId, name, &objinfo, H5O_INFO_ALL, H5P_DEFAULT) < 0) {
+         debug5 << "visitLinks() - unable to open object with name " <<name <<std::endl;
+         debug5 << "visitLinks() - this object and all children will be dropped." <<std::endl;
+         return 0;
+@@ -2032,7 +2032,7 @@ avtPixieFileFormat::VisitLinks(hid_t locId, const char* name,
+       }
+ 
+       //Test-open the linked object
+-      if (H5Oget_info (obj_id, &objinfo) < 0) {
++      if (H5Oget_info (obj_id, &objinfo, H5O_INFO_ALL) < 0) {
+         debug5 << "visitLinks() - unable to open external object " <<name <<std::endl;
+         debug5 << "visitLinks() - this object and all children will be dropped." <<std::endl;
+         return 0;
+
+From 374173b027f2bfafa524dbad958612ec9fb81588 Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Wed, 10 Dec 2025 19:01:59 -0800
+Subject: [PATCH 09/13] adj handling of HDF5 mpi dep
+
+---
+ src/tools/dev/scripts/bv_support/bv_cgns.sh   | 46 ++++++++++++++++++-
+ .../dev/scripts/bv_support/bv_conduit.sh      |  6 ++-
+ src/tools/dev/scripts/bv_support/bv_h5part.sh |  4 +-
+ src/tools/dev/scripts/bv_support/bv_xdmf.sh   | 40 ++--------------
+ .../dev/scripts/bv_support/helper_funcs.sh    | 45 ++++++++++++++++++
+ 5 files changed, 99 insertions(+), 42 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_cgns.sh b/src/tools/dev/scripts/bv_support/bv_cgns.sh
+index 41a44e1393b..6fe467f715a 100644
+--- a/src/tools/dev/scripts/bv_support/bv_cgns.sh
++++ b/src/tools/dev/scripts/bv_support/bv_cgns.sh
+@@ -282,6 +282,41 @@ EOF
+     return 0
+ }
+ 
++function apply_cgns_hdf520_patch
++{
++    info "Patching CGNS 4.1.0 configure for HDF5 2.0"
++    patch -p0 << \EOF
++diff -c CGNS-4.1.0/src/configure CGNS-4.1.0.patched/src/configure
++*** CGNS-4.1.0/src/configure	2021-03-03 08:22:54.000000000 -0800
++--- CGNS-4.1.0.patched/src/configure	2025-12-10 17:36:29.764546000 -0800
++***************
++*** 5686,5692 ****
++  
++    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if HDF5 is 1.8 or greater" >&5
++  $as_echo_n "checking if HDF5 is 1.8 or greater... " >&6; }
++!   if test ${H5_VERS_MAJOR} -ge 1 && test ${H5_VERS_MINOR} -ge 8; then
++      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
++  $as_echo "yes" >&6; }
++    else
++--- 5686,5694 ----
++  
++    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if HDF5 is 1.8 or greater" >&5
++  $as_echo_n "checking if HDF5 is 1.8 or greater... " >&6; }
++!   if [ "$H5_VERS_MAJOR" -gt 1 ] || \
++!      { [ "$H5_VERS_MAJOR" -eq 1 ] && [ "$H5_VERS_MINOR" -ge 8 ]; }
++!   then
++      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
++  $as_echo "yes" >&6; }
++    else
++EOF
++    if [[ $? != 0 ]] ; then
++        warn "CGNS patch for HDF5-2.0 failed."
++        return 1
++    fi
++
++    return 0
++}
++
+ function apply_cgns_patch
+ {
+     if [[ ${CGNS_VERSION} == "4.1.0" ]] ; then
+@@ -289,6 +324,11 @@ function apply_cgns_patch
+         if [[ $? != 0 ]] ; then
+             return 1
+         fi
++
++        apply_cgns_hdf520_patch
++        if [[ $? != 0 ]] ; then
++            return 1
++        fi
+     fi
+ 
+     return 0
+@@ -386,15 +426,17 @@ function build_cgns
+     # Disable fortran
+     FORTRANARGS="--with-fortran=no"
+ 
++    probe_hdf5_mpi_dependence
++
+     set -x
+     if [[ "$OPSYS" == "Darwin" ]] ; then
+         env CXX="$CXX_COMPILER" CC="$C_COMPILER" \
+-            CFLAGS="$CFLAGS $C_OPT_FLAGS" CXXFLAGS="$CXXFLAGS $CXX_OPT_FLAGS" \
++            CFLAGS="$CFLAGS $C_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG" CXXFLAGS="$CXXFLAGS $CXX_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG" \
+             LDFLAGS="$LDFLAGS_ENV" LIBS="$LIBS_ENV" \
+             ./configure --enable-64bit --enable-cgnstools=no ${cf_build_type} $H5ARGS $FORTRANARGS --prefix="$VISITDIR/cgns/$CGNS_VERSION/$VISITARCH"
+     else
+         env CXX="$CXX_COMPILER" CC="$C_COMPILER" \
+-            CFLAGS="$CFLAGS $C_OPT_FLAGS" CXXFLAGS="$CXXFLAGS $CXX_OPT_FLAGS" \
++            CFLAGS="$CFLAGS $C_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG" CXXFLAGS="$CXXFLAGS $CXX_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG" \
+             ./configure --enable-64bit --enable-cgnstools=no ${cf_build_type} $H5ARGS $FORTRANARGS --prefix="$VISITDIR/cgns/$CGNS_VERSION/$VISITARCH"
+     fi
+     set +x
+diff --git a/src/tools/dev/scripts/bv_support/bv_conduit.sh b/src/tools/dev/scripts/bv_support/bv_conduit.sh
+index 4ecceecf830..cbe9f749af0 100644
+--- a/src/tools/dev/scripts/bv_support/bv_conduit.sh
++++ b/src/tools/dev/scripts/bv_support/bv_conduit.sh
+@@ -192,13 +192,15 @@ function build_conduit
+     else
+         cfg_opts="${cfg_opts} -DBUILD_SHARED_LIBS:BOOL=ON"
+     fi
++
++    probe_hdf5_mpi_dependence
+     
+     cfg_opts="${cfg_opts} -DENABLE_TESTS:BOOL=false"
+     cfg_opts="${cfg_opts} -DENABLE_DOCS:BOOL=false"
+     cfg_opts="${cfg_opts} -DCMAKE_C_COMPILER:STRING=${C_COMPILER}"
+     cfg_opts="${cfg_opts} -DCMAKE_CXX_COMPILER:STRING=${CXX_COMPILER}"
+-    cfg_opts="${cfg_opts} -DCMAKE_C_FLAGS:STRING=\"${C_OPT_FLAGS} ${PAR_LINKER_FLAGS}\""
+-    cfg_opts="${cfg_opts} -DCMAKE_CXX_FLAGS:STRING=\"${CXX_OPT_FLAGS} ${PAR_LINKER_FLAGS}\""
++    cfg_opts="${cfg_opts} -DCMAKE_C_FLAGS:STRING=\"${C_OPT_FLAGS} ${PAR_LINKER_FLAGS} ${VISIT_HDF5_MPI_INCLUDE_FLAG}\""
++    cfg_opts="${cfg_opts} -DCMAKE_CXX_FLAGS:STRING=\"${CXX_OPT_FLAGS} ${PAR_LINKER_FLAGS} ${VISIT_HDF5_MPI_INCLUDE_FLAG}\""
+     if test "${OPSYS}" = "Darwin" ; then
+         cfg_opts="${cfg_opts} -DCMAKE_INSTALL_NAME_DIR:PATH=${conduit_install_path}/lib"
+         if test "${MACOSX_DEPLOYMENT_TARGET}" = "10.10"; then
+diff --git a/src/tools/dev/scripts/bv_support/bv_h5part.sh b/src/tools/dev/scripts/bv_support/bv_h5part.sh
+index f5d8781ddb2..46e09221a55 100644
+--- a/src/tools/dev/scripts/bv_support/bv_h5part.sh
++++ b/src/tools/dev/scripts/bv_support/bv_h5part.sh
+@@ -549,12 +549,14 @@ function build_h5part
+          EXTRAARGS="ac_cv_build=aarch64-unknown-linux-gnu"
+     fi
+ 
++    probe_hdf5_mpi_dependence
++
+     info "Invoking command to configure H5Part"
+     # In order to ensure $FORTRANARGS is expanded to build the arguments to
+     # configure, we wrap the invokation in 'sh -c "..."' syntax
+     set -x
+     sh -c "./configure ${WITHHDF5ARG} ${OPTIONAL} CXX=\"$CXX_COMPILER\" \
+-       CC=\"$C_COMPILER\" CFLAGS=\"$CFLAGS $C_OPT_FLAGS\" CXXFLAGS=\"$CXXFLAGS $CXX_OPT_FLAGS\" \
++       CC=\"$C_COMPILER\" CFLAGS=\"$CFLAGS $C_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG\" CXXFLAGS=\"$CXXFLAGS $CXX_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG\" \
+        $FORTRANARGS $EXTRAARGS \
+        --prefix=\"$VISITDIR/h5part/$H5PART_VERSION/$VISITARCH\""
+     set +x
+diff --git a/src/tools/dev/scripts/bv_support/bv_xdmf.sh b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+index bb3b5be2eb7..81df162941f 100644
+--- a/src/tools/dev/scripts/bv_support/bv_xdmf.sh
++++ b/src/tools/dev/scripts/bv_support/bv_xdmf.sh
+@@ -331,39 +331,6 @@ function apply_xdmf_patch
+     return 0;
+ }
+ 
+-#
+-# We're using an ancient version of Xdmf lib (2.1.1 ~2012)
+-# Its CMake logic doesn't use find_package() on HDF5. Patching
+-# it to use find_package() still doesn't work due to differences
+-# in assumptions about CMake variable names. When HDF5 is installed
+-# with parallel enabled, any library including hdf5.h then also
+-# hits a #include for mpi.h. So, we need to tell Xdmf's CMake where
+-# to find mpi header files. This little bit of logic creates a tiny
+-# CMake project to call find_package() on HDF5 and then tease from
+-# it the relevant CMake variable.
+-#
+-function probe_hdf5_mpi_dependence
+-{
+-    rm -rf build-visit-probe-hdf5
+-    mkdir -p build-visit-probe-hdf5
+-    cat > build-visit-probe-hdf5/CMakeLists.txt << \EOF
+-cmake_minimum_required(VERSION 3.24)
+-project(hdf5_probe LANGUAGES C)
+-find_package(HDF5)
+-if(HDF5_MPI_C_INCLUDE_PATH)
+-  message(STATUS "HDF5_MPI_C_INCLUDE_PATH=${HDF5_MPI_C_INCLUDE_PATH}")
+-endif()
+-EOF
+-    pushd build-visit-probe-hdf5 >/dev/null 2>&1
+-    mpi_inc=$(${CMAKE_COMMAND} -DHDF5_DIR:PATH="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/cmake" . | grep HDF5_MPI_C_INCLUDE_PATH | cut -d'=' -f2)
+-    popd >/dev/null 2>&1
+-    if [[ -n "$mpi_inc" ]]; then
+-        echo -I$mpi_inc
+-    else
+-        echo ""
+-    fi
+-}
+-
+ function build_xdmf
+ {
+     CMAKE_BIN="${CMAKE_COMMAND}"
+@@ -422,8 +389,7 @@ function build_xdmf
+     xmllib=$VISITDIR/${VTK_INSTALL_DIR}/$VTK_VERSION/$VISITARCH/lib${xml64}/libvtklibxml2${xmlsep}${VTK_SHORT_VERSION}.${SO_EXT}
+ 
+     # Probe HDF5 installation for MPI header file path, if any
+-    mpi_inc=$(probe_hdf5_mpi_dependence)
+-    info "Xdmf: HDF5 MPI include path detected as \"$mpi_inc\""
++    probe_hdf5_mpi_dependence
+ 
+     # The -Wno-dev arg to CMake here makes pawing through any
+     # failed output a lot easier.
+@@ -432,9 +398,9 @@ function build_xdmf
+                  -DCMAKE_BUILD_TYPE:STRING="${VISIT_BUILD_MODE}" \
+                  -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON \
+                  -DBUILD_SHARED_LIBS:BOOL=${XDMF_SHARED_LIBS}\
+-                 -DCMAKE_CXX_FLAGS:STRING="${CXXFLAGS} ${CXX_OPT_FLAGS} ${mpi_inc}" \
++                 -DCMAKE_CXX_FLAGS:STRING="${CXXFLAGS} ${CXX_OPT_FLAGS} ${VISIT_HDF5_MPI_INCLUDE_FLAG}" \
+                  -DCMAKE_CXX_COMPILER:STRING=${CXX_COMPILER}\
+-                 -DCMAKE_C_FLAGS:STRING="${CFLAGS} ${C_OPT_FLAGS} ${mpi_inc}" \
++                 -DCMAKE_C_FLAGS:STRING="${CFLAGS} ${C_OPT_FLAGS} ${VISIT_HDF5_MPI_INCLUDE_FLAG}" \
+                  -DCMAKE_C_COMPILER:STRING=${C_COMPILER} \
+                  -DBUILD_TESTING:BOOL=OFF \
+                  -DXDMF_BUILD_MPI:BOOL=OFF \
+diff --git a/src/tools/dev/scripts/bv_support/helper_funcs.sh b/src/tools/dev/scripts/bv_support/helper_funcs.sh
+index 7a8e136366f..daeba00e97b 100644
+--- a/src/tools/dev/scripts/bv_support/helper_funcs.sh
++++ b/src/tools/dev/scripts/bv_support/helper_funcs.sh
+@@ -1847,3 +1847,48 @@ function mangle_libraries
+     touch "$mangled_dir"/done_mangling_library
+     return 0
+ }
++
++#
++# We use some ancient versions of third party libraries.
++# They don't handle building against a parallel enabled HDF5
++# install. When HDF5 is built for parallel, any library
++# including hdf5.h then also hits a #include for mpi.h. So, we
++# need to tell the library's CMake or Autotools logic where
++# to find MPI header files. The little bit of logic here creates
++# a tiny CMake project to call find_package() on HDF5 and then
++# tease from it the relevant CMake variable. If that variable is
++# already defined, because this function has been called before,
++# it just returns the value it computed previously.
++#
++function probe_hdf5_mpi_dependence
++{
++    if [ "${VISIT_HDF5_MPI_INCLUDE_FLAG+set}" = set ]; then
++        info "HDF5 MPI include flag detected as \"${VISIT_HDF5_MPI_INCLUDE_FLAG}\""
++        return
++    fi
++
++    if [[ "$DO_HDF5" == "yes" ]] ; then
++        rm -rf build-visit-probe-hdf5
++        mkdir -p build-visit-probe-hdf5
++        cat > build-visit-probe-hdf5/CMakeLists.txt << \EOF
++cmake_minimum_required(VERSION 3.24)
++project(hdf5_probe LANGUAGES C)
++find_package(HDF5)
++if(HDF5_MPI_C_INCLUDE_PATH)
++  message(STATUS "HDF5_MPI_C_INCLUDE_PATH=${HDF5_MPI_C_INCLUDE_PATH}")
++endif()
++EOF
++        pushd build-visit-probe-hdf5 >/dev/null 2>&1
++        mpi_inc=$(${CMAKE_COMMAND} -DHDF5_DIR:PATH="$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH/cmake" . | grep HDF5_MPI_C_INCLUDE_PATH | cut -d'=' -f2)
++        popd >/dev/null 2>&1
++        if [[ -n "$mpi_inc" ]]; then
++            export VISIT_HDF5_MPI_INCLUDE_FLAG="-I${mpi_inc}"
++        else
++            export VISIT_HDF5_MPI_INCLUDE_FLAG=""
++        fi
++    else
++        export VISIT_HDF5_MPI_INCLUDE_FLAG=""
++    fi
++    info "HDF5 MPI include flag detected as \"${VISIT_HDF5_MPI_INCLUDE_FLAG}\""
++}
++
+
+From 62618eae01b7437b0708beabb6ddbe1e8f7f7d6c Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Thu, 11 Dec 2025 10:06:38 -0800
+Subject: [PATCH 10/13] fix zlib option
+
+---
+ src/tools/dev/scripts/bv_support/bv_hdf5.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_hdf5.sh b/src/tools/dev/scripts/bv_support/bv_hdf5.sh
+index 6443eeb7295..7ec2cf3de93 100644
+--- a/src/tools/dev/scripts/bv_support/bv_hdf5.sh
++++ b/src/tools/dev/scripts/bv_support/bv_hdf5.sh
+@@ -185,7 +185,7 @@ function build_hdf5
+            -DONLY_SHARED_LIBS:BOOL=ON"
+     fi
+ 
+-    if [[ "$DO_MOAB" == "yes" ]]; then
++    if [[ "$DO_MOAB" == "yes" || "$DO_MFEM" == "yes" || "$DO_NETCDF" == "yes" ]]; then
+         cmk_opts="${cmk_opts} -DHDF5_BUILD_HL_LIB:BOOL=ON"
+     else
+         cmk_opts="${cmk_opts} -DHDF5_BUILD_HL_LIB:BOOL=OFF"
+@@ -194,7 +194,7 @@ function build_hdf5
+     if [[ "$DO_ZLIB" == "yes" ]]; then
+         info "Configuring HDF5 with ZLib support."
+         cmk_opts="${cmk_opts} \
+-            -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=ON \
++            -DHDF5_ENABLE_ZLIB_SUPPORT:BOOL=ON \
+             -DZLIB_INCLUDE_DIR:PATH=\"${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}/include\" \
+             -DZLIB_LIBRARY_RELEASE:FILEPATH=\"${VISITDIR}/zlib/${ZLIB_VERSION}/${VISITARCH}/lib/libz.${SO_EXT}\""
+     fi
+
+From 979b7e9c20535ee19b786e511f5d27b4c860132e Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Fri, 12 Dec 2025 18:15:21 -0800
+Subject: [PATCH 11/13] fix for HDF5-2.0
+
+---
+ src/tools/dev/scripts/bv_support/bv_mfem.sh   |   6 +-
+ src/tools/dev/scripts/bv_support/bv_moab.sh   | 154 +++-----
+ src/tools/dev/scripts/bv_support/bv_netcdf.sh | 354 +++++++++++++++++-
+ 3 files changed, 419 insertions(+), 95 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_mfem.sh b/src/tools/dev/scripts/bv_support/bv_mfem.sh
+index 6048747265d..6d43a615b4e 100644
+--- a/src/tools/dev/scripts/bv_support/bv_mfem.sh
++++ b/src/tools/dev/scripts/bv_support/bv_mfem.sh
+@@ -183,10 +183,12 @@ function build_mfem
+     mkdir build
+     cd build || error "Can't cd to MFEM build dir."
+ 
++    probe_hdf5_mpi_dependence
++
+     vopts="-DCMAKE_C_COMPILER:STRING=${C_COMPILER}"
+-    vopts="${vopts} -DCMAKE_C_FLAGS:STRING=\"${C_OPT_FLAGS} $CFLAGS\""
++    vopts="${vopts} -DCMAKE_C_FLAGS:STRING=\"${C_OPT_FLAGS} ${VISIT_HDF5_MPI_INCLUDE_FLAG} $CFLAGS\""
+     vopts="${vopts} -DCMAKE_CXX_COMPILER:STRING=${CXX_COMPILER}"
+-    vopts="${vopts} -DCMAKE_CXX_FLAGS:STRING=\"${CXX_OPT_FLAGS} $CXXFLAGS\""
++    vopts="${vopts} -DCMAKE_CXX_FLAGS:STRING=\"${CXX_OPT_FLAGS} ${VISIT_HDF5_MPI_INCLUDE_FLAG} $CXXFLAGS\""
+     vopts="${vopts} -DMFEM_ENABLE_MINIAPPS:BOOL=OFF"
+     # MFEM 4.6 is hard coded to use C++11
+     #  In the future, we want to change this to C++14
+diff --git a/src/tools/dev/scripts/bv_support/bv_moab.sh b/src/tools/dev/scripts/bv_support/bv_moab.sh
+index c4158907207..a833d3c10a0 100644
+--- a/src/tools/dev/scripts/bv_support/bv_moab.sh
++++ b/src/tools/dev/scripts/bv_support/bv_moab.sh
+@@ -98,106 +98,76 @@ function build_moab
+     cd $MOAB_BUILD_DIR || error "Can't cd to moab build dir."
+     rm -f src/moab/MOABConfig.h # work around a potential issue in MOAB tarball
+ 
+-    par_build_types="serial"
+-    if [[ -n "$PAR_COMPILER_CXX" ]]; then
+-        par_build_types="$par_build_types parallel"
++    cf_mpi_arg=""
++    cf_par_suffix=""
++    if [[ -n "$PAR_COMPILER" ]]; then
++        cf_mpi_arg="--with-mpi"
++        cf_c_compiler="$PAR_COMPILER"
++        cf_cxx_compiler="$PAR_COMPILER_CXX"
++    else
++        cf_c_compiler="$C_COMPILER"
++        cf_cxx_compiler="$CXX_COMPILER"
+     fi
+ 
+-    for bt in $par_build_types; do 
+-
+-        mkdir build_$bt
+-        pushd build_$bt
+-
+-        cf_mpi_arg=""
+-        cf_par_suffix=""
+-        if [[ "$bt" == "serial" ]]; then
+-            cf_c_compiler="$C_COMPILER"
+-            cf_cxx_compiler="$CXX_COMPILER"
+-        elif [[ "$bt" == "parallel" ]]; then
+-            # these commands ruin the untar'd source code for normal builds
+-            sed -i.orig -e 's/libhdf5/libhdf5_mpi/g' ../configure
+-            sed -i.orig -e 's/libMOAB/libMOAB_mpi/g' ../configure
+-            sed -i.orig -e 's/=hdf5/=hdf5_mpi/' ../configure
+-            sed -i.orig -e 's/^LIBS = @LIBS@/LIBS = @HDF5_LIBS@ @LIBS@/' ../tools/Makefile.in
+-            find .. -name Makefile.in -exec sed -e 's/libMOAB/libMOAB_mpi/g' -i.orig {} \;
+-            cf_mpi_arg="--with-mpi"
+-            cf_par_suffix="_mpi"
+-            cf_c_compiler="$PAR_COMPILER"
+-            cf_cxx_compiler="$PAR_COMPILER_CXX"
+-        fi
+-
+-        cf_prefix_arg="--prefix=$VISITDIR/moab${cf_par_suffix}/$MOAB_VERSION/$VISITARCH"
+-        cf_common_args="--with-pic --disable-fortran --disable-imesh --disable-cgns"
+-
+-        if [[ "DO_STATIC_BUILD" == "yes" ]]; then
+-            cf_static_args="--enable-static --disable-shared"
+-        else
+-            cf_static_args="--disable-static --enable-shared"
+-        fi
+-
+-        cf_hdf5_ldflags_arg=""
+-        cf_szip_arg=""
+-        cf_zlib_arg=""
+-        cf_hdf5_arg="--with-hdf5=$VISITDIR/hdf5${cf_par_suffix}/$HDF5_VERSION/$VISITARCH"
+-        if [[ "$DO_SZIP" == "yes" ]] ; then
+-            cf_szip_arg="--with-szip=$VISITDIR/szip/$SZIP_VERSION/$VISITARCH"
+-            cf_hdf5_ldflags_arg="-lsz"
+-        fi
+-        cf_zlib_arg="--with-zlib=$VISITDIR/zlib/$ZLIB_VERSION/$VISITARCH"
+-        cf_hdf5_ldflags_arg="$cf_hdf5_ldflags_arg -lz"
+-        if [[ -n "$cf_hdf5_ldflags_arg" ]]; then
+-            cf_hdf5_ldflags_arg="--with-hdf5-ldflags=\"$cf_hdf5_ldflags_arg\""
+-        fi
++    cf_prefix_arg="--prefix=$VISITDIR/moab/$MOAB_VERSION/$VISITARCH"
++    cf_common_args="--with-pic --disable-fortran --disable-imesh --disable-cgns"
+ 
+-        info "Configuring $bt moab . . ."
+-        set -x
+-        sh -c "../configure \
+-            CXX=\"$cf_cxx_compiler\" CXXFLAGS=\"$CXXFLAGS $CXX_OPT_FLAGS\" \
+-            CC=\"$cf_c_compiler\" CFLAGS=\"$CFLAGS $C_OPT_FLAGS\" \
+-            ${cf_prefix_arg} ${cf_mpi_arg} ${cf_common_args} ${cf_static_args} \
+-            ${cf_hdf5_arg} ${cf_hdf5_ldflags_arg} \
+-            ${cf_szip_arg} ${cf_zlib_arg}"
+-        set +x
+-        if [[ $? != 0 ]] ; then
+-            warn "$bt MOAB configure failed.  Giving up"
+-            return 1
+-        fi
+-
+-        #
+-        # Build moab
+-        #
++    if [[ "DO_STATIC_BUILD" == "yes" ]]; then
++        cf_static_args="--enable-static --disable-shared"
++    else
++        cf_static_args="--disable-static --enable-shared"
++    fi
+ 
+-        info "Building $bt moab . . . (~2 minutes)"
+-        $MAKE $MAKE_OPT_FLAGS
+-        if [[ $? != 0 ]] ; then
+-            warn "$bt moab build failed.  Giving up"
+-            return 1
+-        fi
++    cf_hdf5_ldflags_arg=""
++    cf_szip_arg=""
++    cf_zlib_arg=""
++    cf_hdf5_arg="--with-hdf5=$VISITDIR/hdf5/$HDF5_VERSION/$VISITARCH"
++    if [[ "$DO_SZIP" == "yes" ]] ; then
++        cf_szip_arg="--with-szip=$VISITDIR/szip/$SZIP_VERSION/$VISITARCH"
++        cf_hdf5_ldflags_arg="-lsz"
++    fi
++    cf_zlib_arg="--with-zlib=$VISITDIR/zlib/$ZLIB_VERSION/$VISITARCH"
++    cf_hdf5_ldflags_arg="$cf_hdf5_ldflags_arg -lz"
++    if [[ -n "$cf_hdf5_ldflags_arg" ]]; then
++        cf_hdf5_ldflags_arg="--with-hdf5-ldflags=\"$cf_hdf5_ldflags_arg\""
++    fi
+ 
+-        #
+-        # Install into the VisIt third party location.
+-        #
+-        info "Installing $bt moab"
+-        $MAKE install
++    probe_hdf5_mpi_dependence
++
++    info "Configuring moab . . ."
++    set -x
++    sh -c "./configure \
++        CXX=\"$cf_cxx_compiler\" CXXFLAGS=\"$CXXFLAGS $CXX_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG\" \
++        CC=\"$cf_c_compiler\" CFLAGS=\"$CFLAGS $C_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG\" \
++        ${cf_prefix_arg} ${cf_mpi_arg} ${cf_common_args} ${cf_static_args} \
++        ${cf_hdf5_arg} ${cf_hdf5_ldflags_arg} \
++        ${cf_szip_arg} ${cf_zlib_arg}"
++    set +x
++    if [[ $? != 0 ]] ; then
++        warn "MOAB configure failed.  Giving up"
++        return 1
++    fi
+ 
+-        if [[ "$DO_GROUP" == "yes" ]] ; then
+-            chmod -R ug+w,a+rX "$VISITDIR/moab${cf_par_suffix}"
+-            chgrp -R ${GROUP} "$VISITDIR/moab${cf_par_suffix}"
+-        fi
++    #
++    # Build moab
++    #
++    info "Building moab . . . (~2 minutes)"
++    $MAKE $MAKE_OPT_FLAGS
++    if [[ $? != 0 ]] ; then
++        warn "moab build failed.  Giving up"
++        return 1
++    fi
+ 
+-        #
+-        # Change name of installed lib to libXXX_mpi.whatever
+-        #
+-        if [[ "$bt" == "parallel" ]]; then
+-            pushd $VISITDIR/moab${cf_par_suffix}/$MOAB_VERSION/$VISITARCH/lib
+-            if [[ "$OPSYS" == "Darwin" ]]; then
+-                install_name_tool -id $VISITDIR/moab${cf_par_suffix}/$MOAB_VERSION/$VISITARCH/lib/libMOAB_mpi.dylib libMOAB_mpi.dylib
+-            fi
+-            popd
+-        fi
++    #
++    # Install into the VisIt third party location.
++    #
++    info "Installing moab"
++    $MAKE install
+ 
+-        popd
+-    done
++    if [[ "$DO_GROUP" == "yes" ]] ; then
++        chmod -R ug+w,a+rX "$VISITDIR/moab"
++        chgrp -R ${GROUP} "$VISITDIR/moab"
++    fi
+ 
+     cd "$START_DIR"
+     info "Done with moab"
+diff --git a/src/tools/dev/scripts/bv_support/bv_netcdf.sh b/src/tools/dev/scripts/bv_support/bv_netcdf.sh
+index 8605a89dff8..e028594bd67 100644
+--- a/src/tools/dev/scripts/bv_support/bv_netcdf.sh
++++ b/src/tools/dev/scripts/bv_support/bv_netcdf.sh
+@@ -299,10 +299,348 @@ EOF
+     return 0;
+ }
+ 
++function apply_netcdf_hdf520_patches
++{
++    info "Patching netcdf for HDF5-2.0 (patch #1)"
++    local retval=0
++    pushd $NETCDF_BUILD_DIR 1>/dev/null 2>&1
++    patch -p0 << \EOF
++diff -c libsrc4/nc4internal.h libsrc4.patched/nc4internal.h
++*** libsrc4/nc4internal.h	2010-01-19 09:45:45.000000000 -0800
++--- libsrc4.patched/nc4internal.h	2025-12-11 19:39:28.947231000 -0800
++***************
++*** 14,29 ****
++  #include <stdarg.h>
++  #include <string.h>
++  #include "netcdf3.h"
++  #include <hdf5.h>
++  #include <netcdf.h>
++  
++- #ifdef USE_PARALLEL
++- #include <mpi.h>
++- #else
++- #define MPI_Info int
++- #define MPI_Comm int
++- #endif /* USE_PARALLEL */
++- 
++  #ifdef USE_HDF4
++  #include <mfhdf.h>
++  #endif
++--- 14,23 ----
++  #include <stdarg.h>
++  #include <string.h>
++  #include "netcdf3.h"
+++ #define H5_USE_18_API
++  #include <hdf5.h>
++  #include <netcdf.h>
++  
++  #ifdef USE_HDF4
++  #include <mfhdf.h>
++  #endif
++***************
++*** 376,382 ****
++  NC_FILE_INFO_T *nc4_find_nc_file(int ncid);
++  int nc4_find_dim(NC_GRP_INFO_T *grp, int dimid, NC_DIM_INFO_T **dim, NC_GRP_INFO_T **dim_grp);
++  int nc4_find_dim_len(NC_GRP_INFO_T *grp, int dimid, size_t **len);
++! int nc4_find_type(NC_HDF5_FILE_INFO_T *h5, int typeid, NC_TYPE_INFO_T **type);
++  NC_TYPE_INFO_T *nc4_rec_find_nc_type(NC_GRP_INFO_T *start_grp, hid_t target_nc_typeid);
++  NC_TYPE_INFO_T *nc4_rec_find_hdf_type(NC_GRP_INFO_T *start_grp, hid_t target_hdf_typeid);
++  NC_TYPE_INFO_T *nc4_rec_find_named_type(NC_GRP_INFO_T *start_grp, char *name);
++--- 370,376 ----
++  NC_FILE_INFO_T *nc4_find_nc_file(int ncid);
++  int nc4_find_dim(NC_GRP_INFO_T *grp, int dimid, NC_DIM_INFO_T **dim, NC_GRP_INFO_T **dim_grp);
++  int nc4_find_dim_len(NC_GRP_INFO_T *grp, int dimid, size_t **len);
++! int nc4_find_type(NC_HDF5_FILE_INFO_T *h5, int64_t typeid, NC_TYPE_INFO_T **type);
++  NC_TYPE_INFO_T *nc4_rec_find_nc_type(NC_GRP_INFO_T *start_grp, hid_t target_nc_typeid);
++  NC_TYPE_INFO_T *nc4_rec_find_hdf_type(NC_GRP_INFO_T *start_grp, hid_t target_hdf_typeid);
++  NC_TYPE_INFO_T *nc4_rec_find_named_type(NC_GRP_INFO_T *start_grp, char *name);
++EOF
++
++    if [[ $? != 0 ]] ; then
++      warn "netcdf patch #1 for HDF5-2.0 failed."
++      retval=1
++    fi
++
++    info "Patching netcdf for HDF5-2.0 (patch #2)"
++    patch -p0 << \EOF
++diff -c libsrc4/nc4type.c libsrc4.patched/nc4type.c
++*** libsrc4/nc4type.c	2010-01-11 11:27:12.000000000 -0800
++--- libsrc4.patched/nc4type.c	2025-12-11 19:44:24.385210000 -0800
++***************
++*** 317,323 ****
++  
++  /* Insert a named array into a compound type. */
++  EXTERNL int
++! nc_insert_array_compound(int ncid, int typeid, const char *name, 
++  			 size_t offset, nc_type field_typeid,
++  			 int ndims, const int *dim_sizesp)
++  {
++--- 317,323 ----
++  
++  /* Insert a named array into a compound type. */
++  EXTERNL int
++! nc_insert_array_compound(int ncid, nc_type typeid, const char *name, 
++  			 size_t offset, nc_type field_typeid,
++  			 int ndims, const int *dim_sizesp)
++  {
++EOF
++
++    if [[ $? != 0 ]] ; then
++      warn "netcdf patch #2 for HDF5-2.0 failed."
++      retval=1
++    fi
++
++    info "Patching netcdf for HDF5-2.0 (patch #3)"
++    patch -p0 << \EOF
++diff -c libsrc4/netcdf_base.h libsrc4.patched/netcdf_base.h
++*** libsrc4/netcdf_base.h	2010-01-21 08:00:18.000000000 -0800
++--- libsrc4.patched/netcdf_base.h	2025-12-10 20:52:04.370967000 -0800
++***************
++*** 38,44 ****
++  #include <stddef.h> /* size_t, ptrdiff_t */
++  #include <errno.h>  /* netcdf functions sometimes return system errors */
++  
++! typedef int nc_type;
++  
++  #if defined(__cplusplus)
++  extern "C" {
++--- 38,44 ----
++  #include <stddef.h> /* size_t, ptrdiff_t */
++  #include <errno.h>  /* netcdf functions sometimes return system errors */
++  
++! typedef int64_t nc_type;
++  
++  #if defined(__cplusplus)
++  extern "C" {
++EOF
++
++    if [[ $? != 0 ]] ; then
++      warn "netcdf patch #3 for HDF5-2.0 failed."
++      retval=1
++    fi
++
++    info "Patching netcdf for HDF5-2.0 (patch #4)"
++    patch -p0 << \EOF
++diff -c libsrc4/netcdf.h libsrc4.patched/netcdf.h
++*** libsrc4/netcdf.h	2010-04-12 11:48:02.000000000 -0700
++--- libsrc4.patched/netcdf.h	2025-12-12 18:08:44.691818000 -0800
++***************
++*** 37,51 ****
++  
++  #include <stddef.h> /* size_t, ptrdiff_t */
++  #include <errno.h>  /* netcdf functions sometimes return system errors */
++  /* These defs added by netCDF configure because parallel HDF5 is not present. */
++  #ifndef MPI_INCLUDED
++! #define MPI_Comm int
++! #define MPI_Info int
++! #define MPI_COMM_WORLD 0
++! #define MPI_INFO_NULL 0
++  #endif
++  
++! typedef int nc_type;
++  
++  #if defined(__cplusplus)
++  extern "C" {
++--- 37,52 ----
++  
++  #include <stddef.h> /* size_t, ptrdiff_t */
++  #include <errno.h>  /* netcdf functions sometimes return system errors */
+++ #include <stdint.h>
++  /* These defs added by netCDF configure because parallel HDF5 is not present. */
++  #ifndef MPI_INCLUDED
++! #define MPI_Comm_spoof int
++! #define MPI_Info_spoof int
++! #define MPI_COMM_WORLD_SPOOF 0
++! #define MPI_INFO_NULL_SPOOF 0
++  #endif
++  
++! typedef int64_t nc_type;
++  
++  #if defined(__cplusplus)
++  extern "C" {
++***************
++*** 382,392 ****
++  nc_open(const char *path, int mode, int *ncidp);
++  
++  EXTERNL int
++! nc_create_par(const char *path, int cmode, MPI_Comm comm, MPI_Info info,
++  	      int *ncidp);
++  
++  EXTERNL int
++! nc_open_par(const char *path, int mode, MPI_Comm comm, MPI_Info info,
++  	    int *ncidp);
++  
++  /* Use these with nc_var_par_access(). */
++--- 383,393 ----
++  nc_open(const char *path, int mode, int *ncidp);
++  
++  EXTERNL int
++! nc_create_par(const char *path, int cmode, MPI_Comm_spoof comm, MPI_Info_spoof info,
++  	      int *ncidp);
++  
++  EXTERNL int
++! nc_open_par(const char *path, int mode, MPI_Comm_spoof comm, MPI_Info_spoof info,
++  	    int *ncidp);
++  
++  /* Use these with nc_var_par_access(). */
++EOF
++
++    if [[ $? != 0 ]] ; then
++      warn "netcdf patch #4 for HDF5-2.0 failed."
++      retval=1
++    fi
++
++    info "Patching netcdf for HDF5-2.0 (patch #5)"
++    patch -p0 << \EOF
++diff -r -c libsrc4/tst_h_par.c libsrc4.patched/tst_h_par.c
++*** libsrc4/tst_h_par.c	2009-03-06 06:38:23.000000000 -0800
++--- libsrc4.patched/tst_h_par.c	2025-12-12 17:55:31.683605000 -0800
++***************
++*** 38,45 ****
++  #endif /* USE_MPE */
++  
++     MPI_Init(&argc, &argv);
++!    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
++!    MPI_Comm_size(MPI_COMM_WORLD, &p);
++  
++  #ifdef USE_MPE
++     MPE_Init_log();
++--- 38,45 ----
++  #endif /* USE_MPE */
++  
++     MPI_Init(&argc, &argv);
++!    MPI_Comm_rank(MPI_COMM_WORLD_SPOOF, &my_rank);
++!    MPI_Comm_size(MPI_COMM_WORLD_SPOOF, &p);
++  
++  #ifdef USE_MPE
++     MPE_Init_log();
++***************
++*** 85,91 ****
++  
++        /* Create file. */
++        if ((fapl_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
++!       if (H5Pset_fapl_mpio(fapl_id, MPI_COMM_WORLD, MPI_INFO_NULL) < 0) ERR;
++        if ((fileid = H5Fcreate(FILE_NAME, H5F_ACC_TRUNC, H5P_DEFAULT, 
++        fapl_id)) < 0) ERR;
++  
++--- 85,91 ----
++  
++        /* Create file. */
++        if ((fapl_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
++!       if (H5Pset_fapl_mpio(fapl_id, MPI_COMM_WORLD_SPOOF, MPI_INFO_NULL_SPOOF) < 0) ERR;
++        if ((fileid = H5Fcreate(FILE_NAME, H5F_ACC_TRUNC, H5P_DEFAULT, 
++        fapl_id)) < 0) ERR;
++  
++***************
++*** 134,140 ****
++  #endif /* USE_MPE */
++        }
++        write_us = (MPI_Wtime() - ftime) * MILLION;
++!       MPI_Reduce(&write_us, &max_write_us, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
++        if (!my_rank)
++        {
++  	 write_rate = (float)(DIM2_LEN * sizeof(int))/(float)max_write_us;      
++--- 134,140 ----
++  #endif /* USE_MPE */
++        }
++        write_us = (MPI_Wtime() - ftime) * MILLION;
++!       MPI_Reduce(&write_us, &max_write_us, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD_SPOOF);
++        if (!my_rank)
++        {
++  	 write_rate = (float)(DIM2_LEN * sizeof(int))/(float)max_write_us;      
++***************
++*** 160,166 ****
++  
++        /* Open the file. */
++        if ((fapl_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
++!       if (H5Pset_fapl_mpio(fapl_id, MPI_COMM_WORLD, MPI_INFO_NULL) < 0) ERR;
++  
++  
++        if (H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST) < 0) ERR;
++--- 160,166 ----
++  
++        /* Open the file. */
++        if ((fapl_id = H5Pcreate(H5P_FILE_ACCESS)) < 0) ERR;
++!       if (H5Pset_fapl_mpio(fapl_id, MPI_COMM_WORLD_SPOOF, MPI_INFO_NULL_SPOOF) < 0) ERR;
++  
++  
++        if (H5Pset_libver_bounds(fapl_id, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST) < 0) ERR;
++***************
++*** 205,211 ****
++  /* 	    } */
++        }
++        read_us = (MPI_Wtime() - ftime) * MILLION;
++!       MPI_Reduce(&read_us, &max_read_us, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
++        if (!my_rank)
++        {
++  	 read_rate = (float)(DIM2_LEN * sizeof(int))/(float)max_read_us;      
++--- 205,211 ----
++  /* 	    } */
++        }
++        read_us = (MPI_Wtime() - ftime) * MILLION;
++!       MPI_Reduce(&read_us, &max_read_us, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD_SPOOF);
++        if (!my_rank)
++        {
++  	 read_rate = (float)(DIM2_LEN * sizeof(int))/(float)max_read_us;      
++EOF
++
++    if [[ $? != 0 ]] ; then
++      warn "netcdf patch #5 for HDF5-2.0 failed."
++      retval=1
++    fi
++
++    info "Patching netcdf for HDF5-2.0 (patch #6)"
++    patch -p0 << \EOF
++diff -c configure configure.patched
++*** configure	2010-04-12 11:47:47.000000000 -0700
++--- configure.patched	2025-12-12 00:28:23.357195000 -0800
++***************
++*** 25760,25767 ****
++     else
++        { $as_echo "$as_me:${as_lineno-$LINENO}: result: without parallel" >&5
++  $as_echo "without parallel" >&6; }
++-       # Modify netcdf.h to include defs for missing parallel stuff.
++-       sed '/#include <errno.h>/{G;s/$/\/* These defs added by netCDF configure because parallel HDF5 is not present. *\//;G;s/$/#ifndef MPI_INCLUDED/;G;s/$/#define MPI_Comm int/;G;s/$/#define MPI_Info int/;G;s/$/#define MPI_COMM_WORLD 0/;G;s/$/#define MPI_INFO_NULL 0/;G;s/$/#endif/;}' libsrc4/netcdf_base.h > libsrc4/netcdf.h
++     fi
++  
++     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether parallel I/O features are to be included" >&5
++--- 25760,25765 ----
++***************
++*** 25933,25940 ****
++     fi
++  else
++  # !netcdf-4
++!    # Modify netcdf.h to include defs for missing parallel stuff.
++!    sed '/#include <errno.h>/{G;s/$/\/* These defs added by netCDF configure because parallel HDF5 is not present. *\//;G;s/$/#ifndef MPI_INCLUDED/;G;s/$/#define MPI_Comm int/;G;s/$/#define MPI_Info int/;G;s/$/#define MPI_COMM_WORLD 0/;G;s/$/#define MPI_INFO_NULL 0/;G;s/$/#endif/;}' libsrc4/netcdf_base.h > libsrc4/netcdf.h
++  fi
++  
++  # Restore LDFLAGS to it's old value.
++--- 25931,25937 ----
++     fi
++  else
++  # !netcdf-4
++!     :
++  fi
++  
++  # Restore LDFLAGS to it's old value.
++EOF
++
++    if [[ $? != 0 ]] ; then
++      warn "netcdf patch #6 for HDF5-2.0 failed."
++      retval=1
++    fi
++
++    popd 1>/dev/null 2>&1
++
++    return $retval;
++}
++
+ function apply_netcdf_patch
+ {
+     apply_netcdf_patch_for_exodusii
+ 
++    apply_netcdf_hdf520_patches
++
+     if [[ ${NETCDF_VERSION} == 4.1.1 ]] ; then
+         if [[ "$OPSYS" == "Darwin" ]] ; then
+             productVersion=`sw_vers -productVersion`
+@@ -407,11 +745,25 @@ function build_netcdf
+     fi
+     ZLIBARGS="--with-zlib=$VISITDIR/zlib/$ZLIB_VERSION/$VISITARCH"
+ 
++    #
++    # Ensure that if #include hdf5.h turns around and does #include mpi.h,
++    # netcdf's compilation will find mpi.h...even though we're not ever
++    # going to use any netcdf parallel features.
++    #
++    probe_hdf5_mpi_dependence
++
++    #
++    # To prevent possible enablement of netcdf parallel features if HDF5
++    # itself is compiled for parallel, we apriori set two controlling
++    # autotools cache variables to "no".
++    #
+     C_OPT_FLAGS="-Wno-error=implicit-function-declaration"
+     set -x
+     env ./configure CXX="$CXX_COMPILER" CC="$C_COMPILER" \
+-                CFLAGS="$CFLAGS $C_OPT_FLAGS" CXXFLAGS="$CXXFLAGS $CXX_OPT_FLAGS" \
++                CFLAGS="$CFLAGS $C_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG" CXXFLAGS="$CXXFLAGS $CXX_OPT_FLAGS $VISIT_HDF5_MPI_INCLUDE_FLAG" \
+                 FC="" FCFLAGS="" $EXTRA_AC_FLAGS $EXTRA_FLAGS --enable-cxx-4 $H5ARGS $ZLIBARGS \
++                ac_cv_lib_hdf5_H5Pget_fapl_mpiposix=no \
++                ac_cv_lib_hdf5_H5Pget_fapl_mpio=no \
+                 --disable-dap --disable-fortran \
+                 --prefix="$VISITDIR/netcdf/$NETCDF_VERSION/$VISITARCH"
+     set +x
+
+From ad857d68891a8b535741ee43ab3c0d854ecfe028 Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Fri, 12 Dec 2025 18:19:38 -0800
+Subject: [PATCH 12/13] fix logic; imprv comment
+
+---
+ src/tools/dev/scripts/bv_support/bv_netcdf.sh | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/tools/dev/scripts/bv_support/bv_netcdf.sh b/src/tools/dev/scripts/bv_support/bv_netcdf.sh
+index e028594bd67..e51f8d66c55 100644
+--- a/src/tools/dev/scripts/bv_support/bv_netcdf.sh
++++ b/src/tools/dev/scripts/bv_support/bv_netcdf.sh
+@@ -639,7 +639,9 @@ function apply_netcdf_patch
+ {
+     apply_netcdf_patch_for_exodusii
+ 
+-    apply_netcdf_hdf520_patches
++    if [[ "$DO_HDF5" == "yes" ]] ; then
++        apply_netcdf_hdf520_patches
++    fi
+ 
+     if [[ ${NETCDF_VERSION} == 4.1.1 ]] ; then
+         if [[ "$OPSYS" == "Darwin" ]] ; then
+@@ -748,7 +750,9 @@ function build_netcdf
+     #
+     # Ensure that if #include hdf5.h turns around and does #include mpi.h,
+     # netcdf's compilation will find mpi.h...even though we're not ever
+-    # going to use any netcdf parallel features.
++    # going to use any netcdf parallel features. Calling this is harmless
++    # even if HDF5 is not in play. The effect of the call is to either
++    # populate or leave blank VISIT_HDF5_MPI_INCLUDE_FLAG.
+     #
+     probe_hdf5_mpi_dependence
+ 
+
+From 6068fd390a4705647a226ec14bec1197a1d3fc0a Mon Sep 17 00:00:00 2001
+From: "Mark C. Miller" <5720676+markcmiller86@users.noreply.github.com>
+Date: Mon, 15 Dec 2025 12:56:15 -0800
+Subject: [PATCH 13/13] imprv db-comment
+
+---
+ src/databases/Silo/avtSiloFileFormat.C | 137 +++++++++++++++++++++----
+ src/databases/Silo/avtSiloFileFormat.h |   2 -
+ 2 files changed, 115 insertions(+), 24 deletions(-)
+
+diff --git a/src/databases/Silo/avtSiloFileFormat.C b/src/databases/Silo/avtSiloFileFormat.C
+index 2830d1ec92b..dd8e6a6c7cb 100644
+--- a/src/databases/Silo/avtSiloFileFormat.C
++++ b/src/databases/Silo/avtSiloFileFormat.C
+@@ -63,13 +63,13 @@
+ #include <BadDomainException.h>
+ #include <BadIndexException.h>
+ #include <BufferConnection.h>
++#include <DatabaseException.h>
+ #include <DBOptionsAttributes.h>
+ #include <DebugStream.h>
+ #include <ImproperUseException.h>
+ #include <InvalidFilesException.h>
+ #include <InvalidVariableException.h>
+ #include <InvalidZoneTypeException.h>
+-#include <SiloException.h>
+ #include <avtExecutionManager.h>
+ 
+ #include <avtStructuredDomainBoundaries.h>
+@@ -125,7 +125,7 @@ static bool TetIsInverted(const int *siloTetrahedron,
+                             vtkUnstructuredGrid *ugrid);
+ 
+ static void ArbInsertArbitrary(vtkUnstructuredGrid *ugrid,
+-    DBphzonelist *phzl, int gz, const vector<int> &nloffs,
++    int nsdims, DBphzonelist *phzl, int gz, const vector<int> &nloffs,
+     const vector<int> &floffs, unsigned int ocdata[2],
+     vector<int> *cellReMap, vector<int> *nodeReMap);
+ 
+@@ -157,6 +157,22 @@ static int FindFirstNonEmptyBlock(char const *mbobj_name, int nblocks,
+ 
+ static int db_get_index(DBnamescheme const *ns, int natnum);
+ 
++class SiloException : public DatabaseException
++{
++  public: SiloException(const char *)
++          {
++              char str[1024];
++              sprintf(str, "A Silo error occurred.\nThe error is \"%s.\"", filename);
++              msg = str;
++              DBSetDataReadMask2(DBAll); // precaution against exception out from a
++                                         // block where mask was other than DBAll
++          };
++    virtual ~SiloException() VISIT_THROW_NOTHING {;};
++};
++
++/* We don't want to include hdf5.h for this one function */
++extern "C" {int H5get_libversion(unsigned *maj, unsigned *min, unsigned *rel);}
++
+ // ****************************************************************************
+ //  Class: avtSiloFileFormat
+ //
+@@ -1143,23 +1159,35 @@ avtSiloFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md)
+     multispecCache.Clear();
+ 
+     //
+-    // We're just interested in metadata for now, so tell Silo not
+-    // to read the extra data arrays, except for material names and
+-    // numbers and colors.
++    // It is easy to conclude the right thing for PopulateDatabaseMetadata
++    // is to call DBSetDataReadMask2(DBNone) to avoid any bulk-data reads
++    // during bootstrap for opening a file. However, that would then prevent
++    // us from getting information about material names, numbers and colors
++    // used in parts of the GUI as well as multiblock object names which are
++    // needed for various purposes including accessing the first non-empty
++    // block to get additional metadata about the object as well as matching
++    // multiblock objects to their associated multiblock mesh.
++    //
++    // Note: A secondary issue is that anything that causes an exception out
++    // of ReadDir
+     //
+ #if SILO_VERSION_GE(4,11,0)
+-    DBSetDataReadMask2(DBMatMatnames|DBMatMatnos|DBMatMatcolors|DBMBNamesAndTypes|DBMBOptions);
++    DBSetDataReadMask2(
++         DBMBNamesAndTypes // to get names/types from all multi-block objects
++       | DBMBOptions       // to get other optional arrays on multi-block objects
++       | DBMatMatnames     // to get material names from mat objects
++       | DBMatMatnos       // to get material numbers from mat objects
++       | DBMatMatcolors    // to get material colors from mat objects
++    );
+ #else
+-DBSetDataReadMask2(DBMatMatnames|DBMatMatnos|DBMatMatcolors);
++    DBSetDataReadMask2(DBMatMatnames|DBMatMatnos|DBMatMatcolors);
+ #endif
+ 
+     //
+     // Do a recursive search through the subdirectories.
+     //
+     ReadDir(dbfile, topDir.c_str(), md);
+-#ifdef PARALLEL
+     BroadcastGlobalInfo(md);
+-#endif
+     DoRootDirectoryWork(md);
+ 
+     //
+@@ -1500,6 +1528,9 @@ DBSetDataReadMask2(DBMatMatnames|DBMatMatnos|DBMatMatcolors);
+ //
+ //    Mark C. Miller, Wed Jun 15 09:22:14 PDT 2016
+ //    Added logic to support adding of block decomposition as a variable.
++// 
++//    Mark C. Miller, Fri Aug  9 20:56:16 PDT 2024
++//    Improve logic to populate db comment with driver and version info.
+ // ****************************************************************************
+ void
+ avtSiloFileFormat::ReadTopDirStuff(DBfile *dbfile, const char *dirname,
+@@ -1639,18 +1670,80 @@ avtSiloFileFormat::ReadTopDirStuff(DBfile *dbfile, const char *dirname,
+                 }
+             }
+ 
++            char drvrinfo_str[16];
++            switch (DBGetDriverType(dbfile))
++            {
++                case DB_HDF5: strcpy(drvrinfo_str, "HDF5"); break;
++                case DB_PDB:  strcpy(drvrinfo_str, "PDB Lite"); break;
++                case DB_PDBP: strcpy(drvrinfo_str, "PDB Proper"); break;
++                default:      strcpy(drvrinfo_str, "Unknown"); break;
++            }
++
++            char *siloinfo_str = 0;
++            if (DBInqVarExists(dbfile, "_silolibinfo"))
++            {
++                int linfo = DBGetVarLength(dbfile, "_silolibinfo");
++                if (linfo > 0)
++                {
++                    siloinfo_str = new char[linfo+1];
++                    DBReadVar(dbfile, "_silolibinfo", siloinfo_str);
++                }
++            }
++
++            char *hdf5info_str = 0;
++            if (DBInqVarExists(dbfile, "_hdf5libinfo"))
++            {
++                int linfo = DBGetVarLength(dbfile, "_hdf5libinfo");
++                if (linfo > 0)
++                {
++                    hdf5info_str = new char[linfo+1];
++                    DBReadVar(dbfile, "_hdf5libinfo", hdf5info_str);
++                }
++            }
++
++            char *fileinfo_str = 0;
+             if (DBInqVarExists(dbfile, "_fileinfo"))
+             {
+                 int lfileinfo = DBGetVarLength(dbfile, "_fileinfo");
+                 if (lfileinfo > 0)
+                 {
+-                    char *fileinfo_str = new char[lfileinfo+1];
++                    fileinfo_str = new char[lfileinfo+1];
+                     DBReadVar(dbfile, "_fileinfo", fileinfo_str);
+-                    md->SetDatabaseComment(fileinfo_str);
+-                    delete [] fileinfo_str;
+                 }
+             }
+ 
++            char *hdf5libinfo_str = 0;
++#ifdef HAVE_LIBHDF5
++            {
++                unsigned h5maj, h5min, h5rel;
++                H5get_libversion(&h5maj, &h5min, &h5rel);
++                hdf5libinfo_str = new char[9];
++                snprintf(hdf5libinfo_str, sizeof(hdf5libinfo_str), "%d.%d.%d",
++                    h5maj, h5min, h5rel);
++            }
++#endif
++
++            // Enough chars for main comment plus driver heading and string
++            // and hdf5 and silo heading and version strings.
++            char dbcmt[256+256];
++            snprintf(dbcmt, sizeof(dbcmt), "%.256s%sDriver: %s\nFile: %s%s%s\nPlugin:%s%s%ssilo-%s",
++                fileinfo_str?fileinfo_str:"",
++                fileinfo_str?"\n":"",
++                drvrinfo_str,
++                hdf5info_str?hdf5info_str:"",
++                siloinfo_str?", silo-":"",
++                siloinfo_str?siloinfo_str:"",
++
++                hdf5libinfo_str?" hdf5-":"",
++                hdf5libinfo_str?hdf5libinfo_str:"",
++                hdf5libinfo_str?", ":"",
++                DBVersion());
++            md->SetDatabaseComment(dbcmt);
++
++            if (fileinfo_str) delete [] fileinfo_str;
++            if (hdf5info_str) delete [] hdf5info_str;
++            if (siloinfo_str) delete [] siloinfo_str;
++            if (hdf5libinfo_str) delete [] hdf5libinfo_str;
+ 
+             // See if we should add the block decomp as a scalar var
+             if (codeNameGuess == "BlockStructured" &&
+@@ -4651,10 +4744,10 @@ avtSiloFileFormat::ReadDir(DBfile *dbfile, const char *dirname,
+ //    Mark C. Miller, Wed Jun 15 09:22:14 PDT 2016
+ //    Added logic to support adding of block decomposition as a variable.
+ // ****************************************************************************
+-#ifdef PARALLEL
+ void
+ avtSiloFileFormat::BroadcastGlobalInfo(avtDatabaseMetaData *metadata)
+ {
++#ifdef PARALLEL
+     int rank = PAR_Rank();
+ 
+     //
+@@ -4755,8 +4848,8 @@ avtSiloFileFormat::BroadcastGlobalInfo(avtDatabaseMetaData *metadata)
+     BroadcastInt(have_amr_group_info);
+     haveAmrGroupInfo = have_amr_group_info;
+ 
+-}
+ #endif
++}
+ 
+ // ****************************************************************************
+ //  Method:  avtSiloFileFormat::StoreMultimeshInfo
+@@ -6340,7 +6433,7 @@ inline void GetWord(char *&s, char *word, bool allowSlash)
+ }
+ 
+ 
+-void
++static void
+ AddDefvars(const char *defvars, avtDatabaseMetaData *md)
+ {
+     char *dv_tmp = new char[strlen(defvars)+1];
+@@ -16462,7 +16555,7 @@ ExceptionGenerator(char *msg)
+ //
+ // ****************************************************************************
+ 
+-char *
++static char *
+ GenerateName(const char *dirname, const char *varname, const char *topdirname)
+ {
+     if (varname[0] == '/')
+@@ -16580,7 +16673,7 @@ GenerateName(const char *dirname, const char *varname, const char *topdirname)
+ //
+ // ****************************************************************************
+ 
+-string
++static string
+ PrepareDirName(const char *dirvar, const char *curdir)
+ {
+     int len = strlen(dirvar);
+@@ -16632,7 +16725,7 @@ PrepareDirName(const char *dirvar, const char *curdir)
+ //    Fixed memory problem when strlen dirvar is zero
+ // ****************************************************************************
+ 
+-void
++static void
+ SplitDirVarName(const char *dirvar, const char *curdir,
+                 string &dir, string &var)
+ {
+@@ -16699,7 +16792,7 @@ SplitDirVarName(const char *dirvar, const char *curdir,
+ //
+ // ****************************************************************************
+ 
+-int
++static int
+ SiloZoneTypeToVTKZoneType(int zonetype)
+ {
+     int  vtk_zonetype = -1;
+@@ -16789,7 +16882,7 @@ SiloZoneTypeToVTKZoneType(int zonetype)
+ //
+ // ****************************************************************************
+ 
+-void
++static void
+ TranslateSiloWedgeToVTKWedge(const int *siloWedge, vtkIdType vtkWedge[6])
+ {
+     //
+@@ -16827,7 +16920,7 @@ TranslateSiloWedgeToVTKWedge(const int *siloWedge, vtkIdType vtkWedge[6])
+ //
+ // ****************************************************************************
+ 
+-void
++static void
+ TranslateSiloPyramidToVTKPyramid(const int *siloPyramid, vtkIdType vtkPyramid[5])
+ {
+     //
+@@ -16860,7 +16953,7 @@ TranslateSiloPyramidToVTKPyramid(const int *siloPyramid, vtkIdType vtkPyramid[5]
+ //
+ // ****************************************************************************
+ 
+-void
++static void
+ TranslateSiloTetrahedronToVTKTetrahedron(const int *siloTetrahedron,
+                                          vtkIdType vtkTetrahedron[4])
+ {
+diff --git a/src/databases/Silo/avtSiloFileFormat.h b/src/databases/Silo/avtSiloFileFormat.h
+index 6c26605b2d5..c7a49c1c08d 100644
+--- a/src/databases/Silo/avtSiloFileFormat.h
++++ b/src/databases/Silo/avtSiloFileFormat.h
+@@ -388,9 +388,7 @@ class avtSiloFileFormat : public avtSTMDFileFormat
+     void                  ReadDefvars(DBfile*,int,char**,avtDatabaseMetaData*);
+ 
+     void                  DoRootDirectoryWork(avtDatabaseMetaData*);
+-#ifdef PARALLEL
+     void                  BroadcastGlobalInfo(avtDatabaseMetaData*);
+-#endif
+     void                  StoreMultimeshInfo(const char *const dirname,
+                                              const char *const name_w_dir,
+                                              int meshnum,
