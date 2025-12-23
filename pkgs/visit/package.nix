@@ -3,6 +3,7 @@
   cmake,
   fetchFromGitHub,
   hdf5,
+  ispc,
   lib,
   libGL,
   libxcb-cursor,
@@ -16,9 +17,6 @@
   vtkWithQt6,
   xorg,
   zlib,
-  ispc,
-
-  breakpointHook,
 }:
 let
   zlib-dev = symlinkJoin {
@@ -87,11 +85,10 @@ stdenv.mkDerivation {
     qt6.wrapQtAppsHook
     autoPatchelfHook
     ispc
-
-    breakpointHook
   ];
 
   buildInputs = [
+    python3
     libGL
     hdf5
     (lib.getDev hdf5)
@@ -111,8 +108,17 @@ stdenv.mkDerivation {
     silo
   ];
 
+  postInstall = ''
+    mkdir -p $out/bin
+    ln -s ${lib.getExe python3} $out/3.4.9/linux-x86_64/bin/python3
+  '';
+
   preFixup = ''
     ln -s libsiloh5.so.4.12.0 $out/3.4.9/linux-x86_64/lib/libsiloh5.so.412 
+  '';
+
+  postFixup = ''
+    patchShebangs $out
   '';
 
   passthru.updateScript = nix-update-script {
