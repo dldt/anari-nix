@@ -1,4 +1,5 @@
 {
+  adwaita-qt,
   autoPatchelfHook,
   cmake,
   fetchFromGitHub,
@@ -34,16 +35,18 @@ let
       (lib.getDev hdf5)
     ];
   };
+
+  rversion = "3.4.9";
 in
 stdenv.mkDerivation {
   pname = "visit";
-  version = "3.3.0d-unstable-2025-12-12";
+  version = "3.4.0-934-g68668d3586";
 
   src = fetchFromGitHub {
     owner = "visit-dav";
     repo = "visit";
-    rev = "f676bbb82cb98e819bccf8b9e61fdbdd60fccadc";
-    hash = "sha256-yA7qPMZOonv9Gyiqvdpx0oZ2M9vCJ/ThT49+D6AooZM=";
+    rev = "68668d35863691507218443c329ad1467aa7595c";
+    hash = "sha256-9MjOkdlWdi092UE9eYtuI2YfzVRfwg8QDxZHzmxdBpY=";
     fetchSubmodules = true;
   };
 
@@ -88,33 +91,45 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    python3
-    libGL
-    hdf5
     (lib.getDev hdf5)
+    (lib.getDev vtkWithQt6)
+    adwaita-qt
+    hdf5
+    libGL
+    libxcb-cursor
+    python3
     python3
     python3Packages.distutils
+    python3Packages.numpy
     python3Packages.pip
     python3Packages.setuptools
-    python3Packages.numpy
     qt6.qtbase
     qt6.qtsvg
     qt6.qttools
-    vtkWithQt6
-    (lib.getDev vtkWithQt6)
-    xorg.libxcb.dev
-    xorg.libX11
-    libxcb-cursor
     silo
+    vtkWithQt6
+    xorg.libX11
+    xorg.libxcb.dev
+  ];
+
+  dontWrapQtApps = true;
+
+  qtWrapperArgs = [
+    "--set QT_STYLE_OVERRIDE adwaita-dark"
   ];
 
   postInstall = ''
     mkdir -p $out/bin
-    ln -s ${lib.getExe python3} $out/3.4.9/linux-x86_64/bin/python3
+    ln -s ${lib.getExe python3} $out/${rversion}/linux-x86_64/bin/python3
   '';
 
   preFixup = ''
-    ln -s libsiloh5.so.4.12.0 $out/3.4.9/linux-x86_64/lib/libsiloh5.so.412 
+    ln -s libsiloh5.so.4.12.0 $out/${rversion}/linux-x86_64/lib/libsiloh5.so.412 
+
+    for exe in gui mcurvit qtviswinExample qtvtkExample qvtkopenglExample xmledit viewer
+    do
+      wrapQtApp "$out/${rversion}/linux-x86_64/bin/$exe"
+    done    
   '';
 
   postFixup = ''
@@ -124,7 +139,7 @@ stdenv.mkDerivation {
   passthru.updateScript = nix-update-script {
     extraArgs = [
       "--flake"
-      "--version=branch"
+      "--version=skip"
     ];
   };
 
