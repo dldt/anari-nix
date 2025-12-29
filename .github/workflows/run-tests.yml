@@ -37,16 +37,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         with:
           hatchet-protocol: 'cleave'
-      - uses: cachix/install-nix-action@v31
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Cache Nix store
-        uses: nix-community/cache-nix-action@v6
-        with:
-          nix: true
-          primary-key: nix-store-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
-          save: true
+          use-flakehub: false
       - uses: cachix/cachix-action@v16
         with:
           name: dldt
