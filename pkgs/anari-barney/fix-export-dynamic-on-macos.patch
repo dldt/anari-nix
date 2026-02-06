@@ -1,0 +1,17 @@
+diff --git a/anari/CMakeLists.txt b/anari/CMakeLists.txt
+index ffed028..4c1abe2 100644
+--- a/anari/CMakeLists.txt
++++ b/anari/CMakeLists.txt
+@@ -90,6 +90,12 @@ if(WIN32)
+   set_target_properties(anari_library_barney PROPERTIES
+     LINK_FLAGS "/WHOLEARCHIVE:barney_static"
+   )
++elseif(APPLE)
++  target_link_libraries(anari_library_barney PRIVATE
++    $<BUILD_INTERFACE:banari-config>
++    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
++    anari::helium
++  )
+ else()
+   target_link_libraries(anari_library_barney PRIVATE
+     $<BUILD_INTERFACE:banari-config>

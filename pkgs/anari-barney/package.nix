@@ -29,6 +29,12 @@ stdenv.mkDerivation {
     fetchSubmodules = true;
   };
 
+  patches = [
+    ./fix-export-dynamic-on-macos.patch
+  ];
+
+  patchFlags = [ "-p1" ];
+
   postPatch = ''
     echo Patching CMake files...
     for i in CMakeLists.txt barney/CMakeLists.txt anari/CMakeLists.txt
