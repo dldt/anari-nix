@@ -8,6 +8,7 @@
   cmake,
   anari-sdk,
   libGL,
+  lua54Packages,
   pkg-config,
   assimp,
   cudaPackages,
@@ -16,6 +17,7 @@
   tbb,
   silo,
   sdl3,
+  sol2,
   openusd,
   xorg,
   vtk,
@@ -103,9 +105,11 @@ stdenv.mkDerivation {
     sdl3
     glm
     libGL
+    lua54Packages.lua
     hdf5
     openusd
     silo
+    sol2
     tbb
     vtk
   ]
