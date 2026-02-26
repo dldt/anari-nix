@@ -89,6 +89,7 @@ stdenv.mkDerivation {
     cp ./tsdViewer "''${out}/bin"
     cp ./tsdRender "''${out}/bin"
     cp ./tsdPrint "''${out}/bin"
+    cp ./tsdLua "''${out}/bin"
   '';
 
   nativeBuildInputs = [
