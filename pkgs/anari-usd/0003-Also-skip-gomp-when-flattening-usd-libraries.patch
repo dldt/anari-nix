@@ -1,14 +1,14 @@
-From 8bf53354e635392c7690b6b0e5bbe1e17452b37d Mon Sep 17 00:00:00 2001
+From 4de8c8501c84c068bdc77017a5fa2df68536bbbd Mon Sep 17 00:00:00 2001
 From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
-Date: Sun, 20 Jul 2025 18:19:17 -0400
-Subject: [PATCH 3/6] Also skip gomp when flattening usd libraries
+Date: Sun, 1 Mar 2026 18:33:34 -0500
+Subject: [PATCH 3/5] Also skip gomp when flattening usd libraries
 
 ---
  UsdBridge/usdhelpers.cmake | 1 +
  1 file changed, 1 insertion(+)
 
 diff --git a/UsdBridge/usdhelpers.cmake b/UsdBridge/usdhelpers.cmake
-index 976aa1f..0d70b75 100644
+index 049d285..5f0bba3 100644
 --- a/UsdBridge/usdhelpers.cmake
 +++ b/UsdBridge/usdhelpers.cmake
 @@ -42,6 +42,7 @@ function(flatten_and_cleanup_targets RESULT_TARGETS INIT_TARGETS)
@@ -16,9 +16,9 @@ index 976aa1f..0d70b75 100644
        AND NOT (${cur_target} STREQUAL "dl")
        AND NOT (${cur_target} STREQUAL "m")
 +      AND NOT (${cur_target} STREQUAL "gomp")
+       AND NOT (${cur_target} STREQUAL "opengl32")
+       AND NOT (${cur_target} STREQUAL "MaterialXGenMsl")
        )
-       list(APPEND flat_targets ${cur_target})
-       
 -- 
-2.49.0
+2.51.2
 
