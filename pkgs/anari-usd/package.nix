@@ -17,22 +17,23 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-usd";
-  version = "0.10.0-unstable-2025-01-07";
+  version = "0.15.0_next-unstable-2026-03-01";
 
   src = fetchFromGitHub {
     owner = "NVIDIA-Omniverse";
     repo = "ANARI-USD";
-    rev = "13bb5ef1a436d4569a5ea5576c88e35b673fb4ba";
-    hash = "sha256-QiQK6U5lAcWxMcJ3DQnU22dw7zd5nh6nJVpwl/Gv+qY=";
+    rev = "1454ecb102e2a48f1ee876bd7e0f371432a82b03";
+    hash = "sha256-hj7wzfq5SyXsYXMTwnCi6e19HE1DGQM8PAYXQoiE090=";
   };
 
   patches = [
     ./0001-Use-find-components-instead-of-explicitely-iterating.patch
     ./0002-Find-X11-and-OpenGL-as-dependencies-of-OpenUSD-Mater.patch
     ./0003-Also-skip-gomp-when-flattening-usd-libraries.patch
-    ./0004-Workaround-compatibility-with-latest-ANARI-SDK.patch
-    ./0005-Also-ignore-static-and-dylib-libraries.patch
-    ./0006-Fix-build-on-MacOS.patch
+    ./0004-Also-ignore-static-and-dylib-libraries.patch
+    ./0005-Fix-build-on-MacOS.patch
+    ./0006-Fix-non-const-reference-bound-to-temporary-in-GetOrC.patch
+    ./0007-Fix-format-security-warning-in-snprintf-call.patch
   ];
 
   nativeBuildInputs = [

@@ -1,0 +1,37 @@
+From f369189d019a05e706c26218d9cb92451898ed55 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Sun, 1 Mar 2026 18:43:07 -0500
+Subject: [PATCH] Fix non-const reference bound to temporary in
+ GetOrCreateAttributeReaders
+
+---
+ UsdBridge/UsdBridgeUsdWriter_Material.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/UsdBridge/UsdBridgeUsdWriter_Material.cpp b/UsdBridge/UsdBridgeUsdWriter_Material.cpp
+index f57045b..9ee6a78 100644
+--- a/UsdBridge/UsdBridgeUsdWriter_Material.cpp
++++ b/UsdBridge/UsdBridgeUsdWriter_Material.cpp
+@@ -712,7 +712,7 @@ namespace
+ 
+   template<bool PreviewSurface>
+   void GetOrCreateAttributeReaders(UsdStageRefPtr sceneStage, UsdStageRefPtr timeVarStage, const SdfPath& matPrimPath, UsdBridgeMaterialData::DataMemberId dataMemberId,
+-    UsdShadeShader& uniformReaderPrim, SdfPath& attribReaderPath = SdfPath())
++    UsdShadeShader& uniformReaderPrim, SdfPath& attribReaderPath)
+   {
+     uniformReaderPrim = InitializeAttributeReader_Impl<PreviewSurface>(sceneStage, matPrimPath, true, dataMemberId, nullptr, attribReaderPath);
+     //if(timeVarStage && (timeVarStage != sceneStage))
+@@ -928,8 +928,9 @@ namespace
+ 
+       // Create attribute reader(s) to connect to the material shader input
+       UsdShadeShader uniformReaderPrim;
++      SdfPath attribReaderPath;
+       GetOrCreateAttributeReaders<PreviewSurface>(sceneStage,
+-        sceneStage, matPrimPath, dataMemberId, uniformReaderPrim);
++        sceneStage, matPrimPath, dataMemberId, uniformReaderPrim, attribReaderPath);
+       assert(uniformReaderPrim);
+ 
+       const TfToken& attribNameToken = writer->AttributeNameToken(param.SrcAttrib);
+-- 
+2.51.2
+

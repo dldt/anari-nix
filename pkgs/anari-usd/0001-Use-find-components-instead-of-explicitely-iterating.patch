@@ -1,38 +1,46 @@
-From 0023607e81607e97fa666a0276c3a52b1d1db89b Mon Sep 17 00:00:00 2001
+From ad27d856cd0137ee7a7f9135d7b78b1327d78283 Mon Sep 17 00:00:00 2001
 From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
-Date: Sun, 20 Jul 2025 18:06:34 -0400
-Subject: [PATCH 1/6] Use find components instead of explicitely iterating over
+Date: Sun, 1 Mar 2026 18:33:20 -0500
+Subject: [PATCH 1/5] Use find components instead of explicitely iterating over
  libraries
 
 PXR_LIBARIES holds what we are expected to use.
 ---
- UsdBridge/CMakeLists.txt | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ UsdBridge/CMakeLists.txt | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/UsdBridge/CMakeLists.txt b/UsdBridge/CMakeLists.txt
-index 9d33da2..50b47b5 100644
+index a7f9e20..80236a1 100644
 --- a/UsdBridge/CMakeLists.txt
 +++ b/UsdBridge/CMakeLists.txt
-@@ -83,7 +83,8 @@ if(NOT DEFINED MaterialX_DIR)
+@@ -112,7 +112,12 @@ if(${USD_DEVICE_RENDERING_ENABLED} AND NOT TARGET opensubdiv::opensubdiv)
  endif()
  
- # Search in config mode
+ # Search in config mode (USD will now skip TBB finding and use our targets)
 -find_package(pxr REQUIRED
-+list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils)
++list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils plug)
++if(${USD_DEVICE_RENDERING_ENABLED})
++  find_package(OpenGL REQUIRED)
++  list(APPEND USD_INIT_TARGETS usdHydra usdImaging usdRender hgi hdx glf usdImagingGL)
++endif()
 +find_package(pxr REQUIRED COMPONENTS ${USD_INIT_TARGETS}
-   PATHS ${USD_ROOT_DIR_CURRENT})
+   HINTS ${USD_ROOT_DIR_CURRENT})
  
  if(NOT (USD_ROOT_DIR_DEBUG STREQUAL USD_ROOT_DIR_RELEASE))
-@@ -96,8 +97,7 @@ if(NOT (USD_ROOT_DIR_DEBUG STREQUAL USD_ROOT_DIR_RELEASE))
+@@ -125,12 +130,7 @@ if(NOT (USD_ROOT_DIR_DEBUG STREQUAL USD_ROOT_DIR_RELEASE))
    endif()
  endif()
  
--list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils)
+-list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils plug)
+-if(${USD_DEVICE_RENDERING_ENABLED})
+-  find_package(OpenGL REQUIRED)
+-  list(APPEND USD_INIT_TARGETS usdHydra usdImaging usdRender hgi hdx glf usdImagingGL)
+-endif()
 -flatten_and_cleanup_targets(USD_TARGETS "${USD_INIT_TARGETS}")
 +flatten_and_cleanup_targets(USD_TARGETS "${PXR_LIBRARIES}")
  message(STATUS "USD_TARGETS: ${USD_TARGETS}")
  
  # Find out whether USD was compiled with or without the CXX11 ABI
 -- 
-2.49.0
+2.51.2
 

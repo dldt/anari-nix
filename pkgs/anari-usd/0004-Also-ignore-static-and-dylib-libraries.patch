@@ -1,14 +1,14 @@
-From b676d52d0a840122e9427699e50abd8ff0e07360 Mon Sep 17 00:00:00 2001
+From a2b734253ec5f1e9e50f6c25ea3b10628239c92e Mon Sep 17 00:00:00 2001
 From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
-Date: Sun, 20 Jul 2025 18:50:14 -0400
-Subject: [PATCH 5/6] Also ignore static and dylib libraries
+Date: Sun, 1 Mar 2026 18:33:42 -0500
+Subject: [PATCH 4/5] Also ignore static and dylib libraries
 
 ---
  UsdBridge/usdhelpers.cmake | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/UsdBridge/usdhelpers.cmake b/UsdBridge/usdhelpers.cmake
-index 0d70b75..47df33c 100644
+index 5f0bba3..8850a4e 100644
 --- a/UsdBridge/usdhelpers.cmake
 +++ b/UsdBridge/usdhelpers.cmake
 @@ -29,7 +29,7 @@ function(flatten_and_cleanup_targets RESULT_TARGETS INIT_TARGETS)
@@ -21,5 +21,5 @@ index 0d70b75..47df33c 100644
    set(candidate_targets ${INIT_TARGETS})
    set(flat_targets "")
 -- 
-2.49.0
+2.51.2
 
