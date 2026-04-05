@@ -1,31 +1,28 @@
 From fc465102b1ed10019b23d28c57136dade84e3735 Mon Sep 17 00:00:00 2001
 From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
 Date: Wed, 30 Apr 2025 21:06:35 -0400
-Subject: [PATCH] Link with openvdb and OSL when needed
+Subject: [PATCH] Link with openvdb when needed
 
 ---
- cycles/device/CMakeLists.txt | 10 ++++++
- 1 file changed, 10 insertions(+)
+ cycles/src/device/CMakeLists.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/cycles/src/device/CMakeLists.txt b/cycles/src/device/CMakeLists.txt
 index 431ae7a80..c220f28cb 100644
 --- a/cycles/src/device/CMakeLists.txt
 +++ b/cycles/src/device/CMakeLists.txt
-@@ -207,6 +207,17 @@ if(WITH_CYCLES_OSL)
-   )
+@@ -233,6 +233,12 @@ endif()
  endif()
- 
+
 +if(WITH_CYCLES_NANOVDB)
 +  list(APPEND LIB
 +    openvdb
 +  )
 +endif()
 +
-+if(WITH_CYCLES_OSL)
-+  list(APPEND LIB
-+    ${OSL_LIBRARIES}
-+  )
-+endif()
- 
- include_directories(${INC})
- include_directories(SYSTEM ${INC_SYS})
+ if(WITH_CYCLES_OSL)
+   list(APPEND LIB
+     ${OSL_LIBRARIES}
+   )
+-- 
+2.49.0

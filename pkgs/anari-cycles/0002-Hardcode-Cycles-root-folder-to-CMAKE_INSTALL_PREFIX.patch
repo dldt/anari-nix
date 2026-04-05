@@ -8,7 +8,7 @@ Subject: [PATCH 2/2] Hardcode Cycles root folder to CMAKE_INSTALL_PREFIX
  cycles/src/util/path.cpp       | 18 +++++++++++++++++-
  2 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/src/util/CMakeLists.txt b/src/util/CMakeLists.txt
+diff --git a/cycles/src/util/CMakeLists.txt b/cycles/src/util/CMakeLists.txt
 index fe28dfd66..e1a9d78b1 100644
 --- a/cycles/src/util/CMakeLists.txt
 +++ b/cycles/src/util/CMakeLists.txt
@@ -23,7 +23,7 @@ index fe28dfd66..e1a9d78b1 100644
  set(SRC
    aligned_malloc.cpp
    debug.cpp
-diff --git a/src/util/path.cpp b/src/util/path.cpp
+diff --git a/cycles/src/util/path.cpp b/cycles/src/util/path.cpp
 index 33cf0a39e..58a08781d 100644
 --- a/cycles/src/util/path.cpp
 +++ b/cycles/src/util/path.cpp
@@ -42,7 +42,7 @@ index 33cf0a39e..58a08781d 100644
      env_init = true;
    }
    if (env_shader_path != nullptr && sub == "shader") {
-@@ -342,7 +348,11 @@ string path_get(const string &sub)
+@@ -342,7 +347,11 @@ string path_get(const string &sub)
    }
 
    if (cached_path.empty()) {
@@ -54,7 +54,7 @@ index 33cf0a39e..58a08781d 100644
    }
 
    return path_join(cached_path, sub);
-@@ -351,7 +362,11 @@ string path_get(const string &sub)
+@@ -351,7 +360,11 @@ string path_get(const string &sub)
  string path_user_get(const string &sub)
  {
    if (cached_user_path.empty()) {
@@ -67,5 +67,5 @@ index 33cf0a39e..58a08781d 100644
    }
 
    return path_join(cached_user_path, sub);
---
+-- 
 2.49.0
