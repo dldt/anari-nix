@@ -17,13 +17,13 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-usd";
-  version = "0.15.0_next-unstable-2026-04-07";
+  version = "0.15.0_next-unstable-2026-04-14";
 
   src = fetchFromGitHub {
     owner = "NVIDIA-Omniverse";
     repo = "ANARI-USD";
-    rev = "796449e356f795d49b28f102638ec3352db18914";
-    hash = "sha256-jnhiGlo4Wm9YEqKPSJEGr5VDH/pOt53MTpB0OkBRIdw=";
+    rev = "98ea5c4f49f4bea99bccadb7e8371d889b557527";
+    hash = "sha256-OzsA2mu8wTPK2Qy/HwNAqkZnqUJvrySledNMEbHHChg=";
   };
 
   patches = [
