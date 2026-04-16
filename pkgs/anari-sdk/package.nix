@@ -76,6 +76,12 @@ stdenv.mkDerivation {
       --replace-fail '../anari_test_scenes.h' 'anari_test_scenes.h'
   '';
 
+  patches = [
+    ./0001-anari_viewer-expose-pixel-density-and-set-ImGui-Disp.patch
+  ];
+
+  patchFlags = [ "-p1" ];
+
   passthru.updateScript = nix-update-script {
     extraArgs = [
       "--flake"
