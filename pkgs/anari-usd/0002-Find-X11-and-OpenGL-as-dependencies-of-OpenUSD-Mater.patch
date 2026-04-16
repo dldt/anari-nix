@@ -1,6 +1,6 @@
-From 11f43a76afec05940376517b141109b3b0ed0f0f Mon Sep 17 00:00:00 2001
+From caf3785201a4092391164015809bcc4f6f65a81f Mon Sep 17 00:00:00 2001
 From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
-Date: Sun, 1 Mar 2026 18:33:27 -0500
+Date: Thu, 16 Apr 2026 18:53:37 -0400
 Subject: [PATCH 2/5] Find X11 and OpenGL as dependencies of OpenUSD/MaterialX
 
 ---
@@ -8,18 +8,18 @@ Subject: [PATCH 2/5] Find X11 and OpenGL as dependencies of OpenUSD/MaterialX
  1 file changed, 2 insertions(+)
 
 diff --git a/UsdBridge/CMakeLists.txt b/UsdBridge/CMakeLists.txt
-index 80236a1..10adedc 100644
+index 5021801..4687eb5 100644
 --- a/UsdBridge/CMakeLists.txt
 +++ b/UsdBridge/CMakeLists.txt
 @@ -112,6 +112,8 @@ if(${USD_DEVICE_RENDERING_ENABLED} AND NOT TARGET opensubdiv::opensubdiv)
  endif()
- 
+
  # Search in config mode (USD will now skip TBB finding and use our targets)
 +find_package(X11)
 +find_package(OpenGL)
- list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils plug)
+ list(APPEND USD_INIT_TARGETS usdGeom usdVol usdShade usdLux usdUtils plug usdRender)
  if(${USD_DEVICE_RENDERING_ENABLED})
    find_package(OpenGL REQUIRED)
--- 
+--
 2.51.2
 
