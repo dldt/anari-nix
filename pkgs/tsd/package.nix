@@ -62,6 +62,14 @@ stdenv.mkDerivation {
     add_subdirectory(stb_image)"
   '';
 
+  patches = [
+    ./0001-fix-macOS-Retina-UI-scale-using-ImFontConfig-RasterizerDensity.patch
+  ];
+
+  patchFlags = [
+    "-p2"
+  ];
+
   sourceRoot = "./source/tsd";
 
   postUnpack = ''

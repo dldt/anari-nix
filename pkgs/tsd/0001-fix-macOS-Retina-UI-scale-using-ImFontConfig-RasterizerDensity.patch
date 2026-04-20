@@ -1,0 +1,44 @@
+Commit ID: 71d90e7bb9f7fd9a6046226a9fdfeb5293dcbd5a
+Change ID: xruyvmusrkmxzosktzktuppwmyxqoult
+Author   : Thomas Arcila <134677+tarcila@users.noreply.github.com> (2026-04-20 10:17:32)
+Committer: Thomas Arcila <134677+tarcila@users.noreply.github.com> (2026-04-20 10:22:35)
+
+    fix macOS Retina UI scale using ImFontConfig RasterizerDensity
+
+diff --git a/tsd/src/tsd/ui/imgui/Application.cpp b/tsd/src/tsd/ui/imgui/Application.cpp
+index 03d7b05400..918326e946 100644
+--- a/tsd/src/tsd/ui/imgui/Application.cpp
++++ b/tsd/src/tsd/ui/imgui/Application.cpp
+@@ -122,14 +122,16 @@
+ 
+   ImGuiIO &io = ImGui::GetIO();
+   io.IniFilename = nullptr;
++
++  ImFontConfig fontCfg;
++  fontCfg.FontDataOwnedByAtlas = false;
++  fontCfg.RasterizerDensity = pixelDensity();
+   auto *font = io.Fonts->AddFontFromMemoryCompressedTTF(
+-      tsd_font_compressed_data, tsd_font_compressed_size, 20.f);
+-  io.Fonts->ConfigData[0].FontDataOwnedByAtlas = false;
++      tsd_font_compressed_data, tsd_font_compressed_size, 20.f, &fontCfg);
+   io.FontDefault = font;
+ 
+   auto *window = sdlWindow();
+   SDL_MaximizeWindow(window);
+-  m_uiConfig.fontScale = SDL_GetWindowDisplayScale(window);
+ 
+   setupImGuiStyle();
+ 
+diff --git a/tsd/src/tsd/ui/imgui/modals/AppSettingsDialog.cpp b/tsd/src/tsd/ui/imgui/modals/AppSettingsDialog.cpp
+index fbbde5ff6d..d4efb733d5 100644
+--- a/tsd/src/tsd/ui/imgui/modals/AppSettingsDialog.cpp
++++ b/tsd/src/tsd/ui/imgui/modals/AppSettingsDialog.cpp
+@@ -59,7 +59,7 @@
+   auto *config = m_app->uiConfig();
+ 
+   doUpdate |=
+-      ImGui::DragFloat("font size", &config->fontScale, 0.01f, 0.5f, 4.f);
++      ImGui::DragFloat("ui scale", &config->fontScale, 0.01f, 0.5f, 4.f);
+ 
+   doUpdate |= ImGui::DragFloat("rounding", &config->rounding, 0.01f, 0.f, 12.f);
+ 
