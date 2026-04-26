@@ -17,14 +17,14 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-helide";
-  version = "0.15.0-unstable-2026-04-03";
+  version = "0.15.0-unstable-2026-04-25";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "1331286c4078011dc4e0679c8c2a5280d4ce6b50";
-    hash = "sha256-wvypG7cGbgz20DCTF5PEN4qM8giBIdxFHTNJ4WscYFo=";
+    rev = "3fdccc32ab7bd46f068fb8bee2e0d4648992ba5f";
+    hash = "sha256-ekC9q7nNFsfTR0w+7vhThQ0ZjcqzrzNmU6isLtDEXq0=";
   };
   sourceRoot = "source/src/devices/helide";
 
