@@ -14,13 +14,13 @@
 }:
 stdenv.mkDerivation (_finalAttrs: {
   pname = "pbrt-v4";
-  version = "0-unstable-2025-12-08";
+  version = "0-unstable-2026-05-01";
 
   src = fetchFromGitHub {
     owner = "mmp";
     repo = "pbrt-v4";
-    rev = "8c19f304558fd7681e2fef2c395a689d0106fb05";
-    hash = "sha256-My/AOimAlDxxO89s8MwfckbnQwHXO7krY+pAyY0ctwI=";
+    rev = "eef3a6ef634a7d83dc98458334dfdfbbe8906d53";
+    hash = "sha256-a1sDnEfWG4ZTT0DmWPfUAMEuyqK6lNzmGuUefcSrbvE=";
     fetchSubmodules = true;
   };
 
