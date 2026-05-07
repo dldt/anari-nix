@@ -6,13 +6,22 @@
   config,
   cudaSupport ? config.cudaSupport,
   optixSupport ? cudaSupport && stdenv.hostPlatform.isx86_64,
-  cudaPackages,
+  # pbrt-v4 trips a chain of nvcc/CCCL 12.8 bugs (cudafe1.stub.c host-stub
+  # gen, __host__ macroization order, cuda_bf16 device intrinsics in
+  # non-arch-guarded paths) that are absent in 12.9+. Pin to cudaPackages_12_9
+  # rather than keeping the flake-default cudaPackages so we can drop the
+  # workarounds. Other packages in the flake (barney, visionaray) keep the
+  # default cudaPackages — there's a second CUDA closure on disk in exchange.
+  cudaPackages_12_9,
   autoAddDriverRunpath,
   nvidia-optix,
   zlib,
   openexr,
   nix-update-script,
 }:
+let
+  cudaPackages = cudaPackages_12_9;
+in
 stdenv.mkDerivation (_finalAttrs: {
   pname = "pbrt-v4";
   version = "0-unstable-2026-05-01";
@@ -101,12 +110,21 @@ stdenv.mkDerivation (_finalAttrs: {
     CUDAGLSTUB
   ''
   + lib.optionalString cudaSupport ''
-    # pbrt unconditionally appends `--gpu-architecture=$ARCH` to CMAKE_CUDA_FLAGS, which
-    # only emits SASS for one arch. Replace with the full nixpkgs gencode list (SASS for
-    # each arch + PTX for the highest, enabling JIT for forward-compat on newer GPUs).
+    # pbrt's CMakeLists hardcodes a single CUDA arch via `--gpu-architecture=$ARCH`
+    # (sm_75 here), which is correct for OptiX PTX compilation (single-arch required
+    # by `-ptx`). Augment SASS-target compiles with the full nixpkgs gencode list —
+    # SASS for every supported arch + PTX for the highest, enabling forward-compat
+    # JIT on newer GPUs. The `$<NOT:CUDA_PTX_COMPILATION>` guard keeps the multi-
+    # gencode list off pbrt's OptiX shader targets, where `-ptx + multi-gencode` is
+    # a fatal nvcc error. Scoped to cuda_build_configuration so it doesn't leak into
+    # check_language(CUDA)'s try-compile.
     substituteInPlace CMakeLists.txt --replace-fail \
-        'string (APPEND CMAKE_CUDA_FLAGS " --gpu-architecture=''${ARCH}")' \
-        'string (APPEND CMAKE_CUDA_FLAGS " ${cudaPackages.flags.gencodeString}")'
+        'string (APPEND CMAKE_CUDA_FLAGS " -Xnvlink -suppress-stack-size-warning")' \
+        'string (APPEND CMAKE_CUDA_FLAGS " -Xnvlink -suppress-stack-size-warning")
+        target_compile_options (cuda_build_configuration INTERFACE
+            "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<NOT:$<BOOL:$<TARGET_PROPERTY:CUDA_PTX_COMPILATION>>>>:${
+              builtins.replaceStrings [ " " ] [ ";" ] cudaPackages.flags.gencodeString
+            }>")'
   '';
 
   nativeBuildInputs = [
@@ -150,13 +168,6 @@ stdenv.mkDerivation (_finalAttrs: {
     # Allow the linker to resolve `-lcuda` against the driver stub at link time;
     # autoAddDriverRunpath then patches RPATH so the loader picks the real driver at runtime.
     export NIX_LDFLAGS="$NIX_LDFLAGS -L${cudaPackages.cuda_cudart}/lib/stubs"
-
-    # Workaround for an nvcc 12.8 bug: the .cudafe1.stub.c stub-emitter references
-    # cuda::std device-side symbols (piecewise_construct, swappable, iter_move) without
-    # including the corresponding CCCL headers, so host compilation of the stub fails.
-    # Force-include the public umbrella headers via the host compiler. Drop this once
-    # cudaPackages tracks an nvcc that emits its own includes.
-    export CUDAFLAGS="$CUDAFLAGS -Xcompiler -include,cuda/std/utility -Xcompiler -include,cuda/std/concepts -Xcompiler -include,cuda/std/iterator"
   '';
 
   postInstall = ''
