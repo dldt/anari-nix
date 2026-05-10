@@ -112,19 +112,19 @@ stdenv.mkDerivation (_finalAttrs: {
   + lib.optionalString cudaSupport ''
     # pbrt's CMakeLists hardcodes a single CUDA arch via `--gpu-architecture=$ARCH`
     # (sm_75 here), which is correct for OptiX PTX compilation (single-arch required
-    # by `-ptx`). Augment SASS-target compiles with the full nixpkgs gencode list —
-    # SASS for every supported arch + PTX for the highest, enabling forward-compat
-    # JIT on newer GPUs. The `$<NOT:CUDA_PTX_COMPILATION>` guard keeps the multi-
-    # gencode list off pbrt's OptiX shader targets, where `-ptx + multi-gencode` is
-    # a fatal nvcc error. Scoped to cuda_build_configuration so it doesn't leak into
-    # check_language(CUDA)'s try-compile.
+    # by `-ptx`). For SASS-target compiles, emit PTX-only for compute_75 instead of
+    # the multi-arch SASS list — a single virtual arch keeps the embedded sample
+    # tables (pmj02tables, bluenoise) from being duplicated per gencode and shrinks
+    # the static archive by ~hundreds of MB. The driver JITs to the user's GPU on
+    # first run and caches under ~/.nv/ComputeCache. The `$<NOT:CUDA_PTX_COMPILATION>`
+    # guard keeps this off pbrt's OptiX shader targets, where `-ptx + extra gencode`
+    # is a fatal nvcc error. Scoped to cuda_build_configuration so it doesn't leak
+    # into check_language(CUDA)'s try-compile.
     substituteInPlace CMakeLists.txt --replace-fail \
         'string (APPEND CMAKE_CUDA_FLAGS " -Xnvlink -suppress-stack-size-warning")' \
-        'string (APPEND CMAKE_CUDA_FLAGS " -Xnvlink -suppress-stack-size-warning")
+        'string (APPEND CMAKE_CUDA_FLAGS " -Xnvlink -suppress-stack-size-warning -Xfatbin=-compress-all")
         target_compile_options (cuda_build_configuration INTERFACE
-            "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<NOT:$<BOOL:$<TARGET_PROPERTY:CUDA_PTX_COMPILATION>>>>:${
-              builtins.replaceStrings [ " " ] [ ";" ] cudaPackages.flags.gencodeString
-            }>")'
+            "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<NOT:$<BOOL:$<TARGET_PROPERTY:CUDA_PTX_COMPILATION>>>>:-gencode=arch=compute_75,code=compute_75>")'
   '';
 
   nativeBuildInputs = [
@@ -177,6 +177,12 @@ stdenv.mkDerivation (_finalAttrs: {
     rm -rf $out/lib/pkgconfig
     rm -rf $out/share
     rm -f $out/bin/{ptxinfo,libdeflate-gzip}
+
+    # Drop standalone utility tools — each statically links libpbrt_lib.a
+    # and CUDA fatbins, weighing ~320 MB. This package is consumed as a
+    # library (see lib/cmake/pbrt-config); users who want imgtool/plytool/
+    # pspec can install upstream pbrt-v4 directly.
+    rm -f $out/bin/{imgtool,plytool,pspec}
 
     # cmake build dir is one level below the (patched) source root.
     pbrtSrc=$(realpath ..)
