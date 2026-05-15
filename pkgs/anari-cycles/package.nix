@@ -33,13 +33,13 @@ assert lib.assertMsg (!optixSupport || cudaSupport) "OptiX support requires CUDA
 stdenv.mkDerivation {
 
   pname = "anari-cycles";
-  version = "0-unstable-2026-04-03";
+  version = "0-unstable-2026-05-14";
 
   src = fetchFromGitHub {
     owner = "jeffamstutz";
     repo = "anari-cycles";
-    rev = "ac680b862e11ce8d936d41a91b3fd6abd0afdbbc";
-    hash = "sha256-/GazR0Qbv3/0LEeGYZptLJKa0RAGseCUyL8gK8ZGH00=";
+    rev = "ac891fc5c9e9e0b3affe559815a5b16743ca84d7";
+    hash = "sha256-b/+GrtIVif7cHT/PZ7EpJaHH5SAl6t6zXRJYppzuPzk=";
     fetchSubmodules = true;
   };
 
