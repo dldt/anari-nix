@@ -25,10 +25,16 @@ stdenv.mkDerivation {
     ispc
   ];
 
-  cmakeFlags = with lib; [
-    (cmakeBool "BUILD_EXAMPLES" false)
-    (cmakeFeature "CMAKE_POLICY_VERSION_MINIMUM" "3.5")
-  ];
+  cmakeFlags =
+    with lib;
+    [
+      (cmakeBool "BUILD_EXAMPLES" false)
+      (cmakeFeature "CMAKE_POLICY_VERSION_MINIMUM" "3.5")
+    ]
+    ++ optionals stdenv.hostPlatform.isAarch64 [
+      (cmakeBool "OPENVKL_ISA_NEON" false)
+      (cmakeBool "OPENVKL_ISA_NEON2X" true)
+    ];
 
   buildInputs = [
     embree
