@@ -64,6 +64,7 @@ stdenv.mkDerivation {
 
   patches = [
     ./0001-fix-macOS-Retina-UI-scale-using-ImFontConfig-RasterizerDensity.patch
+    ./0002-Application-expose-pixel-density-and-set-ImGui-Displ.patch
   ];
 
   patchFlags = [
