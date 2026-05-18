@@ -9,8 +9,8 @@ diff --git a/tsd/src/tsd/ui/imgui/Application.cpp b/tsd/src/tsd/ui/imgui/Applica
 index 03d7b05400..918326e946 100644
 --- a/tsd/src/tsd/ui/imgui/Application.cpp
 +++ b/tsd/src/tsd/ui/imgui/Application.cpp
-@@ -122,14 +122,16 @@
- 
+@@ -323,14 +323,16 @@ WindowArray Application::setupWindows()
+ {
    ImGuiIO &io = ImGui::GetIO();
    io.IniFilename = nullptr;
 +

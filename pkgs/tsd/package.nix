@@ -24,7 +24,7 @@
   nix-update-script,
 }:
 let
-  anari_viewer_imgui_sdl = fetchurl {
+  tsd_ext_imgui_sdl = fetchurl {
     url = "https://github.com/ocornut/imgui/archive/refs/tags/v1.91.7-docking.zip";
     hash = "sha256-glnDJORdpGuZ8PQ4uBYfeOh0kmCzJmNnI9zHOnSwePQ=";
   };
@@ -39,14 +39,14 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "0.13.0-unstable-2026-05-13";
+  version = "0.13.0-unstable-2026-05-15";
 
   # Main source. Hosted as part of VisRTX.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "73b8f14bb559e9014db29d535aa8bb3b151c8cb3";
-    hash = "sha256-f9nNPZAyhMCgd2qQmkE1PLXFDRxE9xwI0k8H0ewCWF0=";
+    rev = "4e27083ee79b507e0150f333d5513bd49836577a";
+    hash = "sha256-Qxp22yKcz2EoB5N3VDUpR7RGN0+8TELiEQUnSUQnWXI=";
   };
 
   postPatch = ''
@@ -64,6 +64,7 @@ stdenv.mkDerivation {
 
   patches = [
     ./0001-fix-macOS-Retina-UI-scale-using-ImFontConfig-RasterizerDensity.patch
+    ./0002-Application-expose-pixel-density-and-set-ImGui-Displ.patch
   ];
 
   patchFlags = [
@@ -73,8 +74,8 @@ stdenv.mkDerivation {
   sourceRoot = "./source/tsd";
 
   postUnpack = ''
-    mkdir -p "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/"
-    cp "${anari_viewer_imgui_sdl}" "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/v1.91.7-docking.zip"
+    mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imgui_sdl/"
+    cp "${tsd_ext_imgui_sdl}" "''${sourceRoot}/.anari_deps/tsd_ext_imgui_sdl/v1.91.7-docking.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imnodes/"
     cp "${imnodes-src}" "''${sourceRoot}/.anari_deps/tsd_ext_imnodes/v0.5.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imguizmo/"
