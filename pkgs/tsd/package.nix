@@ -24,7 +24,7 @@
   nix-update-script,
 }:
 let
-  anari_viewer_imgui_sdl = fetchurl {
+  tsd_ext_imgui_sdl = fetchurl {
     url = "https://github.com/ocornut/imgui/archive/refs/tags/v1.91.7-docking.zip";
     hash = "sha256-glnDJORdpGuZ8PQ4uBYfeOh0kmCzJmNnI9zHOnSwePQ=";
   };
@@ -74,8 +74,8 @@ stdenv.mkDerivation {
   sourceRoot = "./source/tsd";
 
   postUnpack = ''
-    mkdir -p "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/"
-    cp "${anari_viewer_imgui_sdl}" "''${sourceRoot}/.anari_deps/anari_viewer_imgui_sdl/v1.91.7-docking.zip"
+    mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imgui_sdl/"
+    cp "${tsd_ext_imgui_sdl}" "''${sourceRoot}/.anari_deps/tsd_ext_imgui_sdl/v1.91.7-docking.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imnodes/"
     cp "${imnodes-src}" "''${sourceRoot}/.anari_deps/tsd_ext_imnodes/v0.5.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/tsd_ext_imguizmo/"
