@@ -41,17 +41,19 @@ stdenv.mkDerivation {
     rkcommon
   ];
 
-  cmakeFlags = with lib; [
-    (cmakeBool "OSPRAY_ENABLE_APPS" false)
-    (cmakeBool "OSPRAY_MODULE_DENOISER" true)
-    (cmakeBool "OSPRAY_MODULE_BILINEAR_PATCH" true)
-  ];
+  cmakeFlags =
+    with lib;
+    [
+      (cmakeBool "OSPRAY_ENABLE_APPS" false)
+      (cmakeBool "OSPRAY_MODULE_DENOISER" true)
+      (cmakeBool "OSPRAY_MODULE_BILINEAR_PATCH" true)
+    ]
+    ++ optional stdenv.hostPlatform.isAarch64 (cmakeFeature "OSPRAY_BUILD_ISA" "NEON2X");
 
   meta = with lib; {
     description = "OSPRay is an open source, scalable, and portable ray tracing engine.";
     homepage = "https://ospray.org";
     license = licenses.mit;
     platforms = platforms.unix;
-    broken = stdenv.hostPlatform.system == "aarch64-darwin";
   };
 }
