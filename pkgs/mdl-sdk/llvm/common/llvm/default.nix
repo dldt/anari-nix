@@ -136,6 +136,9 @@ stdenv.mkDerivation (
         # Testing support relies on now removed pipes python module.
         (getVersionFile "llvm/deprecated-python.patch")
 
+        # GCC 15 no longer provides fixed-width integer types here transitively.
+        (getVersionFile "llvm/mctargetdesc-cstdint-gcc15.patch")
+
         # On older CPUs (e.g. Hydra/wendy) we'd be getting an error in this test.
         (fetchpatch {
           name = "uops-CMOV16rm-noreg.diff";
