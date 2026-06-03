@@ -21,13 +21,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-cts";
-  version = "0.15.0-unstable-2026-05-13";
+  version = "0.15.0-unstable-2026-06-02";
 
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "7a4e37685964fd167fa2f5d0db901143922ff3e3";
-    hash = "sha256-kNK++/foUPuQWd1DA7RehfQjGbmPw1VrfgAP08OMNDU=";
+    rev = "e49027eb5f1df317574684ffe1bda481b151babb";
+    hash = "sha256-qgZ+Zv91YFCPJwakhrx1aqPrqQtQ4ZNkmAZfii9EU2A=";
   };
 
   postUnpack = ''

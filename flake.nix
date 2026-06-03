@@ -15,7 +15,7 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
     systems.url = "github:nix-systems/default";
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -129,7 +129,6 @@
     in
     {
       packages = forAllDefaultSystems packages;
-      packagesCuda = forAllDefaultSystems packagesCuda;
 
       overlays.default = import ./overlay.nix nixpkgs;
 

@@ -10,7 +10,8 @@
   opensubdiv,
   materialx,
   libGL,
-  xorg,
+  libx11,
+  libxt,
   tbb,
   imath,
   nix-update-script,
@@ -49,8 +50,8 @@ stdenv.mkDerivation {
   ]
   ++ lib.optionals stdenv.isLinux [
     # What's need for MaterialX on Linux
-    xorg.libX11
-    xorg.libXt
+    libx11
+    libxt
     libGL
   ]
   ++ lib.optionals stdenv.isDarwin [

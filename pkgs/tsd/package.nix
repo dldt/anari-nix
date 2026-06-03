@@ -19,7 +19,8 @@
   sdl3,
   sol2,
   openusd,
-  xorg,
+  libx11,
+  libxt,
   vtk,
   nix-update-script,
 }:
@@ -39,14 +40,14 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "0.13.0-unstable-2026-05-22";
+  version = "0.13.0-unstable-2026-06-02";
 
   # Main source. Hosted as part of VisRTX.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "efe2f3845e1a752d098bafcd0e5aad6f4eded389";
-    hash = "sha256-YKTHdIPavw5poL9Yz0+QNgO14GTizoLTkF/O5dwjwsA=";
+    rev = "b78bae4bdbb963b57732c2f033143109ae740eb6";
+    hash = "sha256-E9h5KEJGopojmqZQQzxoztJoDM29eSlcPbof2cYu7EA=";
   };
 
   postPatch = ''
@@ -65,6 +66,7 @@ stdenv.mkDerivation {
   patches = [
     ./0001-fix-macOS-Retina-UI-scale-using-ImFontConfig-RasterizerDensity.patch
     ./0002-Application-expose-pixel-density-and-set-ImGui-Displ.patch
+    ./0003-Include-cstdint-for-SIZE_MAX.patch
   ];
 
   patchFlags = [
@@ -124,8 +126,8 @@ stdenv.mkDerivation {
     vtk
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
-    xorg.libX11
-    xorg.libXt
+    libx11
+    libxt
   ]
   ++ lib.optionals cudaSupport [
     cudaPackages.cuda_cudart

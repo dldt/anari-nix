@@ -1,0 +1,12 @@
+diff --git a/tsd/src/tsd/ui/imgui/ExtensionManager.h b/tsd/src/tsd/ui/imgui/ExtensionManager.h
+index 27e50d6..bf387f4 100644
+--- a/tsd/src/tsd/ui/imgui/ExtensionManager.h
++++ b/tsd/src/tsd/ui/imgui/ExtensionManager.h
+@@ -3,6 +3,7 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
+ #include <functional>
+ #include <memory>
+ #include <string>

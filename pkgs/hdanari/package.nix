@@ -11,20 +11,21 @@
   materialx,
   libGL,
   mdl-sdk,
-  xorg,
+  libx11,
+  libxt,
   tbb,
   nix-update-script,
 }:
 stdenv.mkDerivation {
   pname = "hdanari";
-  version = "0.15.0-unstable-2026-05-13";
+  version = "0.15.0-unstable-2026-06-02";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "7a4e37685964fd167fa2f5d0db901143922ff3e3";
-    hash = "sha256-kNK++/foUPuQWd1DA7RehfQjGbmPw1VrfgAP08OMNDU=";
+    rev = "e49027eb5f1df317574684ffe1bda481b151babb";
+    hash = "sha256-qgZ+Zv91YFCPJwakhrx1aqPrqQtQ4ZNkmAZfii9EU2A=";
   };
 
   sourceRoot = "source/src/hdanari";
@@ -49,8 +50,8 @@ stdenv.mkDerivation {
   ]
   ++ lib.optionals stdenv.isLinux [
     # What's need for MaterialX on Linux
-    xorg.libX11
-    xorg.libXt
+    libx11
+    libxt
     libGL
 
     # MDL-SDK is broken on aarch64-darwin due to
