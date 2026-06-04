@@ -40,14 +40,19 @@ let
 in
 stdenv.mkDerivation {
   pname = "tsd";
-  version = "0.13.0-unstable-2026-06-02";
+  version = "0.13.0-unstable-2026-06-04";
+
+  outputs = [
+    "out"
+    "dev"
+  ];
 
   # Main source. Hosted as part of VisRTX.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "b78bae4bdbb963b57732c2f033143109ae740eb6";
-    hash = "sha256-E9h5KEJGopojmqZQQzxoztJoDM29eSlcPbof2cYu7EA=";
+    rev = "df59f01c592a8ab69dcbae90220f436ba55f1b3d";
+    hash = "sha256-R4yS752Z8Kz/E6oRnDoL4tSAYIEju/M2MKnwgIF6Ctg=";
   };
 
   postPatch = ''
@@ -96,11 +101,48 @@ stdenv.mkDerivation {
   ];
 
   installPhase = ''
-    mkdir -p "''${out}/bin"
-    cp ./tsdViewer "''${out}/bin"
-    cp ./tsdRender "''${out}/bin"
-    cp ./tsdPrint "''${out}/bin"
-    cp ./tsdLua "''${out}/bin"
+    runHook preInstall
+
+    install -Dm755 -t "$out/bin" \
+      ./tsdViewer \
+      ./tsdRender \
+      ./tsdPrint \
+      ./tsdLua \
+      ./obj2header \
+      ./tsdOffline \
+      ./tsdVolumeToNanoVDB
+
+    mkdir -p "$dev/include/tsd" "$dev/lib/cmake/tsd"
+
+    # Public TSD headers: consumers include <tsd/scene/Scene.hpp>, etc.
+    cp -r "$NIX_BUILD_TOP/$sourceRoot/src/tsd/." "$dev/include/tsd/"
+
+    # All static archives (flat in the build dir).
+    find . -maxdepth 1 -name '*.a' -exec cp {} "$dev/lib/" \;
+
+    # tsd_ui_imgui is an OBJECT library (no archive); bundle its objects.
+    ui_objs=$(find . -path '*tsd_ui_imgui*' -name '*.o' 2>/dev/null || true)
+    [ -n "$ui_objs" ] && ar rcs "$dev/lib/libtsd_ui_imgui.a" $ui_objs
+
+    # Third-party headers that TSD's public headers #include.
+    for d in deps/source build/deps/source .anari_deps; do
+      [ -d "$d" ] && find "$d" \( -name '*.h' -o -name '*.hpp' \) \
+        -exec cp {} "$dev/include/" \; 2>/dev/null || true
+    done
+    find "$NIX_BUILD_TOP/$sourceRoot/external" -name 'imoguizmo*.h*' \
+      -exec cp {} "$dev/include/" \; 2>/dev/null || true
+
+    extraFindDeps=""
+    extraLinkLibs=""
+    if printf '%s' "$cmakeFlags" | grep -iqE -- '-DTSD_USE_SDL3(:[A-Z]+)?=(ON|TRUE|YES|1)'; then
+      extraFindDeps="find_dependency(SDL3)"
+      extraLinkLibs=" SDL3::SDL3"
+    fi
+    substitute ${./tsd-config.cmake.in} "$dev/lib/cmake/tsd/tsd-config.cmake" \
+      --subst-var-by TSD_EXTRA_FIND_DEPS "$extraFindDeps" \
+      --subst-var-by TSD_EXTRA_LINK_LIBS "$extraLinkLibs"
+
+    runHook postInstall
   '';
 
   nativeBuildInputs = [
@@ -142,9 +184,10 @@ stdenv.mkDerivation {
   };
 
   meta = with lib; {
-    description = "This project started as a medium to learn 3D scene graph library design in C++ as well as be an ongoing study on how a scene graph and ANARI can be paired.";
+    description = "3D scene graph library and viewer built around the ANARI rendering API";
     homepage = "https://github.com/jeffamstutz/TSD";
     license = licenses.bsd3;
+    mainProgram = "tsdViewer";
     platforms = platforms.unix;
   };
 }
