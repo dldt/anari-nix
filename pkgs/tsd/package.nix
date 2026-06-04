@@ -95,12 +95,65 @@ stdenv.mkDerivation {
     (lib.cmakeBool "TSD_USE_SILO" true)
   ];
 
+  # `outputs` stays single by default; a library consumer opts into the `dev`
+  # output (headers + static archives + tsd-config.cmake) via overrideAttrs.
+
   installPhase = ''
+    runHook preInstall
+
     mkdir -p "''${out}/bin"
-    cp ./tsdViewer "''${out}/bin"
-    cp ./tsdRender "''${out}/bin"
-    cp ./tsdPrint "''${out}/bin"
-    cp ./tsdLua "''${out}/bin"
+    # Apps/tools only exist when TSD_BUILD_APPS is on (the default). A trimmed
+    # library build (apps off) legitimately produces none of these.
+    if ! printf '%s' "$cmakeFlags" | grep -iqE -- '-DTSD_BUILD_APPS(:[A-Z]+)?=(OFF|FALSE|NO|0)'; then
+      install -Dm755 -t "''${out}/bin" \
+        ./tsdViewer \
+        ./tsdRender \
+        ./tsdPrint \
+        ./tsdLua \
+        ./obj2header \
+        ./tsdOffline \
+        ./tsdVolumeToNanoVDB
+    fi
+
+    runHook postInstall
+  '';
+
+  # Assemble the `dev` output only when a consumer requested it
+  # (`outputs = [ "out" "dev" ]`); plain app builds skip this entirely. The
+  # config's dependency set is derived from the live cmakeFlags, so an
+  # overridden trimmed build gets a matching tsd-config.cmake.
+  postInstall = ''
+    if [ -n "''${dev:-}" ]; then
+      mkdir -p "$dev/include/tsd" "$dev/lib/cmake/tsd"
+
+      # Public TSD headers: consumers include <tsd/scene/Scene.hpp>, etc.
+      cp -r "$NIX_BUILD_TOP/$sourceRoot/src/tsd/." "$dev/include/tsd/"
+
+      # All static archives (flat in the build dir).
+      find . -maxdepth 1 -name '*.a' -exec cp {} "$dev/lib/" \;
+
+      # tsd_ui_imgui is an OBJECT library (no archive); bundle its objects.
+      ui_objs=$(find . -path '*tsd_ui_imgui*' -name '*.o' 2>/dev/null || true)
+      [ -n "$ui_objs" ] && ar rcs "$dev/lib/libtsd_ui_imgui.a" $ui_objs
+
+      # Third-party headers that TSD's public headers #include.
+      for d in deps/source build/deps/source .anari_deps; do
+        [ -d "$d" ] && find "$d" \( -name '*.h' -o -name '*.hpp' \) \
+          -exec cp {} "$dev/include/" \; 2>/dev/null || true
+      done
+      find "$NIX_BUILD_TOP/$sourceRoot/external" -name 'imoguizmo*.h*' \
+        -exec cp {} "$dev/include/" \; 2>/dev/null || true
+
+      extraFindDeps=""
+      extraLinkLibs=""
+      if printf '%s' "$cmakeFlags" | grep -iqE -- '-DTSD_USE_SDL3(:[A-Z]+)?=(ON|TRUE|YES|1)'; then
+        extraFindDeps="find_dependency(SDL3)"
+        extraLinkLibs=" SDL3::SDL3"
+      fi
+      substitute ${./tsd-config.cmake.in} "$dev/lib/cmake/tsd/tsd-config.cmake" \
+        --subst-var-by TSD_EXTRA_FIND_DEPS "$extraFindDeps" \
+        --subst-var-by TSD_EXTRA_LINK_LIBS "$extraLinkLibs"
+    fi
   '';
 
   nativeBuildInputs = [
