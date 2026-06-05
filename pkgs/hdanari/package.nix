@@ -92,6 +92,9 @@ stdenv.mkDerivation {
     description = "HdAnari is USD Hydra Render delegate enabling the use of ANARI devices inside USD.";
     homepage = "https://www.khronos.org/anari/";
     license = licenses.asl20;
+    # openusd enables USDView, which pulls PyQt6 -> QtWebEngine; QtWebEngine is
+    # currently a broken transitive dependency on aarch64-darwin.
+    broken = stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isDarwin;
     platforms = platforms.unix;
   };
 }

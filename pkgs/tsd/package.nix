@@ -37,6 +37,12 @@ let
     url = "https://github.com/CedricGuillemet/ImGuizmo/archive/71f14292205c3317122b39627ed98efce137086a.zip";
     hash = "sha256-kOrhHDy5hMGAC95Q1CbfpPNh1D9LQBg48I5H/GGzjRw=";
   };
+  openusdCore = openusd.override {
+    # TSD only needs OpenUSD library support. Nixpkgs' top-level openusd enables
+    # USDView/tools, which pulls PyQt6 -> QtWebEngine and breaks on aarch64-darwin.
+    withUsdView = false;
+    withTools = false;
+  };
 in
 stdenv.mkDerivation {
   pname = "tsd";
@@ -119,7 +125,7 @@ stdenv.mkDerivation {
     libGL
     lua54Packages.lua
     hdf5
-    openusd
+    openusdCore
     silo
     sol2
     tbb
