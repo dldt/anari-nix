@@ -26,7 +26,11 @@ stdenv.mkDerivation {
     cmake
   ];
 
-  transitiveBuildInputs = [
+  # rkcommon's public headers and CMake config (find_dependency(TBB)) expose
+  # TBB, so it must propagate to consumers (ospray, anari-ospray). propagated
+  # inputs also land in rkcommon's own rpath. transitiveBuildInputs is not a
+  # real mkDerivation attribute and was silently ignored.
+  propagatedBuildInputs = [
     tbb
   ];
 

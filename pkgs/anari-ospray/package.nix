@@ -13,19 +13,16 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-ospray";
-  version = "0-unstable-2025-07-04";
+  version = "0-unstable-2026-05-12";
 
-  # Main source.
+  # Main source. Tracks jeffamstutz/anari-ospray (jda/dev), which is ahead of
+  # the lagging ospray/anari-ospray upstream.
   src = fetchFromGitHub {
-    owner = "ospray";
+    owner = "jeffamstutz";
     repo = "anari-ospray";
-    rev = "f385a67d21ba0db314c2539bbe2f2f7e3437d97e";
-    hash = "sha256-s8+89VjGjJLXKrm/Kalt4s6V18Swpl1Y7GKR6OCEfHQ=";
+    rev = "df6088f27b9c5560a4b2a7707eefe37f166eb402";
+    hash = "sha256-YW9BlQUKfQBtG0KZQelVh9z0u3j9aRK2TmKSkXIalmM=";
   };
-
-  patches = [
-    ./add-get-property-size-parameter.patch
-  ];
 
   nativeBuildInputs = [
     cmake
@@ -43,7 +40,7 @@ stdenv.mkDerivation {
   passthru.updateScript = nix-update-script {
     extraArgs = [
       "--flake"
-      "--version=branch"
+      "--version=branch=jda/dev"
     ];
   };
 
