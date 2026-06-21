@@ -33,7 +33,10 @@
     let
       inherit (nixpkgs) lib;
       forEachSystem = systems: lib.genAttrs systems;
-      forAllDefaultSystems = forEachSystem (import systems);
+      # x86_64-darwin support ends after nixpkgs 26.05; drop it to silence the deprecation warning.
+      forAllDefaultSystems = forEachSystem (
+        lib.filter (system: system != "x86_64-darwin") (import systems)
+      );
 
       filterDerivations =
         packages:
