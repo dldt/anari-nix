@@ -21,13 +21,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-sdk";
-  version = "0.15.0-unstable-2026-06-20";
+  version = "0.15.0-unstable-2026-07-01";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "a446f4af1faf964eebe6143a8e4e41bb1b37012a";
+    rev = "9de01a490d99dec836c0bbebaf2872430631a25f";
     hash = "sha256-yMD3Fyz6J0OmVOGlqaZjpzONvssMZGfN940lFTiSZbU=";
   };
 
