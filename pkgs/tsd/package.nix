@@ -139,7 +139,7 @@ stdenv.mkDerivation {
 
   meta = with lib; {
     description = "This project started as a medium to learn 3D scene graph library design in C++ as well as be an ongoing study on how a scene graph and ANARI can be paired.";
-    homepage = "https://github.com/jeffamstutz/TSD";
+    homepage = "https://github.com/NVIDIA/VisRTX";
     license = licenses.bsd3;
     platforms = platforms.unix;
   };
