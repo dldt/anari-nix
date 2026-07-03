@@ -49,6 +49,7 @@ stdenv.mkDerivation {
     ./0003-Link-with-IOKit-on-when-building-Metal.patch
     ./0004-Do-not-build-cycles-standalone-app.patch
     ./0005-Revert-Build-Use-CMAKE_CURRENT_SOURCE_DIR-for-findin.patch
+    ./0006-Enable-SSE2NEON-for-the-ANARI-device-library.patch
   ];
 
   nativeBuildInputs = [
