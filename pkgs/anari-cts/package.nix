@@ -1,17 +1,12 @@
 {
   cmake,
   fetchFromGitHub,
-  fetchurl,
   lib,
   nix-update-script,
   python3,
   stdenv,
 }:
 let
-  anari_cts_pybind11 = fetchurl {
-    url = "https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.zip";
-    hash = "sha256-0KEW6R9kpKLY+3WQw0JC35IlimHsZEt5EnlR6CG0e+Y=";
-  };
   pythonEnv = python3.withPackages (ps: [
     ps.pillow
     ps.reportlab
@@ -21,19 +16,14 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-cts";
-  version = "0.15.0-unstable-2026-06-20";
+  version = "0.15.0-unstable-2026-07-01";
 
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "a446f4af1faf964eebe6143a8e4e41bb1b37012a";
-    hash = "sha256-yMD3Fyz6J0OmVOGlqaZjpzONvssMZGfN940lFTiSZbU=";
+    rev = "9de01a490d99dec836c0bbebaf2872430631a25f";
+    hash = "sha256-ej8GJwBYHtufggQx6UxQcAz2hkn4Lllp8Pnf63QNQi0=";
   };
-
-  postUnpack = ''
-    mkdir -p "''${sourceRoot}/.anari_deps/anari_cts_pybind11/"
-    cp "${anari_cts_pybind11}" "''${sourceRoot}/.anari_deps/anari_cts_pybind11/v2.13.6.zip"
-  '';
 
   nativeBuildInputs = [
     cmake
@@ -56,12 +46,13 @@ stdenv.mkDerivation {
   ];
 
   # The in-tree build installs the full SDK alongside the CTS. Strip
-  # everything except the CTS artifacts and the SDK libraries that the
-  # pybind11 module links against at runtime.
+  # everything except the CTS artifacts (the anariCts binary, the
+  # reporting scripts) and the SDK libraries the binary links against
+  # at runtime.
   postInstall = ''
     rm -rf "$out/include" "$out/share/anari/code_gen" \
            "$out/share/anari/anari_viewer" \
-           "$out/lib/cmake" "$out/bin"
+           "$out/lib/cmake"
   '';
 
   # Patch the CTS Python scripts to find the pybind11 module and use the
