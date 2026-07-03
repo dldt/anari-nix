@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Fri, 3 Jul 2026 00:00:00 -0400
+Subject: [PATCH] Enable SSE2NEON for the ANARI device library
+
+Cycles' util/half.h takes the __ARM_NEON code path whenever the compiler
+defines __ARM_NEON, but the include that pulls in <arm_neon.h> (via
+util/simd.h) is guarded by __KERNEL_SSE2__, which optimization.h only
+defines when WITH_SSE2NEON is set.
+
+Cycles turns this on through add_definitions(-DWITH_SSE2NEON) and a
+matching include_directories() in cmake/configure_build.cmake, but those
+are scoped to the cycles/ subtree. The device/ library is a sibling
+subdirectory and never inherits them, so its translation units compile
+the NEON path without the intrinsics header and fail to build on ARM.
+
+Mirror cycles' own logic on the device target using the cache variables
+it already populates.
+---
+ device/CMakeLists.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/device/CMakeLists.txt b/device/CMakeLists.txt
+index e22a2a4..5e87904 100644
+--- a/device/CMakeLists.txt
++++ b/device/CMakeLists.txt
+@@ -65,6 +65,13 @@
+   target_compile_options(${PROJECT_NAME} PRIVATE -msse4.2)
+ endif()
+
++# On ARM, cycles' util/half.h uses NEON intrinsics through the SSE2NEON path.
++# WITH_SSE2NEON is only added to the cycles/ subtree, so replicate it here.
++if(SUPPORTS_NEON_BUILD AND SSE2NEON_INCLUDE_DIR)
++  target_compile_definitions(${PROJECT_NAME} PRIVATE WITH_SSE2NEON)
++  target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${SSE2NEON_INCLUDE_DIR})
++endif()
++
+ if(ANARI_CYCLES_USE_OPTIX)
+   target_compile_definitions(${PROJECT_NAME} PRIVATE WITH_OPTIX)
+ endif()
+--
+2.49.0

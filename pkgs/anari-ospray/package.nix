@@ -13,15 +13,13 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-ospray";
-  version = "0-unstable-2026-05-12";
+  version = "0-unstable-2026-06-24";
 
-  # Main source. Tracks jeffamstutz/anari-ospray (jda/dev), which is ahead of
-  # the lagging ospray/anari-ospray upstream.
   src = fetchFromGitHub {
-    owner = "jeffamstutz";
+    owner = "ospray";
     repo = "anari-ospray";
-    rev = "df6088f27b9c5560a4b2a7707eefe37f166eb402";
-    hash = "sha256-YW9BlQUKfQBtG0KZQelVh9z0u3j9aRK2TmKSkXIalmM=";
+    rev = "479a5e3079210744ba653792d3d68b71c073857c";
+    hash = "sha256-OO9jciaQ2f+uk6LFghdVy5ncgHfEhzB50KPBnO3VjbQ=";
   };
 
   nativeBuildInputs = [
@@ -40,7 +38,7 @@ stdenv.mkDerivation {
   passthru.updateScript = nix-update-script {
     extraArgs = [
       "--flake"
-      "--version=branch=jda/dev"
+      "--version=branch=main"
     ];
   };
 

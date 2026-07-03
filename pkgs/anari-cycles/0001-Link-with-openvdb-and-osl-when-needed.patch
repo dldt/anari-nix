@@ -3,26 +3,24 @@ From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
 Date: Wed, 30 Apr 2025 21:06:35 -0400
 Subject: [PATCH] Link with openvdb when needed
 
+The device library pulls in nanovdb/openvdb symbols but upstream only
+links openvdb into the scene library, breaking the link when
+WITH_CYCLES_NANOVDB/WITH_OPENVDB are enabled. The openvdb dependency
+target is an INTERFACE library that is a no-op when WITH_OPENVDB is off,
+so it can be linked unconditionally.
 ---
- cycles/src/device/CMakeLists.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+ cycles/src/device/CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/cycles/src/device/CMakeLists.txt b/cycles/src/device/CMakeLists.txt
 index 431ae7a80..c220f28cb 100644
 --- a/cycles/src/device/CMakeLists.txt
 +++ b/cycles/src/device/CMakeLists.txt
-@@ -233,6 +233,12 @@ endif()
- endif()
-
-+if(WITH_CYCLES_NANOVDB)
-+  list(APPEND LIB
-+    openvdb
-+  )
-+endif()
-+
- if(WITH_CYCLES_OSL)
-   list(APPEND LIB
-     ${OSL_LIBRARIES}
-   )
--- 
+@@ -147,4 +147,5 @@ set(LIB
+   PUBLIC cycles_util
+   PRIVATE bf::dependencies::optional::openimagedenoise
+   PRIVATE bf::dependencies::optional::osl
++  PRIVATE bf::dependencies::optional::openvdb
+ )
+--
 2.49.0
