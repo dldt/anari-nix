@@ -32,8 +32,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "NVIDIA-Omniverse";
     repo = "ANARI-USD";
-    rev = "5fa6ef7495e437fe19de0f35ed256b317203fc3e";
-    hash = "sha256-OzsA2mu8wTPK2Qy/HwNAqkZnqUJvrySledNMEbHHChg=";
+    rev = "ad673b04f482fcb19e4da09631e646ae1cc19334";
+    hash = "sha256-9XXG6vielCFtgGWDqululOInUZ+gQ12/DD3Q+5h/wqA=";
   };
 
   patches = [
@@ -42,6 +42,7 @@ stdenv.mkDerivation {
     ./0003-Also-skip-gomp-when-flattening-usd-libraries.patch
     ./0004-Also-ignore-static-and-dylib-libraries.patch
     ./0005-Fix-build-on-MacOS.patch
+    ./0006-Let-USD-find-OpenSubdiv-in-config-mode.patch
   ];
 
   nativeBuildInputs = [
