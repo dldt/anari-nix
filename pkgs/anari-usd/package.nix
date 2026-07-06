@@ -27,12 +27,12 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-usd";
-  version = "0.15.0_next-unstable-2026-06-29";
+  version = "0.15.0_next-unstable-2026-07-06";
 
   src = fetchFromGitHub {
     owner = "NVIDIA-Omniverse";
     repo = "ANARI-USD";
-    rev = "c47025ea7decaf9f26386ad5f1a784edd18c4cbb";
+    rev = "5fa6ef7495e437fe19de0f35ed256b317203fc3e";
     hash = "sha256-OzsA2mu8wTPK2Qy/HwNAqkZnqUJvrySledNMEbHHChg=";
   };
 
