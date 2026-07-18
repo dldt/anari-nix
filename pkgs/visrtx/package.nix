@@ -6,6 +6,7 @@
   anari-sdk,
   pkg-config,
   cudaPackages,
+  materialx,
   mdl-sdk,
   nvidia-optix,
   python3,
@@ -13,21 +14,22 @@
 }:
 stdenv.mkDerivation {
   pname = "visrtx";
-  version = "0.13.0-unstable-2026-07-16";
+  version = "0.13.0-unstable-2026-07-18";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "8dd83cc7a5892cd20d675ccc8e6c201f8c0e5595";
-    hash = "sha256-PRgrLxhtP2rWWnEyFWOjQLCvkWjz6uTQiZ7Fa7Mq53Q=";
+    rev = "7ea292700885ad5894ad49e06d49a1a708f22c94";
+    hash = "sha256-UP1thj5/vQd5t7M8Qie55epoxiS7YhJhO0AmLydx/S8=";
   };
 
   cmakeFlags = with lib; [
     (cmakeBool "FETCHCONTENT_FULLY_DISCONNECTED" true)
-    (cmakeFeature "OptiX_ROOT_DIR" (builtins.toString nvidia-optix))
+    (cmakeFeature "OptiX_ROOT_DIR" (toString nvidia-optix))
     (cmakeBool "VISRTX_BUILD_GL_DEVICE" false)
     (cmakeBool "VISRTX_ENABLE_MDL_SUPPORT" true)
+    (cmakeBool "VISRTX_ENABLE_MATERIALX_SUPPORT" true)
     (cmakeBool "VISRTX_PRECOMPILE_SHADERS" false)
 
     (cmakeFeature "OPTIX_FETCH_VERSION" "${versions.majorMinor nvidia-optix.version}")
@@ -62,7 +64,8 @@ stdenv.mkDerivation {
     cudaPackages.libcurand.static
     nvidia-optix
 
-    # MDL
+    # MDL, MaterialX
+    materialx
     mdl-sdk
   ];
 

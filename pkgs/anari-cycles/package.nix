@@ -122,7 +122,7 @@ stdenv.mkDerivation {
       with lib;
       [
         (cmakeBool "WITH_CYCLES_DEVICE_OPTIX" true)
-        (cmakeFeature "CYCLES_RUNTIME_OPTIX_ROOT_DIR" (builtins.toString nvidia-optix8))
+        (cmakeFeature "CYCLES_RUNTIME_OPTIX_ROOT_DIR" (toString nvidia-optix8))
       ]
     );
 

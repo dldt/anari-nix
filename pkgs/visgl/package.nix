@@ -11,14 +11,14 @@
 }:
 stdenv.mkDerivation {
   pname = "visgl";
-  version = "0.13.0-unstable-2026-07-16";
+  version = "0.13.0-unstable-2026-07-18";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "8dd83cc7a5892cd20d675ccc8e6c201f8c0e5595";
-    hash = "sha256-PRgrLxhtP2rWWnEyFWOjQLCvkWjz6uTQiZ7Fa7Mq53Q=";
+    rev = "7ea292700885ad5894ad49e06d49a1a708f22c94";
+    hash = "sha256-UP1thj5/vQd5t7M8Qie55epoxiS7YhJhO0AmLydx/S8=";
   };
 
   cmakeFlags = with lib; [
