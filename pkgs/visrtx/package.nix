@@ -20,8 +20,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "7ea292700885ad5894ad49e06d49a1a708f22c94";
-    hash = "sha256-UP1thj5/vQd5t7M8Qie55epoxiS7YhJhO0AmLydx/S8=";
+    rev = "8c1186a6355f9baf7730f9af75c601457d1d4a90";
+    hash = "sha256-7wgUR9bZjNci8UGQZIOPPrjgSZVi6eLJVy34hOdpQl4=";
   };
 
   cmakeFlags = with lib; [
