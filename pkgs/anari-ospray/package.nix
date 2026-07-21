@@ -13,13 +13,13 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-ospray";
-  version = "0-unstable-2026-07-14";
+  version = "0-unstable-2026-07-29";
 
   src = fetchFromGitHub {
     owner = "ospray";
     repo = "anari-ospray";
-    rev = "4835de78d37dda518c4aa20cedfd6d0d91c3b45e";
-    hash = "sha256-Yk7qmyKaU43dMhcI/cPmVUOWF89ncHNH78FDz8zJLwA=";
+    rev = "b0766780ddd0c13ba6c8a3453494d0114cba5a7d";
+    hash = "sha256-yStsPZw/gWnAPDq7b0eCjWgKL7C00YfAJVEEoHnsh44=";
   };
 
   nativeBuildInputs = [
