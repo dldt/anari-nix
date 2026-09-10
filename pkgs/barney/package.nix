@@ -2,6 +2,7 @@
   lib,
   stdenv,
   fetchFromGitHub,
+  anari-sdk,
   cmake,
   config,
   cudaSupport ? config.cudaSupport,
@@ -11,43 +12,29 @@
   nvidia-optix,
   nix-update-script,
   openimagedenoise,
+  python3,
   tbb,
   embree,
 }:
 stdenv.mkDerivation {
   pname = "barney";
-  version = "0-unstable-2026-08-13";
+  version = "0-unstable-2026-09-09";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "barney";
-    rev = "ad14131e68f4f327e21b922525c524a1d8ed4f33";
-    hash = "sha256-BOOVgK9syf8sXNb6FWTkVHzTMcs1YBFwy+UDPOsFro8=";
+    rev = "61f50fd472efd60cae4b3620171a2321aa9e29a8";
+    hash = "sha256-ho00lprnNb/jeYsRuLLTdawsn2/3Nbw4MIUeIFxFBa8=";
     fetchSubmodules = true;
   };
-
-  patches = [
-    ./fix-include-install-path.patch
-  ];
-
-  patchFlags = [ "-p1" ];
-
-  postPatch = ''
-    echo Patching CMake files...
-    for i in CMakeLists.txt barney/CMakeLists.txt anari/CMakeLists.txt
-    do
-        sed -e '/CUDA_USE_STATIC_CUDA_RUNTIME\s\+ON/{s/ON/OFF/;h};''${x;/./{x;q0};x;q1}' -i "''${i}"
-    done
-    echo done
-  '';
 
   cmakeFlags =
     with lib;
     [
       (cmakeBool "BARNEY_MPI" false)
-      (cmakeBool "BARNEY_BUILD_ANARI" false)
+      (cmakeBool "BARNEY_BACKEND_CPU" embreeSupport)
+      (cmakeBool "BARNEY_BACKEND_CUDA" (cudaSupport && !optixSupport))
       (cmakeBool "BARNEY_BACKEND_OPTIX" optixSupport)
-      (cmakeBool "BARNEY_BACKEND_EMBREE" embreeSupport)
     ]
     ++ (lib.optionals cudaSupport [
       (cmakeFeature "CMAKE_CUDA_ARCHITECTURES" "all-major")
@@ -55,12 +42,14 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [
     cmake
+    python3
   ]
   ++ lib.optionals cudaSupport [
     cudaPackages.cuda_nvcc
   ];
 
   buildInputs = [
+    anari-sdk
     openimagedenoise
     tbb
   ]
@@ -86,7 +75,7 @@ stdenv.mkDerivation {
   meta = with lib; {
     description = "A Multi-GPU (and optionally, Multi-Node) Implementation of the ANARI Rendering API";
     homepage = "https://github.com/NVIDIA/barney";
-    license = licenses.bsd3;
+    license = licenses.asl20;
     platforms = platforms.unix;
   };
 }
