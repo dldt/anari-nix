@@ -16,14 +16,14 @@
 }:
 stdenv.mkDerivation {
   pname = "haystack";
-  version = "0.9.0-unstable-2026-09-17";
+  version = "0.9.0-unstable-2026-09-26";
 
   src = fetchFromGitHub {
     owner = "ingowald";
     repo = "HayStack";
-    rev = "b540688a06610a1411bb3a0cc5724aaf1d130aa4";
+    rev = "2a3eed8348d46f710f60b33ab5c11da801c5fe67";
     fetchSubmodules = true;
-    hash = "sha256-zqe6/CQepN+5jJbu8Ipd/Zxo6gEb86BF63jgK56vvnA=";
+    hash = "sha256-lzs23ND9psK+9DGqzQDv/G586xgHHp67t7Dz8iUnP7c=";
   };
 
   cmakeFlags = [
@@ -39,7 +39,6 @@ stdenv.mkDerivation {
     runHook preInstall
 
     install -Dm755 -t "''${out}/bin" ./hsOffline ./hsViewer
-    install -Dm755 -t "''${out}/lib" ./submodules/owl/owl/libowl.so
 
     runHook postInstall
   '';

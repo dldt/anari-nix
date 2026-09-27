@@ -45,13 +45,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "vela";
-  version = "0-unstable-2026-09-15";
+  version = "0-unstable-2026-09-21";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "509c6a316ad0c3e2af06011b4a62e2421ec010be";
-    hash = "sha256-lrRAmUUOJS3wQpUjBBZjbpyhFZ75E/C7A6HHQBQQbAA=";
+    rev = "84a5190f181a916972ca4265b5ebf2c86cd787e1";
+    hash = "sha256-s/JocP5/42m68v49wJvCcRWpMun+aRBiUo99doVNkoY=";
   };
 
   # anari_sdk_fetch_project() downloads into `.anari_deps/<name>` under the
