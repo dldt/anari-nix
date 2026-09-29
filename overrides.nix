@@ -1,11 +1,4 @@
 _final: prev: {
-  # Mesa's libgallium links libLLVM.so.21; OSL defaults to LLVM 19. Both end up in
-  # a viewer process, their global symbols interpose and the OSL JIT aborts with
-  # "Attribute list does not match Module context". Build OSL against the same LLVM.
-  openshadinglanguage = prev.openshadinglanguage.override {
-    llvmPackages_19 = prev.llvmPackages_21;
-  };
-
   embree-ispc = prev.embree.overrideAttrs (old: {
     cmakeFlags = old.cmakeFlags ++ [
       "-DEMBREE_ISPC_SUPPORT=ON"

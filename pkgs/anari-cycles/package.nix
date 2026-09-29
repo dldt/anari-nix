@@ -21,7 +21,6 @@
   openvdb,
   openexr,
   openjpeg,
-  osl,
   sse2neon,
   tbb,
   pugixml,
@@ -44,7 +43,7 @@ stdenv.mkDerivation {
   };
 
   patches = [
-    ./0001-Link-with-openvdb-and-osl-when-needed.patch
+    ./0001-Link-with-openvdb-when-needed.patch
     ./0002-Hardcode-Cycles-root-folder-to-CMAKE_INSTALL_PREFIX.patch
     ./0003-Link-with-IOKit-on-when-building-Metal.patch
     ./0004-Do-not-build-cycles-standalone-app.patch
@@ -71,8 +70,6 @@ stdenv.mkDerivation {
     openimageio
     openjpeg
     openvdb
-    osl
-    pugixml
     pugixml
     tbb
     zlib
@@ -98,7 +95,9 @@ stdenv.mkDerivation {
       (cmakeBool "WITH_CYCLES_DEVICE_HIP" false)
       (cmakeBool "WITH_CYCLES_NANOVDB" true)
       (cmakeBool "WITH_CYCLES_OPENVDB" true)
-      (cmakeBool "WITH_CYCLES_OSL" true)
+      # OSL on OptiX needs an OSL built with OSL_USE_OPTIX (CUDA shadeops
+      # bitcode); nixpkgs' OSL lacks it and the JIT asserts at render time.
+      (cmakeBool "WITH_CYCLES_OSL" false)
       # anari-cycles forces WITH_CYCLES_DEVICE_{CUDA,OPTIX,OPENIMAGEDENOISE}
       # from these ANARI_CYCLES_USE_* options (CACHE ... FORCE), overriding
       # any -D passed directly for those; also gates the WITH_OPTIX /
