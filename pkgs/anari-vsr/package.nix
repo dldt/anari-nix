@@ -21,8 +21,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "e78ad128d14c14fc996e49d9ba58de66c4f3e842";
-    hash = "sha256-VEY0dd0n76aVpsr0UxZg2U1Rl/yZpS5Y50lyonCMAYw=";
+    rev = "214161e96bdaefe73d29279ac304b85946554df9";
+    hash = "sha256-KIVFG/v1mGhSGOIzS1MVxxdVS6GxUL6JS8T7JGwdGag=";
   };
 
   # Lives in the vela package, which needs the same fix. Without it the
