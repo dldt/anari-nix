@@ -11,9 +11,11 @@
   lua54Packages,
   pkg-config,
   assimp,
+  boost,
   cudaPackages,
   glm,
   hdf5,
+  libjpeg_turbo,
   opensubdiv,
   tbb,
   silo,
@@ -79,31 +81,56 @@ stdenv.mkDerivation {
     (lib.cmakeBool "VSR_USE_ASSIMP" true)
     (lib.cmakeBool "VSR_USE_HDF5" true)
     (lib.cmakeBool "VSR_USE_LUA" true)
+    (lib.cmakeBool "VSR_USE_NETWORKING" true)
     (lib.cmakeBool "VSR_USE_SDL3" true)
+    (lib.cmakeBool "VSR_USE_TURBOJPEG" true)
     (lib.cmakeBool "VSR_USE_SILO" true)
     (lib.cmakeBool "VSR_USE_TBB" true)
     (lib.cmakeBool "VSR_USE_USD" true)
     (lib.cmakeBool "VSR_USE_VTK" true)
   ];
 
-  # Only the USD file format plugin has an install rule; the applications are
-  # left in the build directory.
+  # Only the USD file format plugin has an install rule; every application is
+  # left in CMAKE_RUNTIME_OUTPUT_DIRECTORY, which the top-level CMakeLists sets
+  # to the build root. Install whatever landed there rather than naming apps
+  # one by one -- a hardcoded list silently drops anything upstream adds, which
+  # is how vsrConvert went missing.
   postInstall = ''
     mkdir -p "''${out}/bin"
-    for app in \
-      scivisStudio \
-      scivisStudioCLI \
-      scivisStudioRenderShot \
-      vsrDataTreeEditor \
-      vsrLua \
-      vsrMultiDeviceViewer \
-      vsrOffline \
-      vsrPrint \
-      vsrRender \
-      vsrViewer \
-      vsrVolumeToNanoVDB
-    do
-      cp "./''${app}" "''${out}/bin"
+    installed=()
+    for app in ./*; do
+      [ -f "''${app}" ] || continue
+      [ -x "''${app}" ] || continue
+      case "''${app}" in
+        *.so | *.so.* | *.a | *.dylib | *.cmake) continue ;;
+      esac
+      cp "''${app}" "''${out}/bin/"
+      installed+=("$(basename "''${app}")")
+    done
+
+    echo "vela: installed ''${#installed[@]} applications: ''${installed[*]}"
+
+    # Guard against the glob silently matching nothing useful if upstream
+    # changes the output layout. The CUDA demos only exist when VSR_USE_CUDA
+    # is on, so they are only required then.
+    expected=(
+      scivisStudio
+      scivisStudioClient
+      scivisStudioServer
+      vsrConvert
+      vsrPrint
+      vsrRemoteViewer
+      vsrServer
+      vsrViewer
+    )
+    ${lib.optionalString cudaSupport ''
+      expected+=(vsrDemoAnimatedParticles vsrDemoAnimatedVolume)
+    ''}
+    for app in "''${expected[@]}"; do
+      if [ ! -x "''${out}/bin/''${app}" ]; then
+        echo "vela: expected application ''${app} was not installed" >&2
+        exit 1
+      fi
     done
   '';
 
@@ -119,6 +146,10 @@ stdenv.mkDerivation {
   buildInputs = [
     anari-sdk
     assimp
+    # vsr_network is boost.asio, which VSR_USE_NETWORKING turns on; turbojpeg
+    # encodes SciVis Studio's remote frames.
+    boost
+    libjpeg_turbo
     sdl3
     glm
     libGL
