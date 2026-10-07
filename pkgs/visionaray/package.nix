@@ -51,9 +51,10 @@ stdenv.mkDerivation {
     cudaPackages.cuda_cudart
   ];
 
-  patches = [
-    ./0001-fix-bvh-read-simd-hit-record-lanes-via-memcpy.patch
-  ];
+  # The SIMD headers read and write vector lanes through scalar pointer casts.
+  # Under strict aliasing GCC 15 -O3 loads stale lanes (garbage prim_id in
+  # BVH traversal), crashing consumers such as anari-visionaray.
+  env.NIX_CFLAGS_COMPILE = "-fno-strict-aliasing";
 
   postUnpack = ''
     substituteInPlace \

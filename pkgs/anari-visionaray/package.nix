@@ -44,6 +44,10 @@ stdenv.mkDerivation {
     cudaPackages.cuda_cccl
   ];
 
+  # Instantiates visionaray's SIMD headers, which pun vector lanes through
+  # scalar pointers; see the matching flag in the visionaray package.
+  env.NIX_CFLAGS_COMPILE = "-fno-strict-aliasing";
+
   cmakeFlags = with lib; [
     (cmakeBool "ANARI_VISIONARAY_ENABLE_CUDA" cudaSupport)
     (cmakeBool "ANARI_VISIONARAY_ENABLE_NANOVDB" true)
