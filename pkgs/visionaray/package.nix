@@ -51,6 +51,10 @@ stdenv.mkDerivation {
     cudaPackages.cuda_cudart
   ];
 
+  patches = [
+    ./0001-fix-bvh-read-simd-hit-record-lanes-via-memcpy.patch
+  ];
+
   postUnpack = ''
     substituteInPlace \
       source/src/3rdparty/pbrt-parser/pbrtParser/impl/syntactic/FileMapping.h \
