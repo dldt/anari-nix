@@ -18,14 +18,14 @@
 }:
 stdenv.mkDerivation {
   pname = "visionaray";
-  version = "0.7.0-unstable-2026-10-02";
+  version = "0.7.0-unstable-2026-10-07";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "szellmann";
     repo = "visionaray";
-    rev = "b567865ef98072e027d4236bbc0811707e093b2b";
-    hash = "sha256-4pcW7S4ZB44AtCo65JFUlDwqPf7v6r35slJKNgOkW1c=";
+    rev = "53d0ca92f0fffc624b774e089d0a6a3bf4af0cd3";
+    hash = "sha256-rMCJ3mnbSgg1yJxGhR/aF+0KzRnvN9Jc7V1c8qx9650=";
     fetchSubmodules = true;
   };
 
@@ -51,10 +51,10 @@ stdenv.mkDerivation {
     cudaPackages.cuda_cudart
   ];
 
-  # The SIMD headers read and write vector lanes through scalar pointer casts.
-  # Under strict aliasing GCC 15 -O3 loads stale lanes (garbage prim_id in
-  # BVH traversal), crashing consumers such as anari-visionaray.
-  env.NIX_CFLAGS_COMPILE = "-fno-strict-aliasing";
+  patches = [
+    ./0001-harden-bitcast.patch
+    ./0002-use-bitcast-for-simd-lane-access.patch
+  ];
 
   postUnpack = ''
     substituteInPlace \

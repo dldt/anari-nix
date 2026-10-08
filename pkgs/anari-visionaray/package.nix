@@ -14,14 +14,14 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-visionaray";
-  version = "0-unstable-2026-09-29";
+  version = "0-unstable-2026-10-06";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "szellmann";
     repo = "anari-visionaray";
-    rev = "a96bb74a93a899d9d0d1aa86ef9216b16a9c946b";
-    hash = "sha256-iZ0yPz9crREdBGHs8exZ0c5UJTRdb2dKkX0/n6wtD0U=";
+    rev = "ae16c074d1e4a007336a1b55d9dd58a208af2d33";
+    hash = "sha256-jRD4oiazlWTXpK1gEHGmr8s1yeqUr3YIH/bpemgHV3M=";
     fetchSubmodules = true;
   };
 
@@ -43,10 +43,6 @@ stdenv.mkDerivation {
     cudaPackages.cuda_cudart
     cudaPackages.cuda_cccl
   ];
-
-  # Instantiates visionaray's SIMD headers, which pun vector lanes through
-  # scalar pointers; see the matching flag in the visionaray package.
-  env.NIX_CFLAGS_COMPILE = "-fno-strict-aliasing";
 
   cmakeFlags = with lib; [
     (cmakeBool "ANARI_VISIONARAY_ENABLE_CUDA" cudaSupport)
