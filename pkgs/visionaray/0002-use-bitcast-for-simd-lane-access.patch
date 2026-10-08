@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 12:00:00 -0400
+Subject: [PATCH] fix(simd): use bitcast for SIMD lane access
+
+closest(), the BVH traversal loops and pack() read and wrote SIMD lanes
+through scalar pointer casts, violating strict aliasing. GCC 15 at -O3
+loads stale lanes, e.g. FLT_MAX as prim_id, and consumers segfault.
+Copy lanes in and out with bitcast instead.
+---
+diff --git a/include/visionaray/detail/bvh/intersect_ray1_bvhN_compressed.inl b/include/visionaray/detail/bvh/intersect_ray1_bvhN_compressed.inl
+--- a/include/visionaray/detail/bvh/intersect_ray1_bvhN_compressed.inl
++++ b/include/visionaray/detail/bvh/intersect_ray1_bvhN_compressed.inl
+@@ -4,6 +4,7 @@
+ #pragma once
+ 
+ #include <iostream>
++#include <array>
+ #include <cstddef>
+ #include <type_traits>
+ #include <utility>
+@@ -72,7 +73,7 @@
+ 
+         while (addr.num_prims == 0)
+         {
+-            if (*((unsigned*)&result.t) < dist)
++            if (bitcast<unsigned>(result.t) < dist)
+             {
+                 goto next;
+             }
+@@ -101,7 +102,7 @@
+ 
+             auto pow2 = [](char e) {
+                 unsigned u((e + 127) << 23);
+-                return *(float*)&u;
++                return bitcast<float>(u);
+             };
+ 
+             // This uses the optimization from the Ylitie paper
+@@ -141,7 +142,7 @@
+                 goto next;
+             }
+ 
+-            unsigned* tnear = reinterpret_cast<unsigned*>(&hrN.tnear);
++            auto tnear = bitcast<std::array<unsigned, BVH::Width>>(hrN.tnear);
+ 
+             auto bsf = [](int& m) {
+                 int i =  ctz(m);
+diff --git a/include/visionaray/detail/bvh/intersect_ray1_bvhN.inl b/include/visionaray/detail/bvh/intersect_ray1_bvhN.inl
+--- a/include/visionaray/detail/bvh/intersect_ray1_bvhN.inl
++++ b/include/visionaray/detail/bvh/intersect_ray1_bvhN.inl
+@@ -3,6 +3,7 @@
+ 
+ #pragma once
+ 
++#include <array>
+ #include <cstddef>
+ #include <type_traits>
+ #include <utility>
+@@ -211,27 +212,21 @@
+ 
+     int closest_index = min_index(hr.t, hr.hit.i);
+ 
+-    auto* prim_id = (int const*)&hr.prim_id;
+-    auto* geom_id = (int const*)&hr.geom_id;
+-    auto* inst_id = (int const*)&hr.inst_id;
+-    auto* t = (float const*)&hr.t;
+-    auto* isect_pos_x = (float const*)&hr.isect_pos.x;
+-    auto* isect_pos_y = (float const*)&hr.isect_pos.y;
+-    auto* isect_pos_z = (float const*)&hr.isect_pos.z;
+-    auto* u = (float const*)&hr.u;
+-    auto* v = (float const*)&hr.v;
++    constexpr size_t N = simd::num_elements<I>::value;
++    using int_lanes = std::array<int, N>;
++    using float_lanes = std::array<float, N>;
+ 
+     hit_record<R, primitive<unsigned>> result;
+     result.hit = true;
+-    result.prim_id = prim_id[closest_index];
+-    result.geom_id = geom_id[closest_index];
+-    result.inst_id = inst_id[closest_index];
+-    result.t = t[closest_index];
+-    result.isect_pos.x = isect_pos_x[closest_index];
+-    result.isect_pos.y = isect_pos_y[closest_index];
+-    result.isect_pos.z = isect_pos_z[closest_index];
+-    result.u = u[closest_index];
+-    result.v = v[closest_index];
++    result.prim_id = bitcast<int_lanes>(hr.prim_id)[closest_index];
++    result.geom_id = bitcast<int_lanes>(hr.geom_id)[closest_index];
++    result.inst_id = bitcast<int_lanes>(hr.inst_id)[closest_index];
++    result.t = bitcast<float_lanes>(hr.t)[closest_index];
++    result.isect_pos.x = bitcast<float_lanes>(hr.isect_pos.x)[closest_index];
++    result.isect_pos.y = bitcast<float_lanes>(hr.isect_pos.y)[closest_index];
++    result.isect_pos.z = bitcast<float_lanes>(hr.isect_pos.z)[closest_index];
++    result.u = bitcast<float_lanes>(hr.u)[closest_index];
++    result.v = bitcast<float_lanes>(hr.v)[closest_index];
+     return result;
+ }
+ 
+@@ -288,7 +283,7 @@
+ 
+         while (addr >= 0)
+         {
+-            if (*((unsigned*)&result.t) < dist)
++            if (bitcast<unsigned>(result.t) < dist)
+             {
+                 goto next;
+             }
+@@ -307,7 +302,7 @@
+                 goto next;
+             }
+ 
+-            unsigned* tnear = reinterpret_cast<unsigned*>(&hrN.tnear);
++            auto tnear = bitcast<std::array<unsigned, BVH::Width>>(hrN.tnear);
+ 
+             auto bsf = [](int& m) {
+                 int i =  ctz(m);
+diff --git a/include/visionaray/math/detail/triangle.inl b/include/visionaray/math/detail/triangle.inl
+--- a/include/visionaray/math/detail/triangle.inl
++++ b/include/visionaray/math/detail/triangle.inl
+@@ -1,6 +1,8 @@
+ // This file is distributed under the MIT license.
+ // See the LICENSE file for details.
+ 
++#include <array>
++
+ #include "../simd/type_traits.h"
+ #include "../aabb.h"
+ #include "../config.h"
+@@ -107,22 +109,8 @@
+     using U = float_from_simd_width_t<N>; // TODO: generalize, not just float!
+     using I = int_from_simd_width_t<N>;
+ 
+-    basic_triangle<3, U, I> result;
+-
+-    int* prim_id = reinterpret_cast<int*>(&result.prim_id);
+-    int* geom_id = reinterpret_cast<int*>(&result.geom_id);
+-
+-    T* v1x = reinterpret_cast<T*>(&result.v1.x);
+-    T* v1y = reinterpret_cast<T*>(&result.v1.y);
+-    T* v1z = reinterpret_cast<T*>(&result.v1.z);
+-
+-    T* e1x = reinterpret_cast<T*>(&result.e1.x);
+-    T* e1y = reinterpret_cast<T*>(&result.e1.y);
+-    T* e1z = reinterpret_cast<T*>(&result.e1.z);
+-
+-    T* e2x = reinterpret_cast<T*>(&result.e2.x);
+-    T* e2y = reinterpret_cast<T*>(&result.e2.y);
+-    T* e2z = reinterpret_cast<T*>(&result.e2.z);
++    std::array<int, N> prim_id, geom_id;
++    std::array<T, N> v1x, v1y, v1z, e1x, e1y, e1z, e2x, e2y, e2z;
+ 
+     for (size_t i = 0; i < N; ++i)
+     {
+@@ -142,6 +130,12 @@
+         e2z[i] = tris[i].e2.z;
+     }
+ 
++    basic_triangle<3, U, I> result;
++    result.prim_id = bitcast<I>(prim_id);
++    result.geom_id = bitcast<I>(geom_id);
++    result.v1 = vector<3, U>(bitcast<U>(v1x), bitcast<U>(v1y), bitcast<U>(v1z));
++    result.e1 = vector<3, U>(bitcast<U>(e1x), bitcast<U>(e1y), bitcast<U>(e1z));
++    result.e2 = vector<3, U>(bitcast<U>(e2x), bitcast<U>(e2y), bitcast<U>(e2z));
+     return result;
+ }
+ 
