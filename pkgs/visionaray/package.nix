@@ -56,6 +56,10 @@ stdenv.mkDerivation {
   # BVH traversal), crashing consumers such as anari-visionaray.
   env.NIX_CFLAGS_COMPILE = "-fno-strict-aliasing";
 
+  patches = [
+    ./0001-harden-bitcast.patch
+  ];
+
   postUnpack = ''
     substituteInPlace \
       source/src/3rdparty/pbrt-parser/pbrtParser/impl/syntactic/FileMapping.h \
