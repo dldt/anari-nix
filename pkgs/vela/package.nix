@@ -5,6 +5,8 @@
   fetchFromGitHub,
   config,
   cudaSupport ? config.cudaSupport,
+  mpiSupport ? false,
+  mpi,
   openimageio,
   cmake,
   anari-sdk,
@@ -92,6 +94,7 @@ stdenv.mkDerivation {
     (lib.cmakeBool "VSR_USE_LUA" true)
     # .mini import/export, the format haystack consumes.
     (lib.cmakeBool "VSR_USE_MINISCENE" true)
+    (lib.cmakeBool "VSR_USE_MPI" mpiSupport)
     # Texture formats stb cannot decode (e.g. TIFF), needed by USD/MaterialX assets.
     (lib.cmakeBool "VSR_USE_OIIO" true)
     (lib.cmakeBool "VSR_USE_NETWORKING" true)
@@ -139,6 +142,9 @@ stdenv.mkDerivation {
     ${lib.optionalString cudaSupport ''
       expected+=(vsrDemoAnimatedParticles vsrDemoAnimatedVolume)
     ''}
+    ${lib.optionalString mpiSupport ''
+      expected+=(vsrMPIViewer vsrMPIServer)
+    ''}
     for app in "''${expected[@]}"; do
       if [ ! -x "''${out}/bin/''${app}" ]; then
         echo "vela: expected application ''${app} was not installed" >&2
@@ -182,6 +188,7 @@ stdenv.mkDerivation {
     libx11
     libxt
   ]
+  ++ lib.optionals mpiSupport [ mpi ]
   ++ lib.optionals cudaSupport [
     cudaPackages.cuda_cudart
     cudaPackages.cuda_cccl
