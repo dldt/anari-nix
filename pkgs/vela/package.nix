@@ -81,6 +81,8 @@ stdenv.mkDerivation {
     # Shared with anari-vsr, which references it from here.
     ./0002-fetch-imnodes-only-for-viskores-demo.patch
     ./0003-make-the-anari-device-library-optional.patch
+    # -usd_mdl / USD_MDL, the MDL counterpart of upstream's -usd_mtlx.
+    ./0004-add-usd_mdl-importer-type.patch
   ];
 
   cmakeFlags = [
