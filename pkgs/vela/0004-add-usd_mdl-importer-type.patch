@@ -1,0 +1,145 @@
+diff -ruN a/src/apps/interactive/scivisStudio/modals/AddStaticDatasetDialog.cpp b/src/apps/interactive/scivisStudio/modals/AddStaticDatasetDialog.cpp
+--- a/src/apps/interactive/scivisStudio/modals/AddStaticDatasetDialog.cpp	2026-10-24 07:40:27.381260156 -0400
++++ b/src/apps/interactive/scivisStudio/modals/AddStaticDatasetDialog.cpp	2026-10-24 07:44:30.857285288 -0400
+@@ -25,7 +25,7 @@
+ };
+ 
+ // The user picks the importer explicitly; nothing is inferred.
+-constexpr std::array<DatasetSourceChoice, 29> SOURCES = {{
++constexpr std::array<DatasetSourceChoice, 30> SOURCES = {{
+     {"AGX", vsr::io::ImporterType::AGX},
+     {"ASSIMP", vsr::io::ImporterType::ASSIMP},
+     {"ASSIMP_FLAT", vsr::io::ImporterType::ASSIMP_FLAT},
+@@ -49,6 +49,7 @@
+     {"TRK", vsr::io::ImporterType::TRK},
+     {"USD", vsr::io::ImporterType::USD},
+     {"USD_MTLX", vsr::io::ImporterType::USD_MTLX},
++    {"USD_MDL", vsr::io::ImporterType::USD_MDL},
+     {"VTP", vsr::io::ImporterType::VTP},
+     {"VTU", vsr::io::ImporterType::VTU},
+     {"XYZDP", vsr::io::ImporterType::XYZDP},
+diff -ruN a/src/apps/interactive/scivisStudio/ProjectContext.cpp b/src/apps/interactive/scivisStudio/ProjectContext.cpp
+--- a/src/apps/interactive/scivisStudio/ProjectContext.cpp	2026-10-24 07:40:27.380271156 -0400
++++ b/src/apps/interactive/scivisStudio/ProjectContext.cpp	2026-10-24 07:41:09.430980109 -0400
+@@ -2035,6 +2035,8 @@
+     return "USD";
+   case vsr::io::ImporterType::USD_MTLX:
+     return "USD_MTLX";
++  case vsr::io::ImporterType::USD_MDL:
++    return "USD_MDL";
+   case vsr::io::ImporterType::VTP:
+     return "VTP";
+   case vsr::io::ImporterType::VTU:
+diff -ruN a/src/apps/interactive/viewer/README.md b/src/apps/interactive/viewer/README.md
+--- a/src/apps/interactive/viewer/README.md	2026-10-24 07:40:27.377804769 -0400
++++ b/src/apps/interactive/viewer/README.md	2026-10-24 07:41:54.030543713 -0400
+@@ -81,6 +81,8 @@
+ - `-usd`
+ - `-usd_mtlx` (USD, emitting native MaterialX materials rather than a portable
+   mapping; falls back per material where no MaterialX network converts)
++- `-usd_mdl` (USD, emitting native MDL materials rather than a portable
++  mapping; falls back per material where no MDL network is authored)
+ - `-vtp`
+ - `-vtu`
+ - `-xyzdp`
+diff -ruN a/src/apps/tools/README.md b/src/apps/tools/README.md
+--- a/src/apps/tools/README.md	2026-10-24 07:40:27.377579333 -0400
++++ b/src/apps/tools/README.md	2026-10-24 07:41:54.030543713 -0400
+@@ -109,7 +109,7 @@
+ 
+ Use `-vsr <file>` to load a Scene Archive. Foreign-format importer flags
+ include `-gltf`, `-obj`, `-ply`, `-volume`, `-hdri`, `-silo`, `-usd`,
+-`-usd_mtlx`,
++`-usd_mtlx`, `-usd_mdl`,
+ `-assimp`, `-axyz`, `-e57xyz`, `-pdb`, `-swc`, `-trk`, `-nbody`, and
+ `-l`/`--layer`.
+ 
+diff -ruN a/src/apps/tools/vsrOffline.cpp b/src/apps/tools/vsrOffline.cpp
+--- a/src/apps/tools/vsrOffline.cpp	2026-10-24 07:40:27.377654179 -0400
++++ b/src/apps/tools/vsrOffline.cpp	2026-10-24 07:41:09.785992599 -0400
+@@ -159,6 +159,8 @@
+   std::cout
+       << "  -usd_mtlx <file...>        Import USD files as native MaterialX\n";
+   std::cout
++      << "  -usd_mdl <file...>         Import USD files as native MDL\n";
++  std::cout
+       << "  -l, --layer <name>         Specify layer name for following imports\n";
+   std::cout
+       << "  -assimp <file...>          Import via ASSIMP (supports many formats)\n";
+diff -ruN a/src/tests/test_UsdImport_materials_portable.cpp b/src/tests/test_UsdImport_materials_portable.cpp
+--- a/src/tests/test_UsdImport_materials_portable.cpp	2026-10-24 07:40:27.386960442 -0400
++++ b/src/tests/test_UsdImport_materials_portable.cpp	2026-10-24 07:41:54.030543713 -0400
+@@ -229,6 +229,24 @@
+             == vsr::scene::tokens::material::mdl);
+       }
+     }
++
++    // The importer's MDL mode is only reachable from an application through
++    // an Importer Type, so the dispatch is worth pinning separately from the
++    // option it sets.
++    WHEN("The file is imported through the USD_MDL Importer Type")
++    {
++      StageFixture stage("vsr_test_usd_omnipbr.usda", omniPbrStage);
++      vsr::scene::Scene scene;
++      vsr::animation::AnimationManager animMgr(&scene);
++      vsr::io::import_file(
++          scene, animMgr, {vsr::io::ImporterType::USD_MDL, stage.path()});
++
++      THEN("MDL materials arrive without asking for options")
++      {
++        REQUIRE(boundMaterial(scene)->subtype()
++            == vsr::scene::tokens::material::mdl);
++      }
++    }
+   }
+ 
+   GIVEN("An OmniPBR material reading textures and cutting out on opacity")
+diff -ruN a/src/vsr/app/Context.cpp b/src/vsr/app/Context.cpp
+--- a/src/vsr/app/Context.cpp	2026-10-24 07:40:27.391453429 -0400
++++ b/src/vsr/app/Context.cpp	2026-10-24 07:41:10.528018702 -0400
+@@ -136,6 +136,8 @@
+       importerType = vsr::io::ImporterType::USD;
+     else if (arg == "-usd_mtlx")
+       importerType = vsr::io::ImporterType::USD_MTLX;
++    else if (arg == "-usd_mdl")
++      importerType = vsr::io::ImporterType::USD_MDL;
+     else if (arg == "-vtp")
+       importerType = vsr::io::ImporterType::VTP;
+     else if (arg == "-vtu")
+diff -ruN a/src/vsr/io/importers/import_file.cpp b/src/vsr/io/importers/import_file.cpp
+--- a/src/vsr/io/importers/import_file.cpp	2026-10-24 07:40:27.396560689 -0400
++++ b/src/vsr/io/importers/import_file.cpp	2026-10-24 07:41:10.283010084 -0400
+@@ -122,6 +122,11 @@
+     options.materialMode = UsdMaterialMode::MATERIALX;
+     widenAnimationClock(animMgr,
+         vsr::io::import_USD(scene, animMgr, file.c_str(), root, options));
++  } else if (f.first == ImporterType::USD_MDL) {
++    UsdImportOptions options;
++    options.materialMode = UsdMaterialMode::MDL;
++    widenAnimationClock(animMgr,
++        vsr::io::import_USD(scene, animMgr, file.c_str(), root, options));
+   } else if (f.first == ImporterType::VTP)
+     vsr::io::import_VTP(scene, animMgr, file.c_str(), root);
+   else if (f.first == ImporterType::VTU) {
+diff -ruN a/src/vsr/io/importers.hpp b/src/vsr/io/importers.hpp
+--- a/src/vsr/io/importers.hpp	2026-10-24 07:40:27.395668218 -0400
++++ b/src/vsr/io/importers.hpp	2026-10-24 07:41:13.007105890 -0400
+@@ -168,6 +168,7 @@
+   TRK,
+   USD,
+   USD_MTLX, // native MaterialX materials instead of a portable mapping
++  USD_MDL, // native MDL materials instead of a portable mapping
+   VTP,
+   VTU,
+   XYZDP,
+diff -ruN a/src/vsr/ui/imgui/modals/ImportFileDialog.cpp b/src/vsr/ui/imgui/modals/ImportFileDialog.cpp
+--- a/src/vsr/ui/imgui/modals/ImportFileDialog.cpp	2026-10-24 07:40:27.398990374 -0400
++++ b/src/vsr/ui/imgui/modals/ImportFileDialog.cpp	2026-10-24 07:41:09.943998158 -0400
+@@ -52,6 +52,7 @@
+     {"TRK", vsr::io::ImporterType::TRK},
+     {"USD", vsr::io::ImporterType::USD},
+     {"USD_MTLX", vsr::io::ImporterType::USD_MTLX},
++    {"USD_MDL", vsr::io::ImporterType::USD_MDL},
+     {"VTP", vsr::io::ImporterType::VTP},
+     {"VTU", vsr::io::ImporterType::VTU},
+     {"XYZDP", vsr::io::ImporterType::XYZDP},
