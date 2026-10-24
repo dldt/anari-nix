@@ -28,6 +28,7 @@
   zlib,
   python3,
   nix-update-script,
+  materialx,
 }:
 let
   imgui-src = fetchurl {
@@ -38,9 +39,10 @@ let
     url = "https://github.com/CedricGuillemet/ImGuizmo/archive/105e4fde45e4e74aae8973d98750820ef7aca7e2.zip";
     hash = "sha256-dU/KToxmxaJV+VMjm1GBOFIokj9kbRo5vcpboYrMfP0=";
   };
+  # Vela only needs OpenUSD library support. Nixpkgs' top-level openusd
+  # enables USDView/tools, which pulls PyQt6 -> QtWebEngine and breaks on
+  # aarch64-darwin.
   openusdCore = openusd.override {
-    # Vela only needs OpenUSD library support. Nixpkgs' top-level openusd enables
-    # USDView/tools, which pulls PyQt6 -> QtWebEngine and breaks on aarch64-darwin.
     withUsdView = false;
     withTools = false;
   };
@@ -155,6 +157,7 @@ stdenv.mkDerivation {
     libGL
     lua54Packages.lua
     hdf5
+    materialx
     opensubdiv
     openusdCore
     silo
