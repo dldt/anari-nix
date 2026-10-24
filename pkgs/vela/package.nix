@@ -40,6 +40,10 @@ let
     url = "https://github.com/CedricGuillemet/ImGuizmo/archive/105e4fde45e4e74aae8973d98750820ef7aca7e2.zip";
     hash = "sha256-dU/KToxmxaJV+VMjm1GBOFIokj9kbRo5vcpboYrMfP0=";
   };
+  miniscene-src = fetchurl {
+    url = "https://github.com/ingowald/miniScene/archive/4eee09bd95d91b8b9e29eeecb1df6053cce84590.zip";
+    hash = "sha256-3yExfhETmMNgNcmnPVwsYcfmoNrMav0JxcCVc8BKn/4=";
+  };
   # Vela only needs OpenUSD library support. Nixpkgs' top-level openusd
   # enables USDView/tools, which pulls PyQt6 -> QtWebEngine and breaks on
   # aarch64-darwin.
@@ -66,6 +70,8 @@ stdenv.mkDerivation {
     cp "${imgui-src}" "''${sourceRoot}/.anari_deps/vela_ext_imgui_sdl/v1.92.9b-docking.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/vela_ext_imguizmo/"
     cp "${imguizmo-src}" "''${sourceRoot}/.anari_deps/vela_ext_imguizmo/105e4fde45e4e74aae8973d98750820ef7aca7e2.zip"
+    mkdir -p "''${sourceRoot}/.anari_deps/vela_ext_miniscene/"
+    cp "${miniscene-src}" "''${sourceRoot}/.anari_deps/vela_ext_miniscene/4eee09bd95d91b8b9e29eeecb1df6053cce84590.zip"
   '';
 
   patches = [
@@ -84,6 +90,8 @@ stdenv.mkDerivation {
     (lib.cmakeBool "VSR_USE_ASSIMP" true)
     (lib.cmakeBool "VSR_USE_HDF5" true)
     (lib.cmakeBool "VSR_USE_LUA" true)
+    # .mini import/export, the format haystack consumes.
+    (lib.cmakeBool "VSR_USE_MINISCENE" true)
     # Texture formats stb cannot decode (e.g. TIFF), needed by USD/MaterialX assets.
     (lib.cmakeBool "VSR_USE_OIIO" true)
     (lib.cmakeBool "VSR_USE_NETWORKING" true)
