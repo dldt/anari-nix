@@ -39,9 +39,9 @@ diff -ruN a/src/apps/interactive/viewer/README.md b/src/apps/interactive/viewer/
    mapping; falls back per material where no MaterialX network converts)
 +- `-usd_mdl` (USD, emitting native MDL materials rather than a portable
 +  mapping; falls back per material where no MDL network is authored)
- - `-vtp`
- - `-vtu`
- - `-xyzdp`
+ - `-usd_variant <set>=<variant>` (not an importer: selects `<variant>` in every
+   prim's `<set>` Variant Set for the USD files named after it, before they
+   load; repeat it to select in several sets)
 diff -ruN a/src/apps/tools/README.md b/src/apps/tools/README.md
 --- a/src/apps/tools/README.md	2026-10-24 07:40:27.377579333 -0400
 +++ b/src/apps/tools/README.md	2026-10-24 07:41:54.030543713 -0400
