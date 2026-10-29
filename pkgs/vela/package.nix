@@ -56,13 +56,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "vela";
-  version = "0-unstable-2026-10-24";
+  version = "0-unstable-2026-10-27";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "7bc6e31edee26eaa16b5823d52fa797d90e64df9";
-    hash = "sha256-/FfF3oskueIOvm6FEFXMNdfMbvRDDlOX71cGr/g4Lmk=";
+    rev = "354ab84c12fcc5f0ba15201a103db9b582175139";
+    hash = "sha256-lpAvD6lcnSqXOg46nuU9KNvJa9SwTwadGK8CxBOITCw=";
   };
 
   # anari_sdk_fetch_project() downloads into `.anari_deps/<name>` under the
@@ -81,8 +81,6 @@ stdenv.mkDerivation {
     # Shared with anari-vsr, which references it from here.
     ./0002-fetch-imnodes-only-for-viskores-demo.patch
     ./0003-make-the-anari-device-library-optional.patch
-    # -usd_mdl / USD_MDL, the MDL counterpart of upstream's -usd_mtlx.
-    ./0004-add-usd_mdl-importer-type.patch
   ];
 
   cmakeFlags = [

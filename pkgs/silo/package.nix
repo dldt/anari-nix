@@ -10,13 +10,13 @@
 
 stdenv.mkDerivation rec {
   pname = "silo";
-  version = "4.12.1-pre2";
+  version = "4.12.2-pre1";
 
   src = fetchFromGitHub {
     owner = "LLNL";
     repo = "Silo";
     rev = version;
-    hash = "sha256-z3ds9205tb9S13Q0cpquIST2fc9l5epHF5RAVR7qkuc=";
+    hash = "sha256-sOBQeUxc5d/b10I2JzkdzhWohen8Fgvb3OItGjm424U=";
   };
 
   nativeBuildInputs = [
