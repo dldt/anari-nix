@@ -1,4 +1,19 @@
 _final: prev: {
+  # anari-cts pulls imageio into its Python environment. Its PNG round-trip
+  # tests fail against the Pillow version nixpkgs ships ("Invalid mode for
+  # data type"); the mismatch is in the test suite's own expectations, not in
+  # anything anari-cts uses.
+  pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+    (_pythonFinal: pythonPrev: {
+      imageio = pythonPrev.imageio.overridePythonAttrs (old: {
+        disabledTests = (old.disabledTests or [ ]) ++ [
+          "test_png_16bit"
+          "test_png"
+        ];
+      });
+    })
+  ];
+
   embree-ispc = prev.embree.overrideAttrs (old: {
     cmakeFlags = old.cmakeFlags ++ [
       "-DEMBREE_ISPC_SUPPORT=ON"
