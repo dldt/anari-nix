@@ -38,7 +38,6 @@ stdenv.mkDerivation {
 
   patches = [
     ./disable-optix-headers-fetch.patch
-    ./mdl-sdk-2026.patch
   ];
 
   postFixup = ''
