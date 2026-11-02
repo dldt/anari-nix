@@ -16,8 +16,8 @@ let
   # private symbols by upstream; their installed shared libraries cannot replace them.
   archives = {
     anari_embree = fetchurl {
-      url = "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip";
-      hash = "sha256-Y9ZOWHlb3fbpxWT2aJVky4WHaU4CXn7HeQdyzIIYs7k=";
+      url = "https://github.com/RenderKit/embree/archive/refs/tags/v4.4.1.zip";
+      hash = "sha256-ZDuHSQsgdHWHKwchAZ6+OUf+uRBPNsJXlUVVFuToW4I=";
     };
     halcyon_openqmc = fetchurl {
       url = "https://github.com/AcademySoftwareFoundation/openqmc/archive/refs/tags/v0.7.1.zip";
@@ -39,13 +39,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-halcyon";
-  version = "0.16.0-unstable-2026-10-23";
+  version = "0.16.0-unstable-2026-10-31";
 
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "449ea60edd8d00bdd464994e201f26ec63c9b422";
-    hash = "sha256-RbeU3k7jcR9dj2L22nm3o1/N0RA2h4BksBbZmcDE/gQ=";
+    rev = "467eaabc5180e760d218c7d8d0aa02048e4863d9";
+    hash = "sha256-S9tsVU0VDJB7xz3H7kaU+OoWRChlFyJnnoajBSfsCQ4=";
   };
   sourceRoot = "source/src/devices/halcyon";
 
