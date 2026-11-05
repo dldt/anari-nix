@@ -13,27 +13,23 @@ Ordering the vsr subdirectory first is incidental: anari_vsr links targets
 defined under it, which CMake resolves regardless, but reading it top-down is
 easier when the consumer comes second.
 ---
- CMakeLists.txt     | 6 ++++++
+ CMakeLists.txt     | 2 ++
  src/CMakeLists.txt | 4 +++-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 0d63254..e5db99d 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -68,6 +68,12 @@ option(VSR_NANOVDB_USE_ZIP
+@@ -76,6 +76,8 @@ option(VSR_NANOVDB_USE_ZIP
    "Enable zlib so NanoVDB importer can read ZIP-compressed .nvdb files" ON)
  option(VSR_USE_LUA "Enable Lua scripting support" ON)
- option(BUILD_VISKORES_DEMO "Build Viskores demo viewer" OFF)
-+cmake_dependent_option(VSR_BUILD_ANARI_DEVICE
-+  "Build the VSR ANARI device library"
-+  ON
-+  "NOT BUILD_VISKORES_DEMO"
-+  ON
-+)
  
++option(VSR_BUILD_ANARI_DEVICE "Build the VSR ANARI device library" ON)
++
  if (APPLE)
    set(VSR_USE_CUDA OFF)
+ else()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index b2772d2..4e4f125 100644
 --- a/src/CMakeLists.txt

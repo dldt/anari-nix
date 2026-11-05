@@ -14,15 +14,15 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-vsr";
-  version = "0-unstable-2026-11-03";
+  version = "0-unstable-2026-11-05";
 
   # Main source. Shared with the vela package, which builds the applications
   # from the same tree.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "9d7c444ade3f39ada74a6e03c7c77e3a195ba055";
-    hash = "sha256-Rq804/aYNH84PmCDjRwP/9y+OPR6KtoYYwacNxwXUK4=";
+    rev = "421273e6ad7e61280a0fa6d8f754d246be79670e";
+    hash = "sha256-2YpoRodHjJBZKlhMve2Ykov4qU1Z+cRETfz4PTWalZ4=";
   };
 
   # The device captures ANARI state rather than loading scenes, so none of the

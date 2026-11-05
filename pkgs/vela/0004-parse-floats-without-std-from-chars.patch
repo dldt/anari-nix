@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Arcila <134677+tarcila@users.noreply.github.com>
+Date: Wed, 05 Nov 2026 12:00:00 -0500
+Subject: [PATCH] fix(tools): parse floats without std::from_chars
+
+libc++ implements the floating-point overloads of std::from_chars out of line
+and marks them _LIBCPP_AVAILABILITY_FROM_CHARS_FLOATING_POINT, i.e. macOS 26
+and later. Instantiating decodeNumeric<float>/<double> is therefore a hard
+error on any older deployment target, which is every supported macOS short of
+the newest one.
+
+Route the floating-point case through strtod instead, rejecting by hand the
+inputs from_chars refuses -- leading whitespace, a leading '+' and hexadecimal
+literals -- so the accepted grammar does not quietly widen. Integers keep
+using from_chars: those overloads are header-only and always available.
+---
+ src/apps/tools/RenderDeviceConfig.cpp | 42 ++++++++++++++++++++++-----
+ 1 file changed, 36 insertions(+), 6 deletions(-)
+
+diff --git a/src/apps/tools/RenderDeviceConfig.cpp b/src/apps/tools/RenderDeviceConfig.cpp
+--- a/src/apps/tools/RenderDeviceConfig.cpp
++++ b/src/apps/tools/RenderDeviceConfig.cpp
+@@ -6,6 +6,8 @@
+ #include "vsr/app/ANARIDeviceManager.h"
+ // std
+ #include <array>
++#include <cctype>
++#include <cerrno>
+ #include <charconv>
+ #include <cmath>
+ #include <cstdio>
+@@ -137,6 +139,38 @@
+   return result;
+ }
+ 
++// The floating-point overloads of std::from_chars are out-of-line in libc++
++// and carry an availability attribute (macOS 26 and later), so using them
++// makes the build fail against any older deployment target. strtod reproduces
++// the from_chars contract once the inputs from_chars rejects -- leading
++// whitespace, a leading '+' and hexadecimal literals -- are filtered out by
++// hand. Integers keep using from_chars: those overloads are header-only and
++// unconditionally available.
++template <typename T>
++bool parseScalar(const std::string &part, T &value)
++{
++  if (part.empty())
++    return false;
++  if constexpr (std::is_floating_point_v<T>) {
++    if (std::isspace(static_cast<unsigned char>(part.front())) || part[0] == '+'
++        || part.find_first_of("xX") != std::string::npos)
++      return false;
++    const char *first = part.c_str();
++    char *last = nullptr;
++    errno = 0;
++    const double parsed = std::strtod(first, &last);
++    if (errno == ERANGE || last != first + part.size())
++      return false;
++    value = static_cast<T>(parsed);
++    return true;
++  } else {
++    const auto parsed =
++        std::from_chars(part.data(), part.data() + part.size(), value);
++    return parsed.ec == std::errc()
++        && parsed.ptr == part.data() + part.size();
++  }
++}
++
+ template <typename T>
+ std::optional<vsr::core::Any> decodeNumeric(
+     const NumericType &type, const std::vector<std::string> &parts)
+@@ -145,11 +179,7 @@
+     return {};
+   std::array<T, 4> values{};
+   for (size_t i = 0; i < parts.size(); ++i) {
+-    const auto &part = parts[i];
+-    const auto parsed =
+-        std::from_chars(part.data(), part.data() + part.size(), values[i]);
+-    if (part.empty() || parsed.ec != std::errc()
+-        || parsed.ptr != part.data() + part.size())
++    if (!parseScalar(parts[i], values[i]))
+       return {};
+     if constexpr (std::is_floating_point_v<T>)
+       if (!std::isfinite(values[i]))
