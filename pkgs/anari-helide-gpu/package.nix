@@ -19,14 +19,14 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-helide-gpu";
-  version = "0.16.0-unstable-2026-10-31";
+  version = "0.16.0-unstable-2026-11-04";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "467eaabc5180e760d218c7d8d0aa02048e4863d9";
-    hash = "sha256-S9tsVU0VDJB7xz3H7kaU+OoWRChlFyJnnoajBSfsCQ4=";
+    rev = "3c858bdcf5b0c150fa6cdabf87ab15f73f4ea2d1";
+    hash = "sha256-DGmYKQJLgHwSQOYJYcL2XbhvGGBCu2UPTBHM4eWRu7w=";
   };
   sourceRoot = "source/src/devices/helide_gpu";
 

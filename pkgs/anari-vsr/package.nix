@@ -14,20 +14,16 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-vsr";
-  version = "0-unstable-2026-10-30";
+  version = "0-unstable-2026-11-03";
 
   # Main source. Shared with the vela package, which builds the applications
   # from the same tree.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "6846a559b1282556648d6ee6bede53025f937f24";
-    hash = "sha256-V+4GIDRjH1DVIOnrMp7bTwSPV/h8JFuiZLt/SKZBUqU=";
+    rev = "9d7c444ade3f39ada74a6e03c7c77e3a195ba055";
+    hash = "sha256-Rq804/aYNH84PmCDjRwP/9y+OPR6KtoYYwacNxwXUK4=";
   };
-
-  # Lives in the vela package, which needs the same fix. Without it the
-  # unconditional imnodes subdirectory downloads an archive nothing here builds.
-  patches = [ ../vela/0002-fetch-imnodes-only-for-viskores-demo.patch ];
 
   # The device captures ANARI state rather than loading scenes, so none of the
   # importer backends are of use to it -- and leaving them off keeps the runtime
