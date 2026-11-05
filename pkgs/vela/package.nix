@@ -85,6 +85,7 @@ stdenv.mkDerivation {
   patches = [
     ./0001-fix-io-build-against-OpenUSD-25.05.patch
     ./0003-make-the-anari-device-library-optional.patch
+    ./0004-parse-floats-without-std-from-chars.patch
   ];
 
   cmakeFlags = [
