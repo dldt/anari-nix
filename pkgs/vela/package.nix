@@ -42,6 +42,10 @@ let
     url = "https://github.com/CedricGuillemet/ImGuizmo/archive/105e4fde45e4e74aae8973d98750820ef7aca7e2.zip";
     hash = "sha256-dU/KToxmxaJV+VMjm1GBOFIokj9kbRo5vcpboYrMfP0=";
   };
+  imnodes-src = fetchurl {
+    url = "https://github.com/Nelarius/imnodes/archive/eb36902c892548ef94f88f51ad7e7c9c7058a71c.zip";
+    hash = "sha256-RcXkCLE9VwLOrW9QbbUBBdfQgtuAGZsXhw5zDKvqGMo=";
+  };
   miniscene-src = fetchurl {
     url = "https://github.com/ingowald/miniScene/archive/4eee09bd95d91b8b9e29eeecb1df6053cce84590.zip";
     hash = "sha256-3yExfhETmMNgNcmnPVwsYcfmoNrMav0JxcCVc8BKn/4=";
@@ -56,13 +60,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "vela";
-  version = "0-unstable-2026-10-30";
+  version = "0-unstable-2026-11-05";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "6846a559b1282556648d6ee6bede53025f937f24";
-    hash = "sha256-V+4GIDRjH1DVIOnrMp7bTwSPV/h8JFuiZLt/SKZBUqU=";
+    rev = "421273e6ad7e61280a0fa6d8f754d246be79670e";
+    hash = "sha256-2YpoRodHjJBZKlhMve2Ykov4qU1Z+cRETfz4PTWalZ4=";
   };
 
   # anari_sdk_fetch_project() downloads into `.anari_deps/<name>` under the
@@ -72,14 +76,14 @@ stdenv.mkDerivation {
     cp "${imgui-src}" "''${sourceRoot}/.anari_deps/vela_ext_imgui_sdl/v1.92.9b-docking.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/vela_ext_imguizmo/"
     cp "${imguizmo-src}" "''${sourceRoot}/.anari_deps/vela_ext_imguizmo/105e4fde45e4e74aae8973d98750820ef7aca7e2.zip"
+    mkdir -p "''${sourceRoot}/.anari_deps/vela_ext_imnodes/"
+    cp "${imnodes-src}" "''${sourceRoot}/.anari_deps/vela_ext_imnodes/eb36902c892548ef94f88f51ad7e7c9c7058a71c.zip"
     mkdir -p "''${sourceRoot}/.anari_deps/vela_ext_miniscene/"
     cp "${miniscene-src}" "''${sourceRoot}/.anari_deps/vela_ext_miniscene/4eee09bd95d91b8b9e29eeecb1df6053cce84590.zip"
   '';
 
   patches = [
     ./0001-fix-io-build-against-OpenUSD-25.05.patch
-    # Shared with anari-vsr, which references it from here.
-    ./0002-fetch-imnodes-only-for-viskores-demo.patch
     ./0003-make-the-anari-device-library-optional.patch
   ];
 
@@ -196,7 +200,7 @@ stdenv.mkDerivation {
 
   passthru.updateScript = nix-update-script {
     extraArgs = [
-      "--version=branch"
+      "--version=branch=pvol-features"
       "--flake"
     ];
   };
