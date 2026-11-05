@@ -4,9 +4,9 @@ Date: Sun, 31 Aug 2026 12:00:00 -0400
 Subject: [PATCH] fix(external): fetch imnodes only for the Viskores demo
 
 imnodes is consumed by the Viskores demo alone, but external/CMakeLists.txt
-adds its subdirectory unconditionally, so anari_sdk_fetch_project() downloads
-the archive on every configure -- including device-only builds that compile
-none of it. Gate the subdirectory on its one consumer, and declare
+adds its subdirectory with the rest of the UI externals, so
+anari_sdk_fetch_project() downloads the archive on every UI build -- including
+ones that compile none of it. Gate the subdirectory on its one consumer, and declare
 BUILD_VISKORES_DEMO with the other options so external/ (which is added before
 src/) sees a defined variable rather than relying on the option's default.
 ---
@@ -31,25 +31,23 @@ diff --git a/external/CMakeLists.txt b/external/CMakeLists.txt
 index 9ae562c..0d818e7 100644
 --- a/external/CMakeLists.txt
 +++ b/external/CMakeLists.txt
-@@ -5,7 +5,6 @@ add_subdirectory(vela_agx)
- add_subdirectory(vela_catch)
+@@ -5,6 +5,5 @@
  add_subdirectory(vela_flip)
  add_subdirectory(vela_fmtlib)
 -add_subdirectory(vela_imnodes)
  add_subdirectory(vela_imoguizmo)
  add_subdirectory(vela_mikktspace)
  add_subdirectory(vela_nanovdb)
-@@ -21,6 +20,10 @@ if(VSR_BUILD_UI_LIBRARY)
-   add_subdirectory(vela_imguizmo)
- endif()
+@@ -15,5 +14,9 @@
+ add_subdirectory(vela_zlib EXCLUDE_FROM_ALL)
  
 +if(BUILD_VISKORES_DEMO)
 +  add_subdirectory(vela_imnodes)
 +endif()
 +
- if(VSR_USE_LUA)
-   add_subdirectory(vela_lua)
-   add_subdirectory(vela_sol2 EXCLUDE_FROM_ALL)
+ if(VSR_BUILD_UI_LIBRARY)
+   add_subdirectory(vela_imgui_sdl)
+   add_subdirectory(vela_imguizmo)
 diff --git a/src/apps/interactive/demos/CMakeLists.txt b/src/apps/interactive/demos/CMakeLists.txt
 index cb41b8c..011b780 100644
 --- a/src/apps/interactive/demos/CMakeLists.txt
