@@ -1,0 +1,27 @@
+Subject: [PATCH] Use fast_float for capture floating-point parsing
+
+The floating-point std::from_chars overloads in Apple's libc++ require
+macOS 26. Use the header-only fast_float implementation to preserve
+locale-independent parsing and from_chars error handling on older targets.
+Integer parsing continues to use std::from_chars.
+
+--- a/src/vsr/io/importers/detail/AnariCaptureText.cpp
++++ b/src/vsr/io/importers/detail/AnariCaptureText.cpp
+@@ -4,6 +4,8 @@
+ #include "vsr/io/importers/detail/AnariCaptureText.hpp"
+ // vsr_core
+ #include "vsr/core/HalfFloat.hpp"
++// fast_float
++#include <fast_float/fast_float.h>
+ // std
+ #include <charconv>
+ #include <cstdint>
+@@ -110,7 +112,7 @@
+ {
+   // from_chars reads "nan", "inf" and "-inf" but not a leading '+', which the
+   // capture never writes.
+-  const auto r = std::from_chars(s.data(), s.data() + s.size(), v);
++  const auto r = fast_float::from_chars(s.data(), s.data() + s.size(), v);
+   return r.ec == std::errc() && r.ptr == s.data() + s.size();
+ }
+ 

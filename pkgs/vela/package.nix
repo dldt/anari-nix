@@ -3,6 +3,7 @@
   stdenv,
   fetchurl,
   fetchFromGitHub,
+  fast-float,
   config,
   cudaSupport ? config.cudaSupport,
   mpiSupport ? false,
@@ -60,13 +61,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "vela";
-  version = "0-unstable-2026-11-05";
+  version = "0-unstable-2026-11-06";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "421273e6ad7e61280a0fa6d8f754d246be79670e";
-    hash = "sha256-2YpoRodHjJBZKlhMve2Ykov4qU1Z+cRETfz4PTWalZ4=";
+    rev = "9abd0ab70654a6e81a57c81fef87e53ebab37124";
+    hash = "sha256-/bglGARQwQwswI/HQrgYrjLB5N3YVJsbivrWIMadWu8=";
   };
 
   # anari_sdk_fetch_project() downloads into `.anari_deps/<name>` under the
@@ -86,6 +87,7 @@ stdenv.mkDerivation {
     ./0001-fix-io-build-against-OpenUSD-25.05.patch
     ./0003-make-the-anari-device-library-optional.patch
     ./0004-parse-floats-without-std-from-chars.patch
+    ./0005-use-fast-float-for-capture-parser.patch
   ];
 
   cmakeFlags = [
@@ -173,6 +175,7 @@ stdenv.mkDerivation {
     # vsr_network is boost.asio, which VSR_USE_NETWORKING turns on; turbojpeg
     # encodes SciVis Studio's remote frames.
     boost
+    fast-float
     libjpeg_turbo
     sdl3
     glm
