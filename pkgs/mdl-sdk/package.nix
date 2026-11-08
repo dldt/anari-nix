@@ -57,6 +57,7 @@ stdenv.mkDerivation rec {
 
   patches = [
     ./skip-xlib-workaround-test.patch
+    ./openimageio-dynamic-gcc-runtime.patch
   ];
 
   hardeningDisable = [ "zerocallusedregs" ];

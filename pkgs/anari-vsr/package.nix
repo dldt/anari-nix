@@ -2,6 +2,7 @@
   lib,
   stdenv,
   fetchFromGitHub,
+  fast-float,
   config,
   cudaSupport ? config.cudaSupport,
   cmake,
@@ -14,16 +15,18 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-vsr";
-  version = "0-unstable-2026-11-05";
+  version = "0-unstable-2026-11-06";
 
   # Main source. Shared with the vela package, which builds the applications
   # from the same tree.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "421273e6ad7e61280a0fa6d8f754d246be79670e";
-    hash = "sha256-2YpoRodHjJBZKlhMve2Ykov4qU1Z+cRETfz4PTWalZ4=";
+    rev = "9abd0ab70654a6e81a57c81fef87e53ebab37124";
+    hash = "sha256-/bglGARQwQwswI/HQrgYrjLB5N3YVJsbivrWIMadWu8=";
   };
+
+  patches = [ ../vela/0005-use-fast-float-for-capture-parser.patch ];
 
   # The device captures ANARI state rather than loading scenes, so none of the
   # importer backends are of use to it -- and leaving them off keeps the runtime
@@ -53,6 +56,7 @@ stdenv.mkDerivation {
 
   buildInputs = [
     anari-sdk
+    fast-float
     glm
     zlib
   ]
