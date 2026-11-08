@@ -201,7 +201,7 @@ stdenv.mkDerivation {
 
   passthru.updateScript = nix-update-script {
     extraArgs = [
-      "--version=branch=pvol-features"
+      "--version=branch"
       "--flake"
     ];
   };
