@@ -1,0 +1,18 @@
+CUDA 13 maps cuCtxCreate to the four-argument v4 API. Pass no optional
+context creation parameters, retaining the old call for earlier toolkits.
+
+diff --git a/src/render/baker/baker/baker.cpp b/src/render/baker/baker/baker.cpp
+--- a/src/render/baker/baker/baker.cpp
++++ b/src/render/baker/baker/baker.cpp
+@@ -548,7 +548,11 @@ CUcontext Baker_module_impl::get_dev_context_oss(int gpu_dev_id) const
+     if (cuDeviceGet(&dev, gpu_dev_id) != CUDA_SUCCESS) return nullptr;
+ 
+     CUcontext ctx = nullptr;
++#if CUDA_VERSION >= 13000
++    if (cuCtxCreate(&ctx, nullptr, /*flags=*/0, dev) != CUDA_SUCCESS || !ctx)
++#else
+     if (cuCtxCreate(&ctx, /*flags=*/0, dev) != CUDA_SUCCESS || !ctx)
++#endif
+         return nullptr;
+ 
+     // cuCtxCreate makes the new context current; pop so we don't leak state.

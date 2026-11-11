@@ -62,6 +62,7 @@ stdenv.mkDerivation rec {
     ./skip-xlib-workaround-test.patch
     ./openimageio-dynamic-gcc-runtime.patch
     ./cuda-toolkit-discovery.patch
+    ./cuda-13-context-create.patch
   ];
 
   hardeningDisable = [ "zerocallusedregs" ];
