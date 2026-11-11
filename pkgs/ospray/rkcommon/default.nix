@@ -5,15 +5,16 @@
   stdenv,
   tbb,
 }:
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   pname = "rkcommon";
-  version = "1.14.2";
+  # OSPRay v3.2.0 requires this exact version.
+  version = "1.14.0";
 
   src = fetchFromGitHub {
     owner = "RenderKit";
     repo = "rkcommon";
-    rev = "ecd1d474e91aaea74f04b62df371b151c2a504fa";
-    hash = "sha256-ezUvl/zr/mLEN4lJnvZRvFbf619JpaqfvqXbEa62Ovc=";
+    rev = "v${version}";
+    hash = "sha256-nUtoPImNM84XJmVvulEXaSsbiH2sfDEJwm2FkSR1Q94=";
   };
 
   prePatch = ''
