@@ -3,14 +3,14 @@
   stdenv,
   fetchFromGitHub,
 }:
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   pname = "nvidia-optix";
   version = "9.1.0";
 
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "optix-dev";
-    rev = "v9.1.0";
+    rev = "v${version}";
     hash = "sha256-DZqsXSbuvCsh1EXFS29H4zCm20zwBYxVKj/pvZRvSTE=";
   };
 

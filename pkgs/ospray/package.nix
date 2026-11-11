@@ -13,7 +13,7 @@ let
   openvkl = callPackage ./openvkl { inherit rkcommon; };
   rkcommon = callPackage ./rkcommon { };
 in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   pname = "ospray";
   version = "3.2.0";
 
@@ -21,8 +21,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "RenderKit";
     repo = "ospray";
-    rev = "675c216b91a765bbd1cf8c7ae8e2c3c0684f21a0";
-    hash = "sha256-/ufvfj4vNARw+LqPVRu5SJqbgFAKRG7Skbty8oz4EgM=";
+    rev = "v${version}";
+    hash = "sha256-XUiQi3OZGC8JOcBMkLagMQHDuzCQ+mQ2BQXsqnJWSm0=";
   };
 
   nativeBuildInputs = [

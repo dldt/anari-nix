@@ -2,6 +2,9 @@
   lib,
   fetchFromGitHub,
   cmake,
+  config,
+  cudaSupport ? config.cudaSupport,
+  cudaPackages,
   stdenv,
   python3,
   swig,
@@ -51,13 +54,14 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "MDL-SDK";
-    rev = "2c125342d99fed865807474afdec49c8362152e5";
-    hash = "sha256-8p1FklxH5Me6VAvzfwIYVtegEXvDF3AadqCJzIki5Iw=";
+    rev = version;
+    hash = "sha256-HuYV9orzcxA3kpF9XvyNP/8h+ljNGKnarTcTiGJvSsE=";
   };
 
   patches = [
     ./skip-xlib-workaround-test.patch
     ./openimageio-dynamic-gcc-runtime.patch
+    ./cuda-toolkit-discovery.patch
   ];
 
   hardeningDisable = [ "zerocallusedregs" ];
@@ -65,6 +69,9 @@ stdenv.mkDerivation rec {
   nativeBuildInputs = [
     cmake
     python3
+  ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_nvcc
   ]
   ++ lib.optionals enablePythonBindings [
     swig
@@ -80,6 +87,10 @@ stdenv.mkDerivation rec {
     openexr
     python3
   ]
+  ++ lib.optionals cudaSupport [
+    cudaPackages.cuda_cudart
+    cudaPackages.cuda_cccl
+  ]
   ++ lib.optionals enablePythonBindings [
     python3.pkgs.numpy
   ];
@@ -91,6 +102,7 @@ stdenv.mkDerivation rec {
       (cmakeBool "MDL_BUILD_DOCUMENTATION" false)
       (cmakeBool "MDL_BUILD_SDK_EXAMPLES" false)
       (cmakeBool "MDL_ENABLE_CUDA_EXAMPLES" false)
+      (cmakeBool "MDL_ENABLE_GPU_BAKER" cudaSupport)
       (cmakeBool "MDL_ENABLE_OPENGL_EXAMPLES" false)
       (cmakeBool "MDL_ENABLE_PYTHON_BINDINGS" enablePythonBindings)
       (cmakeBool "MDL_ENABLE_QT_EXAMPLES" false)

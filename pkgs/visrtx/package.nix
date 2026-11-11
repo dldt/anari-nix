@@ -14,7 +14,7 @@
 }:
 stdenv.mkDerivation {
   pname = "visrtx";
-  version = "tsd_removed-unstable-2026-11-02";
+  version = "26.09-unstable-2026-11-02";
 
   # Main source.
   src = fetchFromGitHub {
@@ -38,6 +38,7 @@ stdenv.mkDerivation {
 
   patches = [
     ./disable-optix-headers-fetch.patch
+    ./mdl-sdk-2026.patch
   ];
 
   postFixup = ''
@@ -72,6 +73,8 @@ stdenv.mkDerivation {
   passthru.updateScript = nix-update-script {
     extraArgs = [
       "--version=branch"
+      # Ignore administrative tags such as tsd_removed, retaining branch snapshots.
+      "--version-regex=^v?([0-9]+\\.[0-9]+(?:\\.[0-9]+)?-unstable-[0-9-]+)$"
       "--flake"
     ];
   };
