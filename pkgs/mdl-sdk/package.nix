@@ -62,6 +62,7 @@ stdenv.mkDerivation rec {
     ./skip-xlib-workaround-test.patch
     ./openimageio-dynamic-gcc-runtime.patch
     ./cuda-toolkit-discovery.patch
+    ./cuda-13-context-create.patch
   ];
 
   hardeningDisable = [ "zerocallusedregs" ];
@@ -110,6 +111,12 @@ stdenv.mkDerivation rec {
       (cmakeBool "MDL_ENABLE_UNIT_TESTS" true)
       (cmakeBool "MDL_ENABLE_VULKAN_EXAMPLES" false)
       (cmakeFeature "python_PATH" "${python3}/bin/python")
+    ]
+    ++ lib.optionals cudaSupport [
+      # CUDA 13 dropped support for the GPU baker's default sm_50 PTX target.
+      (cmakeFeature "TARGET_ADD_CUDA_PTX_RULE_CUDA_ARCH" (
+        if lib.versionAtLeast cudaPackages.cuda_nvcc.version "13" then "sm_75" else "sm_50"
+      ))
     ]
     ++ lib.optionals enablePythonBindings [
       (cmakeFeature "PYTHON_DIR" "${python3}")
