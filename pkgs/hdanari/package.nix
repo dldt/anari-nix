@@ -18,14 +18,14 @@
 }:
 stdenv.mkDerivation {
   pname = "hdanari";
-  version = "0.16.0-unstable-2026-11-06";
+  version = "0.16.0-unstable-2026-11-13";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "62f5007711f8ed5c0c8f1307c3717b581b4611ec";
-    hash = "sha256-b3cBU/S+2S/+pkEbzC8tQgpF6XguuuBh8LtRTO5ejYM=";
+    rev = "a0a3402aeb1e4854382abc0498a3723be852e595";
+    hash = "sha256-YVhlOpMg5ckQos1RHHJNkD0bnDIvekGFyrwSVeIrPIw=";
   };
 
   sourceRoot = "source/src/hdanari";
