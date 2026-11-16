@@ -16,13 +16,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "anari-cts";
-  version = "0.16.0-unstable-2026-11-06";
+  version = "0.16.0-unstable-2026-11-21";
 
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "62f5007711f8ed5c0c8f1307c3717b581b4611ec";
-    hash = "sha256-b3cBU/S+2S/+pkEbzC8tQgpF6XguuuBh8LtRTO5ejYM=";
+    rev = "47b22af519900d5abfd8b6ca6f94b25e6adff390";
+    hash = "sha256-Qi0lYVRPN6GGrzJu5kf1WiIhS8fM83ZaW3CrcLzV+po=";
   };
 
   nativeBuildInputs = [
