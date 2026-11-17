@@ -4,14 +4,10 @@ Date: Mon, 26 May 2025 05:04:55 -0400
 Subject: [PATCH] Do not build cycles standalone app
 
 ---
- cycles/src/CMakeLists.txt | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
 diff --git a/cycles/src/CMakeLists.txt b/cycles/src/CMakeLists.txt
-index 15cccbf0f..f86bc8467 100644
 --- a/cycles/src/CMakeLists.txt
 +++ b/cycles/src/CMakeLists.txt
-@@ -447,7 +447,8 @@ if(WITH_CYCLES_BLENDER)
+@@ -395,7 +395,8 @@
    add_subdirectory(blender)
  endif()
  
@@ -21,6 +17,3 @@ index 15cccbf0f..f86bc8467 100644
  add_subdirectory(bvh)
  add_subdirectory(device)
  add_subdirectory(doc)
--- 
-2.49.0
-

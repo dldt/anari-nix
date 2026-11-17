@@ -9,18 +9,14 @@ WITH_CYCLES_NANOVDB/WITH_OPENVDB are enabled. The openvdb dependency
 target is an INTERFACE library that is a no-op when WITH_OPENVDB is off,
 so it can be linked unconditionally.
 ---
- cycles/src/device/CMakeLists.txt | 1 +
- 1 file changed, 1 insertion(+)
-
 diff --git a/cycles/src/device/CMakeLists.txt b/cycles/src/device/CMakeLists.txt
-index 431ae7a80..c220f28cb 100644
 --- a/cycles/src/device/CMakeLists.txt
 +++ b/cycles/src/device/CMakeLists.txt
-@@ -147,4 +147,5 @@ set(LIB
+@@ -147,6 +147,7 @@
    PUBLIC cycles_util
    PRIVATE bf::dependencies::optional::openimagedenoise
    PRIVATE bf::dependencies::optional::osl
 +  PRIVATE bf::dependencies::optional::openvdb
  )
---
-2.49.0
+ 
+ if(WITH_CYCLES_DEVICE_OPTIX OR WITH_CYCLES_DEVICE_CUDA)
