@@ -24,13 +24,13 @@ let
 in
 stdenv.mkDerivation (_finalAttrs: {
   pname = "pbrt-v4";
-  version = "0-unstable-2026-10-30";
+  version = "0-unstable-2026-11-15";
 
   src = fetchFromGitHub {
     owner = "mmp";
     repo = "pbrt-v4";
-    rev = "b0bdf461ba5dd6504b70ebf0932acc0fe7aa744f";
-    hash = "sha256-sBZWg8LiPyzovjBYUjEq0roZ9U8b2vPDEVJoaiYYzew=";
+    rev = "20e41fd83789f12550e2c31b2047898c9e20e46c";
+    hash = "sha256-kel0NvRQbuWGYIzhx+KBMIyC44r4pDEpLnN3LOGUhzs=";
     fetchSubmodules = true;
   };
 
