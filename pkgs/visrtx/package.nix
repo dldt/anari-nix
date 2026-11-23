@@ -14,14 +14,14 @@
 }:
 stdenv.mkDerivation {
   pname = "visrtx";
-  version = "26.09-unstable-2026-11-02";
+  version = "26.09-unstable-2026-11-17";
 
   # Main source.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "VisRTX";
-    rev = "4ce0fee3de29ee08673953c66d0bac9b4bba146e";
-    hash = "sha256-FL/yV7OU+G6EgBo4O+wDCKNYjKOBK7pdQ6bHCPz7SUw=";
+    rev = "aba2b82903ce560931f72a44083520e9ba6b0190";
+    hash = "sha256-oVD2dUHSYRdwnrAxwh7xZGf0NRG3jUuaKjZwXvom2aE=";
   };
 
   cmakeFlags = with lib; [
@@ -38,7 +38,6 @@ stdenv.mkDerivation {
 
   patches = [
     ./disable-optix-headers-fetch.patch
-    ./mdl-sdk-2026.patch
   ];
 
   postFixup = ''

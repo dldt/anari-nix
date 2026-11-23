@@ -15,15 +15,15 @@
 }:
 stdenv.mkDerivation {
   pname = "anari-vsr";
-  version = "0-unstable-2026-11-06";
+  version = "0-unstable-2026-11-19";
 
   # Main source. Shared with the vela package, which builds the applications
   # from the same tree.
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "Vela";
-    rev = "9abd0ab70654a6e81a57c81fef87e53ebab37124";
-    hash = "sha256-/bglGARQwQwswI/HQrgYrjLB5N3YVJsbivrWIMadWu8=";
+    rev = "00bd301a33f45d8dd5b10c14e6bae7ec211f6fbc";
+    hash = "sha256-aW2yC3eMIUfW7urPK95wpvHyNMlS7c54THZ1QbvIeJQ=";
   };
 
   patches = [ ../vela/0005-use-fast-float-for-capture-parser.patch ];
