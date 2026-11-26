@@ -25,9 +25,8 @@ setupImplicitDirectoryExclusions() {
 	IFS=: read -r -a paths <<<"${paths}"
 	export CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE
 	for p in "${paths[@]}"; do
-		p=$(realpath "${p}")
-		if [ $? == 0 ]; then
-			CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE="$(realpath ${p})${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE:+;${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE}}"
+		if p="$(realpath "${p}")"; then
+			CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE="${p}${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE:+;${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES_EXCLUDE}}"
 		fi
 	done
 }

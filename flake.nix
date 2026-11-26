@@ -57,72 +57,39 @@
       filterOutBroken =
         packages: lib.attrsets.filterAttrs (_packageName: packageDesc: !packageDesc.meta.broken) packages;
 
-      pkgs =
-        system:
+      importNixpkgs =
+        cudaSupport: system:
         import nixpkgs {
           inherit system;
           config = {
             allowUnfree = true;
-            cudaSupport = false;
+            inherit cudaSupport;
           };
           # Make sure we first apply our local overrides
-          overlays = [
-            (import ./overrides.nix)
-          ];
+          overlays = [ (import ./overrides.nix) ];
         };
 
-      packages =
-        system:
+      pkgs = importNixpkgs false;
+
+      packagesFor =
+        nixpkgsFor: system:
         filterOutBroken (
           filterSystem system (
             filterDerivations (
               lib.packagesFromDirectoryRecursive {
-                inherit (pkgs system) callPackage newScope;
+                inherit (nixpkgsFor system) callPackage newScope;
                 directory = ./pkgs;
-              }
-              // {
-                python3Packages = lib.packagesFromDirectoryRecursive {
-                  inherit ((pkgs system).python3Packages) callPackage newScope;
-                  directory = ./python-pkgs;
-                };
               }
             )
           )
         );
+
+      packages = packagesFor pkgs;
 
       # Same, enabling CUDA support
-      pkgsCuda =
-        system:
-        import nixpkgs {
-          inherit system;
-          config = {
-            allowUnfree = true;
-            cudaSupport = true;
-          };
-          # Make sure we first apply our local overrides
-          overlays = [
-            (import ./overrides.nix)
-          ];
-        };
+      pkgsCuda = importNixpkgs true;
 
-      packagesCuda =
-        system:
-        filterOutBroken (
-          filterSystem system (
-            filterDerivations (
-              lib.packagesFromDirectoryRecursive {
-                inherit (pkgsCuda system) callPackage newScope;
-                directory = ./pkgs;
-              }
-              // {
-                python3Packages = lib.packagesFromDirectoryRecursive {
-                  inherit ((pkgs system).python3Packages) callPackage newScope;
-                  directory = ./python-pkgs;
-                };
-              }
-            )
-          )
-        );
+      packagesCuda = packagesFor pkgsCuda;
 
       treefmtEval = system: treefmt-nix.lib.evalModule (pkgs system) ./treefmt.nix;
 
@@ -137,15 +104,15 @@
 
       checks = forAllDefaultSystems (
         system:
-        filterDerivations {
-          format = (treefmtEval system).config.build.check self;
-          packages = (pkgs system).linkFarm "packages" (packages system);
-          packagesCuda =
-            if (canDoCuda system) then
-              (pkgsCuda system).linkFarm "packagesCuda" (packagesCuda system)
-            else
-              null;
-        }
+        filterDerivations (
+          {
+            format = (treefmtEval system).config.build.check self;
+            packages = (pkgs system).linkFarm "packages" (packages system);
+          }
+          // lib.optionalAttrs (canDoCuda system) {
+            packagesCuda = (pkgsCuda system).linkFarm "packagesCuda" (packagesCuda system);
+          }
+        )
       );
 
       formatter = forAllDefaultSystems (system: (treefmtEval system).config.build.wrapper);

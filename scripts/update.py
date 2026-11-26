@@ -13,7 +13,6 @@ import signal
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, Set, Tuple, Union
 
 
 UPDATE_TIMEOUT_SECONDS = 15 * 60
@@ -31,7 +30,7 @@ SKIPPED_PACKAGES = {
 }
 
 
-def run_nix_eval(args: List[str]) -> Optional[str]:
+def run_nix_eval(args: list[str]) -> str | None:
     """Run nix eval command and return the output."""
     try:
         result = subprocess.run(
@@ -47,7 +46,7 @@ def run_nix_eval(args: List[str]) -> Optional[str]:
         return None
 
 
-def get_current_system() -> Optional[str]:
+def get_current_system() -> str | None:
     """Get the current system platform (e.g., x86_64-linux, aarch64-darwin)."""
     output = run_nix_eval(["--impure", "--expr", "builtins.currentSystem"])
     if output:
@@ -58,7 +57,7 @@ def get_current_system() -> Optional[str]:
     return None
 
 
-def get_all_packages(flake_path: str, system: str) -> Optional[List[str]]:
+def get_all_packages(flake_path: str, system: str) -> list[str] | None:
     """
     Get all packages from the flake for the current system.
     Returns a list of package names.
@@ -83,7 +82,7 @@ def get_all_packages(flake_path: str, system: str) -> Optional[List[str]]:
 
 def get_update_script(
     flake_path: str, system: str, package_name: str
-) -> Optional[List[str]]:
+) -> list[str] | None:
     """
     Get the update script for a package.
     Returns the command as a list of arguments, or None if no updateScript exists.
@@ -129,7 +128,7 @@ def get_update_script(
         return None
 
 
-def get_all_package_names(flake_path: str) -> Set[str]:
+def get_all_package_names(flake_path: str) -> set[str]:
     """
     Get all package names across all systems to detect packages not available on current platform.
     Returns a set of all unique package names.
@@ -154,14 +153,14 @@ def get_all_package_names(flake_path: str) -> Set[str]:
         return set()
 
 
-def get_fallback_command(package_name: str) -> List[str]:
+def get_fallback_command(package_name: str) -> list[str]:
     """Get the fallback update command for a package."""
     return ["nix-update", "--flake", package_name]
 
 
 def get_package_source_path(
     flake_path: str, system: str, package_name: str
-) -> Optional[str]:
+) -> str | None:
     """
     Get the source directory path for a package.
     Returns the directory path or the package name as fallback.
@@ -193,8 +192,8 @@ def get_package_source_path(
 
 
 def prepare_update_tasks(
-    flake_path: str, system: str, package_names: List[str]
-) -> Tuple[List[Tuple[str, List[str]]], List[Tuple[str, str]]]:
+    flake_path: str, system: str, package_names: list[str]
+) -> tuple[list[tuple[str, list[str]]], list[tuple[str, str]]]:
     """Build serialized update tasks and collect explicitly skipped packages."""
     update_tasks = []
     skipped_packages = []
@@ -215,7 +214,7 @@ def prepare_update_tasks(
     return update_tasks, skipped_packages
 
 
-def decode_output(output: Optional[Union[str, bytes]]) -> str:
+def decode_output(output: str | bytes) -> str:
     """Normalize subprocess output, including TimeoutExpired byte output."""
     if output is None:
         return ""
@@ -259,11 +258,11 @@ def terminate_process_group(
 
 def run_update(
     package_name: str,
-    command: List[str],
+    command: list[str],
     flake_path: str,
     timeout_seconds: float = UPDATE_TIMEOUT_SECONDS,
     termination_grace_seconds: float = PROCESS_TERMINATION_GRACE_SECONDS,
-) -> Tuple[str, bool, str]:
+) -> tuple[str, bool, str]:
     """
     Run the update command for a package.
     Returns (package_name, success, output).
