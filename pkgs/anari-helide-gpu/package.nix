@@ -16,41 +16,32 @@ let
     url = "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip";
     hash = "sha256-CcVxYpZ4fh9/y4exy9vyaBTsEojtYlnM0w1dl5WAn6U=";
   };
-  implib-so-src = fetchFromGitHub {
-    owner = "yugr";
-    repo = "Implib.so";
-    rev = "a3e167cf978a5b8a38ec0f710d8c4331e8dcdd9a";
-    hash = "sha256-T+q2LXQogD7KCHevU5HW8XPkzC3DzfjD41gtlJZ6i/M=";
+  implib-so-rev = "a3e167cf978a5b8a38ec0f710d8c4331e8dcdd9a";
+  implib-so-src = fetchurl {
+    url = "https://github.com/yugr/Implib.so/archive/${implib-so-rev}.zip";
+    hash = "sha256-e1HoFg2dy8KwewP18NoQnhyd2XuaIXkVd7Asxmm6bcE=";
   };
 in
 stdenv.mkDerivation {
   pname = "anari-helide-gpu";
-  version = "0.16.0-unstable-2026-11-21";
+  version = "0.17.0-1-unstable-2026-11-25";
 
   # Main source
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "ANARI-SDK";
-    rev = "47b22af519900d5abfd8b6ca6f94b25e6adff390";
-    hash = "sha256-Qi0lYVRPN6GGrzJu5kf1WiIhS8fM83ZaW3CrcLzV+po=";
+    rev = "bbd28df094a209a7765d476c19a7d2dfabc95209";
+    hash = "sha256-T5XQu+cUDBkNEATdqdd+5/hB3pYIOukrkASLKuJCF7I=";
   };
   sourceRoot = "source/src/devices/helide_gpu";
 
   postUnpack = ''
     mkdir -p "''${sourceRoot}/.anari_deps/anari_helide_gpu_glm/"
     cp "${glm_for_helide_gpu-src}" "''${sourceRoot}/.anari_deps/anari_helide_gpu_glm/1.0.1.zip"
-  '';
-
-  # This upstream FetchContent_Populate call uses the explicit form, which
-  # ignores FETCHCONTENT_SOURCE_DIR_IMPLIB_SO. Supply the pinned source directly.
-  postPatch = lib.optionalString stdenv.hostPlatform.isLinux ''
-    substituteInPlace CMakeLists.txt \
-      --replace-fail 'FetchContent_Populate(implib_so
-        GIT_REPOSITORY https://github.com/yugr/Implib.so.git
-        GIT_TAG a3e167cf978a5b8a38ec0f710d8c4331e8dcdd9a
-        SOURCE_DIR ''${CMAKE_BINARY_DIR}/_deps/implib_so-src
-        BINARY_DIR ''${CMAKE_BINARY_DIR}/_deps/implib_so-build
-      )' 'set(implib_so_SOURCE_DIR "${implib-so-src}")'
+  ''
+  + lib.optionalString stdenv.hostPlatform.isLinux ''
+    mkdir -p "''${sourceRoot}/.anari_deps/anari_helide_gpu_implib_so/"
+    cp "${implib-so-src}" "''${sourceRoot}/.anari_deps/anari_helide_gpu_implib_so/${implib-so-rev}.zip"
   '';
 
   nativeBuildInputs = [

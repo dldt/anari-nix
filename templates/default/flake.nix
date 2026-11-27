@@ -17,6 +17,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     anari-nix.url = "github:dldt/anari-nix";
+    systems.url = "github:nix-systems/default";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
@@ -56,7 +57,7 @@
             anari-vsr
           ]
           ++ (lib.optionals pkgs.config.cudaSupport [
-            anari-barney
+            barney
             visrtx
           ])
         );
